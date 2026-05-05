@@ -1,0 +1,280 @@
+/* Mos kelmasliklar uchun yamoqlar — HTML va CSS o'rtasida klass nomlari farqlari */
+
+/* Section heading wrapper (HTML uses .section-head, several CSS files declared per-section heads) */
+.section-head {
+  text-align: center;
+  margin-bottom: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.section-head .section-subtitle {
+  text-align: center;
+}
+
+/* Hero text aliases — HTML uses .hero-content / .hero-title / .hero-title-accent / .hero-subtitle */
+.hero-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.hero-title {
+  font-size: clamp(2.4rem, 5vw, 3.75rem);
+  line-height: 1.05;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  margin: 16px 0 20px;
+}
+
+.hero-title-accent {
+  background: var(--gradient-hero);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-weight: 900;
+}
+
+.hero-subtitle {
+  font-size: 1.12rem;
+  color: var(--color-text-muted);
+  max-width: 560px;
+  line-height: 1.65;
+  margin-bottom: 32px;
+}
+
+/* Hero card — richer structure than original CSS supported */
+.hero-card-id {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.hero-card-sport {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+/* HTML uses <span class="tag hero-card-region">. The base .tag styles win; reset the overriding rule from sections.css */
+.tag.hero-card-region {
+  font-size: 0.74rem;
+  color: var(--color-text-muted);
+  display: inline-flex;
+  margin-top: 0;
+  padding: 4px 10px;
+}
+
+/* Override: hero-card-score is a flex row container (ring + meta), not a 56px circle */
+.hero-card-score {
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  background: transparent;
+  border: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: inherit;
+  font-size: inherit;
+  font-weight: 400;
+  padding: 8px 0;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.score-ring {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(16, 185, 129, 0.15);
+  color: #34D399;
+  border: 2px solid rgba(16, 185, 129, 0.4);
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.score-value {
+  font-weight: 800;
+  font-size: 1.35rem;
+}
+
+.score-label {
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.85;
+  margin-top: 2px;
+}
+
+.score-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.score-note {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+/* Metric row text styling — HTML uses .metric-name / .metric-val */
+.metric-name {
+  color: var(--color-text-muted);
+}
+
+.metric-val {
+  color: var(--color-text);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Block list — HTML places <svg> + <span> directly in <li> (no .check wrapper) */
+.block-list li svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.block-card--primary .block-list li svg {
+  color: var(--color-primary);
+}
+
+.block-card--accent .block-list li svg {
+  color: var(--color-accent);
+}
+
+/* Block head wrapper (number + title + desc grouped) */
+.block-head {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.block-head .block-num {
+  flex-shrink: 0;
+  font-size: 1rem;
+  padding-top: 2px;
+}
+
+.block-head h3.block-title {
+  margin: 0;
+}
+
+.block-head .block-desc {
+  margin: 6px 0 0;
+}
+
+/* Rating preview head — title + filter tag above the leaderboard */
+.rating-preview-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px 12px;
+  border-bottom: 1px solid var(--color-border);
+  flex-wrap: wrap;
+}
+
+.rating-preview-title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+/* The header-row wrapper holds an inner .rating-row of column labels — flatten visually */
+.rating-preview-header {
+  padding: 0;
+  border-bottom: 0;
+}
+
+.rating-preview-header .rating-row {
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-text-muted);
+  font-weight: 600;
+  border-radius: 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.rating-preview-header .rating-row:hover {
+  background: transparent;
+}
+
+/* Header row uses a .badge-green for the "Daraja" label — neutralize that */
+.rating-preview-header .rating-row .badge-green {
+  background: transparent;
+  border-color: transparent;
+  color: var(--color-text-muted);
+  padding: 0;
+  font-weight: 600;
+}
+
+/* Footer — HTML uses .footer-inner (not .footer-grid) and .footer-brand (not .brand-col) */
+.site-footer .footer-inner {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr 1fr;
+  gap: 40px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.footer-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.footer-desc {
+  color: var(--color-text-muted);
+  font-size: 0.92rem;
+  line-height: 1.6;
+  max-width: 320px;
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  .site-footer .footer-inner {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .site-footer .footer-inner {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Hero card sizing tweaks for new internal structure */
+@media (min-width: 901px) {
+  .hero-card {
+    width: 300px;
+  }
+}
+
+@media (max-width: 600px) {
+  .hero-card {
+    width: 260px;
+  }
+  .score-ring {
+    width: 56px;
+    height: 56px;
+  }
+  .score-value {
+    font-size: 1.2rem;
+  }
+}
+
+/* CTA section-head edge case — section-head sits inside .cta-inner so already centered */
+.cta .section-head {
+  margin-bottom: 0;
+}
