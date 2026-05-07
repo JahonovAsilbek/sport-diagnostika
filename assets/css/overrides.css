@@ -278,3 +278,16 @@
 .cta .section-head {
   margin-bottom: 0;
 }
+
+.footer-bottom p {
+  margin: 0;
+}
+
+.footer-credit a {
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+.footer-credit a:hover {
+  text-decoration: underline;
+}
