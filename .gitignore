@@ -1,4 +1,10 @@
-.DS_Store                                                 
+.DS_Store
 *.log
 .vscode/
 .idea/
+
+# MS Office temp/lock files (e.g. ~$SPORT.docx)
+~$*
+
+# Machine-local Claude settings (per-machine, not synced)
+.claude/settings.local.json

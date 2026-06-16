@@ -1,0 +1,8 @@
+- [User profile](user_profile.md) — Asilbek Jahonov, independent web dev (jahonov.uz), Uzbek-first, ships fast via parallel agents
+- [Project: SPORT-DIAGNOSTIKA.UZ](project_sport_diagnostika.md) — lite at root for client demo, premium under `premium/`, swap is reversible
+- [Architecture](project_architecture.md) — evolving into full Django+DRF / Vue SPA platform; modular monolith, decided stack & modules
+- [Git merge strategy](feedback_git_merge_strategy.md) — Use `git pull --no-ff` not `--rebase` when push rejected
+- [Design before code](feedback_design_before_code.md) — No code until explicit go; architecture phase = docs only
+- [Finish before moving on](feedback_finish_before_moving_on.md) — Close one step + nail decisions in docs before the next; track prefixes BCKND/DVPS/FRNTND
+- [Open questions](project_open_questions.md) — REMIND user re TZ #13 training-load (ask client); device integration out of scope, manual entry only
+- [Doc language](feedback_doc_language.md) — Internal docs in English (full English domain terms, TVI→BMI); Uzbek only for product/UI
