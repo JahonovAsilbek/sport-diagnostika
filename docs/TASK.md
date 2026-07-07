@@ -173,6 +173,7 @@ can't land as admin. Adding `role` to the existing custom User is a simple addit
 migration (B1 already made User swappable).
 
 # BCKND-11 — JWT login with user profile
+> ✅ **Done** (2026-07-07) — `LoginView` (TokenObtainPairView + `LoginSerializer` embedding `UserSerializer`), `UserSerializer` (id/username/full_name/role/phone/email/is_active — no password), `POST /api/v1/auth/login/`. Verified: 200 with token pair + embedded profile (role, full_name).
 
 `LoginView` (subclass `TokenObtainPairView`) + `LoginSerializer` that embeds
 `UserSerializer` in the token response. `UserSerializer` exposes
@@ -183,6 +184,7 @@ the SPA can build the role-based menu without an extra `/me` call. `UserSerializ
 must never expose the password hash.
 
 # BCKND-12 — Refresh, logout (blacklist), me
+> ✅ **Done** (2026-07-07) — `/auth/refresh/` (TokenRefreshView), `LogoutView` (blacklists the refresh; 400 if missing/invalid), `MeView` `GET /auth/me/`. Verified: refresh 200; me 200 (401 unauthenticated); logout 204 then reusing that refresh → 401 (blacklisted).
 
 `TokenRefreshView` at `/auth/refresh/`. `LogoutView` blacklists the supplied
 refresh token (the `token_blacklist` app from BCKND-7). `MeView`
