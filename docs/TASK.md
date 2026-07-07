@@ -28,6 +28,7 @@ Celery, OpenAPI, test infrastructure. No domain logic yet.
 ---
 
 # BCKND-1 — Repo structure and Python tooling
+> ✅ **Done** (2026-07-07) — `backend/`: requirements(.txt/-dev.txt), pyproject.toml (ruff+pytest), .gitignore, .env.example. venv deferred (needs local Python 3.12).
 
 Create the `backend/` folder and define the dependencies. `requirements.txt`:
 Django 5, djangorestframework, djangorestframework-simplejwt, drf-spectacular,

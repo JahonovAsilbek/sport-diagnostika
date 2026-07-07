@@ -1,0 +1,15 @@
+# Runtime dependencies — compatible-release pins (~=). Target: Python 3.12, Django 5 LTS.
+# Not an exact lock; a pip-freeze lock file is added later.
+
+Django~=5.2.0
+djangorestframework~=3.16.0
+djangorestframework-simplejwt~=5.4.0
+drf-spectacular~=0.28.0
+django-environ~=0.12.0
+psycopg[binary]~=3.2.0
+celery~=5.5.0
+redis~=5.2.0
+gunicorn~=23.0.0
+whitenoise~=6.9.0
+django-cors-headers~=4.7.0
+django-filter~=25.1
