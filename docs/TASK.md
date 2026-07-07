@@ -303,8 +303,9 @@ create: `region_admin` must have `region`; `coach`/`lab_operator` must have
 (BCKND-14) now become enforceable.
 
 # BCKND-21 — Catalog serializers + read APIs
+> ✅ **Done** (2026-07-07) — `catalog/serializers.py` (a ModelSerializer per model; `TestBattery` nests ordered `items → exercise`), `catalog/api.py` (`CatalogViewSet` + `ReadOnlyOrSuperAdmin`: read = any authenticated, write = `super_admin`), `catalog/urls.py` (`SimpleRouter`: regions/districts/organizations/sport-types/age-categories/exercises/batteries) wired under `/api/v1/catalog/`. Filters: `districts?region=`, `organizations?type=&region=`, `exercises?is_active=`, `batteries?age_category=&gender=` (returns the ordered 5 items). Reference lists are NOT region-scoped. Redis list caching skipped as a follow-up (noted in `api.py`). Verified: ruff, `check`, pytest.
 
-DRF serializers + ViewSets for all catalog models. Filters: `districts?region=`,
+DRF serializers + ViewSets for all catalog models. Filters: `districts?region=`, Filters: `districts?region=`,
 `organizations?type=&region=`, `exercises?is_active=`,
 `batteries?age_category=&gender=`. Read = any authenticated user; write gated to
 `super_admin` (BCKND-13). Routes under `/api/v1/catalog/` per API.md §4.
@@ -315,6 +316,7 @@ regions/sports/exercises); only data entities (athletes/measurements) are scoped
 drive the entry form (B6).
 
 # BCKND-22 — Django admin for catalog (TZ #16)
+> ✅ **Done** (2026-07-07) — `catalog/admin.py` registers all 7 models with `list_display`/`search_fields`/`list_filter`; District inline under Region, BatteryItem inline (ordered) under TestBattery; filters on `Organization.type` and `Exercise.value_type`/`direction`. Verified: ruff, `check`.
 
 Register Region, District, Organization, SportType, AgeCategory, Exercise,
 TestBattery in Django admin with `list_display`, search, `list_filter`, and inlines
@@ -326,6 +328,7 @@ selection per `(age_category, gender)`. Useful filters: `Organization.type`,
 `Exercise.value_type`/`direction`.
 
 # BCKND-23 — Seed command: geography + TOIFA categories + sport types
+> ✅ **Done** (2026-07-07) — idempotent `seed_catalog` (`get_or_create` by stable code/ordinal): 14 regions (real Uzbek names, proper apostrophes), 174 real tumanlar (representative, extendable subset per region), 6 TOIFA age categories (4:13–15 / 5:16–17 best-effort split — open item, easy to adjust), 32 sport types. Verified: ran twice against dev DB → +0 on second run; ruff, pytest idempotency test.
 
 Idempotent `seed_catalog` management command (`get_or_create`): 14 regions
 (Qoraqalpogʻiston, Toshkent city, 12 regions), their districts, the **6 TOIFA age
@@ -338,6 +341,7 @@ though code/docs are English. The 13–17 → 4th/5th toifa split is an open ite
 (SCORING.md §11) — seed a best-effort split, easy to adjust.
 
 # BCKND-24 — Seed command: exercise pool
+> ✅ **Done** (2026-07-07) — idempotent `seed_exercises` (`get_or_create` by name): the 9 Exercise rows from SCORING.md §2 with correct unit/value_type/direction/order (30/100 m = seconds·lower, 400 m = minsec·lower, uzunlikka sakrash = count·higher, oldinga egilish = cm_signed·higher, argʻimchoq/push-ups/turnik = count·higher). TestBattery/BatteryItem rows deferred to `seed_physical` (BCKND-32). Verified: ran twice → +0 on second run; ruff, pytest.
 
 Seed the ~9 `Exercise` rows (the pool) from SCORING.md §2 with correct
 `unit`/`value_type`/`direction`/`order`: 30 m · 100 m · 400 m ga yugurish (lower);
@@ -351,6 +355,7 @@ BatteryItem rows** (which 5 per age×gender) are seeded together with the norm t
 exercise name/order.
 
 # BCKND-25 — Catalog tests
+> ✅ **Done** (2026-07-07) — `catalog/factories.py` (factory-boy for all models) + `catalog/tests/` (24 tests): model constraints (unique code/ordinal, unique district-per-region, unique battery-per-group), API read/write permissions (super_admin writes, coach/region_admin 403, coach/ministry read, unauth 401), filters (districts by region, organizations by type/region, exercises by is_active, batteries by age_category/gender → ordered items), seed idempotency + direction/value_type checks, and User per-role scope validation (region_admin without region → 400, coach without organization → 400). B3 closed. Verified: full suite 46 passed (22 pre-existing green), ruff, `check`, `makemigrations --check` clean.
 
 pytest: model constraints (unique `code`, unique TOIFA `ordinal`, age-category
 non-overlap), API read/write permissions (`super_admin` writes, others read-only,
