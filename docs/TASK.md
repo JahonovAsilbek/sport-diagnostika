@@ -45,6 +45,7 @@ Create the venv with 3.12 and set ruff `target-version = "py312"`; do not rely o
 3.14-specific syntax. Not an exact pin — a `pip freeze` lock file will be added later.
 
 # BCKND-2 — Django project init + split settings
+> ✅ **Done** (2026-07-07) — `config/` project, split `settings/{base,dev,prod}` (env-driven, `SECRET_KEY` mandatory), `manage.py`→dev, `wsgi/asgi`→prod. Verified: ruff, `check`, `makemigrations --check`, prod `DEBUG=False` + refuses to start without `SECRET_KEY`.
 
 Create the `config` project. The `config/settings/` package: `base.py`, `dev.py`,
 `prod.py` — reads `.env` via django-environ (`BASE_DIR = backend/`). **base**:
