@@ -11,8 +11,9 @@ behavior. Follow them or produce garbage — there is no middle ground.
 2. **The marketing landing** (existing, secondary) — static HTML/CSS/JS: lite at the
    repo root, premium under `premium/`. See §5.
 
-Status: **design complete** (`docs/`), implementation not started. First pending
-task: `BCKND-1` in `docs/TASK.md`.
+Status: **implementation in progress.** Done tasks carry a `> ✅ **Done**` marker in
+`docs/TASK.md` — the next pending task is the first heading without one. Don't trust
+any hardcoded status line; TASK.md is the ledger.
 
 ---
 
@@ -24,9 +25,11 @@ by `git pull`.
 
 On **every new session**, BEFORE acting on the first request:
 1. `git pull` (get the other machine's latest).
-2. Read **this `CLAUDE.md`**, then **all of `docs/`** (`ARCHITECTURE.md` ·
-   `DATA_MODEL.md` · `API.md` · `SCORING.md` · `ROADMAP.md` · `TASK.md`), then
-   **`.claude/memory/MEMORY.md`** and the relevant memory files.
+2. Read **this `CLAUDE.md`**, **`.claude/memory/MEMORY.md`** (+ the memory files
+   relevant to the request), and the **next pending block** in `docs/TASK.md`.
+   Open the other docs (`ARCHITECTURE` · `DATA_MODEL` · `API` · `SCORING` ·
+   `ROADMAP`) **on demand** when the task references them — don't bulk-read all
+   of `docs/` up front; TASK.md's done sections are history, not boot input.
 3. Identify the **next pending task** in `docs/TASK.md` and begin analyzing it.
 4. Do **not** write code yet — wait for the user's explicit go (§2, §6).
 
@@ -79,8 +82,11 @@ For each task, in order:
 8. **Verify** (§8 Forced Verification, §11 Verify Before Reporting). Never report done
    with errors outstanding.
 9. **Update status + memory** — mark the task done in `docs/TASK.md`; record
-   non-obvious facts in `.claude/memory/`.
-10. **Commit and push** (§3).
+   non-obvious facts in `.claude/memory/`. Done-marker format: directly under the
+   task heading, add `> ✅ **Done** (YYYY-MM-DD) — what was built + how it was
+   verified + notable decisions.` When it closes a block, end with
+   `**Bx <name> complete → By (<name>) next.**`
+10. **Commit and push** (§3). The `/wrap-up` skill runs steps 8–10 as one ritual.
 
 ---
 
@@ -126,6 +132,23 @@ Landing: static, no backend, no build. Lite at root, premium under `premium/`;
 identical Uzbek content, light vs dark theme. Specs: `LITE-CONTRACT.md`, `CONTRACT.md`.
 Preview with `python3 -m http.server`. When editing, stay in one version — a root
 change does not propagate to `premium/`.
+
+### Commands (verify & run)
+
+Local venv is `backend/.venv` (Python 3.12 — NOT the system 3.14). Docker runtime is
+**colima** (no Docker Desktop). From the repo root:
+
+```bash
+backend/.venv/bin/ruff check backend                      # lint — must be clean
+backend/.venv/bin/pytest backend -q                       # tests — Postgres test DB, --reuse-db
+cd backend && DJANGO_SETTINGS_MODULE=config.settings.dev \
+  .venv/bin/python manage.py makemigrations --check --dry-run   # no missing migrations
+docker compose -f deploy/docker-compose.yml ps            # stack: db/redis/web/worker/beat
+```
+
+Postgres/Redis must be up (colima) for pytest and manage.py. Frontend checks
+(`eslint` + build) land with the F-blocks. zsh gotcha: don't store compound commands
+in a variable and expand it — zsh doesn't word-split `$var`; write commands out fully.
 
 ---
 ---

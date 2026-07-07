@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(backend/.venv/bin/pytest:*)",
+      "Bash(.venv/bin/pytest:*)",
+      "Bash(backend/.venv/bin/ruff:*)",
+      "Bash(.venv/bin/ruff:*)",
+      "Bash(DJANGO_SETTINGS_MODULE=config.settings.dev .venv/bin/python manage.py:*)",
+      "Bash(DJANGO_SETTINGS_MODULE=config.settings.dev backend/.venv/bin/python backend/manage.py:*)",
+      "Bash(git status:*)",
+      "Bash(git log:*)",
+      "Bash(git diff:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push origin main)",
+      "Bash(git pull --no-ff:*)",
+      "Bash(docker compose -f deploy/docker-compose.yml ps:*)",
+      "Bash(docker compose -f deploy/docker-compose.yml logs:*)"
+    ],
+    "deny": [
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)"
+    ]
+  },
+  "enabledPlugins": {
+    "swift-lsp@claude-plugins-official": false,
+    "clangd-lsp@claude-plugins-official": false
+  }
+}
