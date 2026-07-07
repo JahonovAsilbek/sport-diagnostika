@@ -253,6 +253,7 @@ BCKND-14 scoping framework. Norm/NormBand are a separate block (B4).
 ---
 
 # BCKND-17 — Catalog app + geography models (Region, District)
+> ✅ **Done** (2026-07-07) — `apps/catalog` + `Region` (unique `code`), `District` (region FK, unique `(region, name)`). In catalog migration `0001`.
 
 Create `apps/catalog`. `Region` (`name`, `code` unique) and `District`
 (`region` FK, `name`), both on `TimeStampedModel`. Migration. Add `apps.catalog`
@@ -262,6 +263,7 @@ Edge case: `District` ordered within its region; unique `(region, name)`.
 display name, which is Uzbek and may vary).
 
 # BCKND-18 — Organization + SportType + AgeCategory (TOIFA) models
+> ✅ **Done** (2026-07-07) — `Organization` (`type` OTM|OPSTTM classification-only, region/district FK), `SportType` (unique `code`), `AgeCategory` (TOIFA `ordinal` 1–6 unique, `age_min`/`age_max`). In `0001`.
 
 `Organization` (`name`, `type` OTM|OPSTTM as TextChoices, `region` FK,
 `district` FK). `SportType` (`name`, `code` unique). `AgeCategory` (TOIFA)
@@ -273,6 +275,7 @@ athletes are OPSTTM") — it does **not** affect physical scoring and is never d
 onto the athlete. `weight_category` is **deferred** (morpho) — see the DEFERRED section.
 
 # BCKND-19 — Exercise pool + TestBattery + BatteryItem models
+> ✅ **Done** (2026-07-07) — `Exercise` (unit/value_type/direction/order/is_active), `TestBattery` (unique `(age_category, gender)`), `BatteryItem` (unique order + unique exercise per battery). Shared `Gender` enum in `common`. In `0001`. Verified: models create + constraints (dup battery, dup code, PROTECT FKs) enforced.
 
 `Exercise` (the exercise pool; replaces the old `TestType` — now deferred, see DEFERRED):
 `name` (Uzbek), `unit`, `value_type` (`seconds`|`minsec`|`count`|`cm_signed`),

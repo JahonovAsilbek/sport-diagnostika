@@ -1,6 +1,13 @@
 from django.db import models
 
 
+class Gender(models.TextChoices):
+    """Shared across Athlete, TestBattery and Norm — one source of the gender values."""
+
+    MALE = "male", "Erkak"
+    FEMALE = "female", "Ayol"
+
+
 class TimeStampedModel(models.Model):
     """Abstract base adding creation/update timestamps; most domain models inherit it."""
 
