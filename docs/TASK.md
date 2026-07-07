@@ -231,6 +231,7 @@ region (role+scope check). Deactivate (`is_active=False`) instead of hard delete
 preserve audit/FK integrity.
 
 # BCKND-16 — Auth & permission tests + seed superuser command
+> ✅ **Done** (2026-07-07) — pytest: login (tokens+profile), refresh, logout-blacklist, `/me` (+401), `role_required` matrix (table-driven), unauthenticated. `UserFactory` gains `role` + a `super_admin` trait; `seed_admin` management command (idempotent, requires a password). **22 tests pass**, ruff clean, `makemigrations --check` clean. **B2 Identity & Access complete → B3 next.**
 
 pytest tests: login returns tokens+user; refresh works; logout blacklists (a
 logged-out refresh can't mint a new access); `/me` returns the profile;
