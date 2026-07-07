@@ -1,8 +1,19 @@
 name: sport-diagnostika
 
-# D1 so far: Postgres + Redis (DVPS-3). The web (DVPS-4) and Celery worker/beat
-# (DVPS-5) services, plus the entrypoint (DVPS-6), are added once BCKND-6/7/8 land.
-# Ports are published so the host venv can reach the services during BCKND-9.
+# Shared backend env — app services reach db/redis by their compose service names
+# (overriding the localhost URLs from backend/.env, which are for host-based access).
+x-backend-env: &backend-env
+  DJANGO_SETTINGS_MODULE: config.settings.dev
+  DATABASE_URL: postgres://${POSTGRES_USER:-sport}:${POSTGRES_PASSWORD:-sport}@db:5432/${POSTGRES_DB:-sport}
+  REDIS_URL: redis://redis:6379/0
+  CELERY_BROKER_URL: redis://redis:6379/1
+  CELERY_RESULT_BACKEND: redis://redis:6379/2
+
+x-db-redis-healthy: &db-redis-healthy
+  db:
+    condition: service_healthy
+  redis:
+    condition: service_healthy
 
 services:
   db:
@@ -31,6 +42,48 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+    networks: [sport]
+
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: sport-backend:dev
+    entrypoint: ["/entrypoint.sh"]
+    # Dev command (runserver + hot-reload); prod (D5) drops the mount and uses gunicorn.
+    command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+    env_file: ../backend/.env
+    environment: *backend-env
+    volumes:
+      - ../backend:/app
+    ports:
+      - "8000:8000"
+    depends_on: *db-redis-healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health/',timeout=3).status==200 else 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    networks: [sport]
+
+  worker:
+    image: sport-backend:dev
+    command: ["celery", "-A", "config", "worker", "-l", "info"]
+    env_file: ../backend/.env
+    environment: *backend-env
+    depends_on: *db-redis-healthy
+    networks: [sport]
+
+  # Exactly one beat instance (avoids duplicate scheduled tasks). Default scheduler
+  # for now; django-celery-beat arrives with scheduled recompute in B8/B12.
+  beat:
+    image: sport-backend:dev
+    # Schedule file goes to /tmp — /app is a read-only bind-mount for the non-root user.
+    command: ["celery", "-A", "config", "beat", "-l", "info", "--schedule", "/tmp/celerybeat-schedule"]
+    env_file: ../backend/.env
+    environment: *backend-env
+    depends_on: *db-redis-healthy
     networks: [sport]
 
 volumes:

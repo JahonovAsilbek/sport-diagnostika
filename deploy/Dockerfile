@@ -23,6 +23,9 @@ WORKDIR /app
 RUN groupadd --system app && useradd --system --gid app --no-create-home app
 COPY --from=builder /venv /venv
 COPY --chown=app:app backend/ ./
+# Entrypoint lives outside /app so the dev bind-mount of ../backend:/app doesn't hide it.
+COPY deploy/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 USER app
 EXPOSE 8000
 # Prod default; the dev compose overrides this with runserver (DVPS-4).

@@ -29,8 +29,8 @@ docs/
 resources/
 premium/
 assets/
-deploy/
 *.html
 *.docx
 *.md
 CNAME
+# deploy/ stays in context so the Dockerfile can COPY deploy/entrypoint.sh.

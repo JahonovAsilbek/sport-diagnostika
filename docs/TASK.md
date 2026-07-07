@@ -487,6 +487,7 @@ services can `depends_on: condition: service_healthy` and not start against a co
 DB. Persist `pgdata` in a named volume so data survives container recreation.
 
 # DVPS-4 — Compose: web (Django) service
+> ✅ **Done** (2026-07-07) — `web` service: build from the Dockerfile, dev `runserver`, `../backend:/app` bind-mount for hot-reload, `:8000`, env overridden to the `db`/`redis` compose hosts, `depends_on` db+redis healthy, healthcheck → `/api/v1/health/`. Verified: container healthy; host `GET /health/` returns 200.
 
 `web` service: build from the Dockerfile, `env_file: .env`, `depends_on` db+redis
 (`service_healthy`), ports `8000:8000`. Dev `command` =
@@ -497,6 +498,7 @@ removed and gunicorn is used (D5). Keep the dev `command` in compose, not baked
 into the image, so prod can override.
 
 # DVPS-5 — Compose: Celery worker + beat services
+> ✅ **Done** (2026-07-07) — `worker` (`celery -A config worker`) + `beat` (`celery -A config beat`, single instance, `--schedule /tmp/celerybeat-schedule` since `/app` is a read-only mount for the non-root user), both reuse the web image, `depends_on` db+redis healthy. Verified: worker `celery@… ready`; beat PersistentScheduler started, stable.
 
 `worker`: same image, `command: celery -A config worker -l info`, `depends_on`
 redis+db, shares `env_file`. `beat`: `command: celery -A config beat -l info`
@@ -506,6 +508,7 @@ Edge case: worker and beat must wait for redis (broker) and db. Run exactly **on
 beat instance to avoid duplicate scheduled tasks.
 
 # DVPS-6 — Entrypoint + stack bring-up verification
+> ✅ **Done** (2026-07-07) — `deploy/entrypoint.sh` (wait-for-db → `migrate` → optional `collectstatic` (env-gated) → `exec`), COPYed to `/entrypoint.sh` (outside `/app` so the dev bind-mount doesn't hide it), used by `web`; its healthcheck hits `/api/v1/health/`. Verified end-to-end: `docker compose up --wait` brings db/redis/web/worker/beat to healthy and `/health/` returns 200. **D1 closed.**
 
 `deploy/entrypoint.sh`: wait-for-db (loop until `pg_isready`/a Python check
 passes), run `migrate`, optional `collectstatic`, then `exec` the container
