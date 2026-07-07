@@ -4,6 +4,8 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
+from apps.accounts.models import Role
+
 User = get_user_model()
 
 
@@ -11,11 +13,24 @@ class UserSerializer(serializers.ModelSerializer):
     """Read-only profile — never exposes the password hash."""
 
     full_name = serializers.CharField(source="get_full_name", read_only=True)
+    region = serializers.SerializerMethodField()
+    organization = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ("id", "username", "full_name", "role", "phone", "email", "is_active")
+        fields = (
+            "id", "username", "full_name", "role", "phone", "email",
+            "is_active", "region", "organization",
+        )
         read_only_fields = fields
+
+    def get_region(self, obj):
+        return {"id": obj.region_id, "name": obj.region.name} if obj.region_id else None
+
+    def get_organization(self, obj):
+        if not obj.organization_id:
+            return None
+        return {"id": obj.organization_id, "name": obj.organization.name}
 
 
 class LoginSerializer(TokenObtainPairSerializer):
@@ -38,7 +53,7 @@ class UserWriteSerializer(serializers.ModelSerializer):
         model = User
         fields = (
             "id", "username", "password", "first_name", "last_name",
-            "email", "phone", "role", "is_active",
+            "email", "phone", "role", "is_active", "region", "organization",
         )
 
     def validate_password(self, value):
@@ -52,6 +67,15 @@ class UserWriteSerializer(serializers.ModelSerializer):
         if self.instance is None and not attrs.get("password"):
             raise serializers.ValidationError(
                 {"password": "Yangi foydalanuvchi uchun parol majburiy."}
+            )
+        role = attrs.get("role") or getattr(self.instance, "role", None)
+        region = attrs.get("region", getattr(self.instance, "region", None))
+        organization = attrs.get("organization", getattr(self.instance, "organization", None))
+        if role == Role.REGION_ADMIN and not region:
+            raise serializers.ValidationError({"region": "region_admin uchun viloyat majburiy."})
+        if role in (Role.COACH, Role.LAB_OPERATOR) and not organization:
+            raise serializers.ValidationError(
+                {"organization": "coach/lab_operator uchun tashkilot majburiy."}
             )
         return attrs
 

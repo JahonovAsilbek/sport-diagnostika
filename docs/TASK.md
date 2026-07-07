@@ -291,6 +291,7 @@ is validated (BCKND-40). The battery **rows** are seeded together with the norm 
 `seed_physical` (BCKND-32).
 
 # BCKND-20 — User region/organization scope fields + wire scoping
+> ✅ **Done** (2026-07-07) — `User.region`/`organization` FKs (nullable, PROTECT) + migration `0003`. Wired BCKND-14 scoping into `UserViewSet` (`ScopedQuerysetMixin`, region_admin → own region); `UserSerializer`/`LoginSerializer` now embed region/organization `{id,name}`; per-role validation (region_admin needs region; coach/lab_operator need organization); region_admin guard (no super_admin, no cross-region/org). Verified: scoping (super sees all, region_admin only own), 403 guards, 400 validation, profile embeds region, 22-test regression green.
 
 Now that catalog exists, add `region` (FK `Region`, null) and `organization`
 (FK `Organization`, null) to `accounts.User`. Migration. Wire the BCKND-14

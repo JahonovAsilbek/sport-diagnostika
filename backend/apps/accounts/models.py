@@ -21,3 +21,14 @@ class User(AbstractUser):
     phone = models.CharField(max_length=32, blank=True)
     # Least-privilege default so a mis-created user can't land as an admin.
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.LAB_OPERATOR)
+    # Scope fields (nullable): region_admin → region; coach/lab_operator → organization.
+    region = models.ForeignKey(
+        "catalog.Region", on_delete=models.PROTECT, null=True, blank=True, related_name="users"
+    )
+    organization = models.ForeignKey(
+        "catalog.Organization",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="users",
+    )
