@@ -14,6 +14,6 @@ select = ["E", "F", "I", "UP", "B", "DJ"]
 known-first-party = ["apps", "config"]
 
 [tool.pytest.ini_options]
-DJANGO_SETTINGS_MODULE = "config.settings.dev"
+DJANGO_SETTINGS_MODULE = "config.settings.test"
 addopts = "--reuse-db"
 python_files = ["tests.py", "test_*.py", "*_tests.py"]

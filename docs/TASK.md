@@ -138,6 +138,7 @@ Edge case: it should be public (no auth) but lightweight — it must not make a 
 (for the load balancer / uptime alert).
 
 # BCKND-9 — Initial migration + test infrastructure + smoke test
+> ✅ **Done** (2026-07-07) — `accounts.0001_initial` + `migrate` (admin/auth/contenttypes/sessions/token_blacklist/accounts) applied to Postgres. `conftest.py`, `config.settings.test` (locmem cache — no Redis, fast hashing, plain static storage), `UserFactory` (factory-boy+Faker). 3 smoke tests pass (settings load, `/api/v1/health/` 200, superuser). ruff clean, pytest `--reuse-db`. **B1 Foundation complete → B2 next.**
 
 `makemigrations` (accounts custom User) + `migrate` (admin, auth, contenttypes,
 sessions, token_blacklist, accounts). Root `conftest.py`. The first smoke tests:
