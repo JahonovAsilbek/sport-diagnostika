@@ -62,6 +62,7 @@ Edge case: SECRET_KEY only from env — if absent in prod, the project must not 
 (do not provide a default, let django-environ read it as mandatory). DEBUG must never be True in prod.
 
 # BCKND-3 — PostgreSQL and Redis connection (configuration)
+> ✅ **Done** (2026-07-07) — base: `DATABASES = env.db("DATABASE_URL")` (psycopg v3), `CACHES` RedisCache with lazy connection. Verified: `check` passes with Redis down; DATABASES parses to the postgresql engine.
 
 base settings: `DATABASES = {"default": env.db("DATABASE_URL")}` (psycopg v3).
 `CACHES` default → `django.core.cache.backends.redis.RedisCache`
@@ -72,6 +73,7 @@ so that even if Redis is down the project still imports / `runserver` comes up.
 The DB, however, is required for `migrate`.
 
 # BCKND-4 — common app: base models and mixins
+> ✅ **Done** (2026-07-07) — `apps/common`: `TimeStampedModel` (abstract), `DefaultPagination` (25/max 100), `role_required()`/`IsSuperAdmin`. Empty `migrations/` (abstract-only). Verified: ruff, `check`, `makemigrations --check` (no changes).
 
 `apps/common` (a manually created minimal app). `models.py`: `TimeStampedModel`
 (`created_at` auto_now_add + db_index, `updated_at` auto_now, `Meta.abstract=True`)
@@ -84,6 +86,7 @@ empty. `role_required` relies on the `user.role` string (User is completed in B2
 — no import cycle, just a string comparison.
 
 # BCKND-5 — accounts app + minimal custom User (AUTH_USER_MODEL)
+> ✅ **Done** (2026-07-07) — `apps/accounts`: `User(AbstractUser)` + `phone`, `AUTH_USER_MODEL="accounts.User"`. Initial migration deferred to BCKND-9. Verified: ruff, `check`, `get_user_model()` resolves, model valid (dry-run "Create model User").
 
 `apps/accounts`. `models.py`: `User(AbstractUser)` — minimal for now (an extra
 `phone` field; `role` and region/organization scope are added in B2 and the catalog phase).

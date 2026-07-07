@@ -34,8 +34,10 @@ THIRD_PARTY_APPS = [
     "drf_spectacular",
 ]
 
-# apps.common (BCKND-4) and apps.accounts (BCKND-5) are appended in their tasks.
-LOCAL_APPS = []
+LOCAL_APPS = [
+    "apps.common",
+    "apps.accounts",
+]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
@@ -70,6 +72,23 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
+
+# Custom user model — set before the first migrate (BCKND-5). The initial migration
+# is generated in BCKND-9.
+AUTH_USER_MODEL = "accounts.User"
+
+# Database — parsed from DATABASE_URL (psycopg v3). The Postgres service is started
+# in DVPS-D1; this is wiring only. The DB is required for `migrate`.
+DATABASES = {"default": env.db("DATABASE_URL")}
+
+# Cache — Redis. The connection is lazy (opened on first use), so the project imports
+# and `runserver` comes up even when Redis is down.
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": env("REDIS_URL"),
+    }
+}
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
