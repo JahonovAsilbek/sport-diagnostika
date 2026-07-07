@@ -219,6 +219,7 @@ can't fetch an out-of-scope athlete by ID → `403/404`. Mark the User-field wir
 a follow-up for B3.
 
 # BCKND-15 — User management API (CRUD)
+> ✅ **Done** (2026-07-07) — `UserViewSet` (ModelViewSet, `IsSuperAdmin`; region_admin/own-region deferred to B3), `UserWriteSerializer` (write-only always-hashed password, Django validators, Uzbek errors), soft-delete (`is_active=False`), `reset-password` action, `/api/v1/users/` (filter role/is_active, search). Verified: CRUD, hashed password not echoed, weak password → 400, non-super → 403, delete → soft-deactivate.
 
 `UserViewSet` (ModelViewSet): list / create / retrieve / update / deactivate.
 `UserCreateSerializer` (write-only password via `set_password`). Permissions:

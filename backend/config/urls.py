@@ -12,7 +12,7 @@ from apps.common.views import health
 # API v1 routes — filled in as backend blocks deliver their endpoints.
 api_v1 = [
     path("health/", health, name="health"),
-    path("auth/", include("apps.accounts.urls")),
+    path("", include("apps.accounts.urls")),
 ]
 
 urlpatterns = [
