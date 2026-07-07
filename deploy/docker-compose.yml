@@ -1,0 +1,40 @@
+name: sport-diagnostika
+
+# D1 so far: Postgres + Redis (DVPS-3). The web (DVPS-4) and Celery worker/beat
+# (DVPS-5) services, plus the entrypoint (DVPS-6), are added once BCKND-6/7/8 land.
+# Ports are published so the host venv can reach the services during BCKND-9.
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-sport}
+      POSTGRES_USER: ${POSTGRES_USER:-sport}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sport}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-sport} -d $${POSTGRES_DB:-sport}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks: [sport]
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks: [sport]
+
+volumes:
+  pgdata:
+
+networks:
+  sport:

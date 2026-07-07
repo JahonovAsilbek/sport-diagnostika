@@ -449,6 +449,7 @@ production deploy come later (D3/D4/D5).
 ---
 
 # DVPS-1 — Backend Dockerfile
+> ✅ **Done** (2026-07-07) — `deploy/Dockerfile`: multi-stage `python:3.12-slim`, deps in a venv, non-root `app` user, gunicorn CMD. Built & smoke-tested (354 MB; Django 5.2.15 importable; runs as `app`).
 
 Multi-stage `deploy/Dockerfile` on `python:3.12-slim`. Build stage installs deps
 into a venv/wheels; final stage copies them. Set `WORKDIR /app`,
@@ -462,6 +463,7 @@ bundles libpq, so no `apt` `libpq-dev`; only add system libs when a later block
 (e.g. WeasyPrint for reports, B12) actually needs them.
 
 # DVPS-2 — .dockerignore
+> ✅ **Done** (2026-07-07) — `.dockerignore` at the **repo root** (honoured for the repo-root build context; the task's `deploy/.dockerignore` is not auto-applied there — noted in-file). Excludes `.git`/venv/`__pycache__`/`.env`/media/static/frontend/docs/etc, keeping the context lean.
 
 `deploy/.dockerignore`: exclude `.git`, `venv`/`.venv`, `__pycache__`, `*.pyc`,
 `.env`, `media/`, `staticfiles/`, `node_modules`, `frontend/`, `.pytest_cache`.
@@ -470,6 +472,7 @@ Edge case: never copy `.env` into the image — secrets are injected at runtime 
 compose `env_file`. Excluding it also avoids cache invalidation on local env edits.
 
 # DVPS-3 — Compose: Postgres + Redis services
+> ✅ **Done** (2026-07-07) — `deploy/docker-compose.yml`: `postgres:16` (named `pgdata` volume, `pg_isready` healthcheck) + `redis:7-alpine` (ping), ports published, project network. Verified: `up -d --wait` → both **healthy**; host venv connects (PostgreSQL 16.14 + Redis PING). Runtime: **colima** (Docker not installed → chosen this session). DVPS-4/5/6 (web/worker/beat/entrypoint) pending BCKND-6/8.
 
 `deploy/docker-compose.yml`: `db` = `postgres:16` with named volume `pgdata`, env
 `POSTGRES_DB/USER/PASSWORD` (from `.env`), healthcheck `pg_isready`; `redis` =

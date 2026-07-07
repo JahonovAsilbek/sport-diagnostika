@@ -6,4 +6,5 @@
 - [Design before code](feedback_design_before_code.md) — No code until explicit go; architecture phase = docs only
 - [Finish before moving on](feedback_finish_before_moving_on.md) — Close one step + nail decisions in docs before the next; track prefixes BCKND/DVPS/FRNTND
 - [Open questions](project_open_questions.md) — REMIND client re TZ #13 training-load, PII, report branding + NEW physical items (TOIFA 4/5 split, clamp, birth_date, Maxsus talab tier, DarajaThreshold)
+- [Dev toolchain](project_dev_toolchain.md) — Python 3.12 + colima Docker runtime; Postgres/Redis via deploy/docker-compose.yml, host venv connects on localhost; shell is zsh
 - [Doc language](feedback_doc_language.md) — Internal docs in English (full English domain terms, TVI→BMI); Uzbek only for product/UI

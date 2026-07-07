@@ -1,0 +1,36 @@
+# Docker build context = repo root, but only backend/ enters the image.
+# Kept at the repo root so it is honoured for the repo-root build context
+# (the task's suggested deploy/.dockerignore is not auto-applied for this context).
+
+# VCS / editor / OS
+.git
+.gitignore
+.idea
+.vscode
+.DS_Store
+
+# Python / virtualenv / bytecode
+**/.venv
+**/venv
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/.pytest_cache
+
+# Secrets & generated artifacts (secrets are injected at runtime via env)
+**/.env
+backend/staticfiles/
+backend/media/
+
+# Non-backend content that must not bloat the backend image
+frontend/
+node_modules/
+docs/
+resources/
+premium/
+assets/
+deploy/
+*.html
+*.docx
+*.md
+CNAME
