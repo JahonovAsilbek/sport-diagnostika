@@ -3,8 +3,10 @@ from rest_framework.permissions import SAFE_METHODS, BasePermission
 
 from apps.catalog.models import (
     AgeCategory,
+    DarajaThreshold,
     District,
     Exercise,
+    Norm,
     Organization,
     Region,
     SportType,
@@ -12,8 +14,10 @@ from apps.catalog.models import (
 )
 from apps.catalog.serializers import (
     AgeCategorySerializer,
+    DarajaThresholdSerializer,
     DistrictSerializer,
     ExerciseSerializer,
+    NormSerializer,
     OrganizationSerializer,
     RegionSerializer,
     SportTypeSerializer,
@@ -81,3 +85,22 @@ class TestBatteryViewSet(CatalogViewSet):
     queryset = TestBattery.objects.prefetch_related("items__exercise")
     serializer_class = TestBatterySerializer
     filterset_fields = ["age_category", "gender"]
+
+
+class NormViewSet(CatalogViewSet):
+    """Norms with nested bands — read for any authenticated user, write for super_admin.
+
+    Not region-scoped: the physical standard is universal by age × gender (API.md §4).
+    """
+
+    queryset = Norm.objects.select_related("exercise").prefetch_related("bands")
+    serializer_class = NormSerializer
+    filterset_fields = ["exercise", "age_min", "age_max", "gender"]
+
+
+class DarajaThresholdViewSet(viewsets.ReadOnlyModelViewSet):
+    """Daraja cut-offs (I/II/III → total range). Read-only over the API; edited in admin."""
+
+    permission_classes = [ReadOnlyOrSuperAdmin]
+    queryset = DarajaThreshold.objects.all()
+    serializer_class = DarajaThresholdSerializer

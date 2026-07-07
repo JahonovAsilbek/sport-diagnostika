@@ -413,6 +413,7 @@ Edge case: keep the cut-offs data-driven so the client can adjust without a code
 are constant across all tables (open item, SCORING.md §11). Validate the ranges don't overlap.
 
 # BCKND-29 — Norm serializers + nested API
+> ✅ **Done** (2026-07-07) — `catalog/serializers.py`: `NormBandSerializer` + writable-nested `NormSerializer` (exercise nested on read / PK on write) that atomically replaces the band set and maps a django `ValidationError` from `assert_bands_no_overlap` to a DRF 400. `catalog/api.py`: `NormViewSet` (`ReadOnlyOrSuperAdmin`, filter by exercise/age_min/age_max/gender) + read-only `DarajaThresholdViewSet`; routes `norms` + `daraja-thresholds`. Verified: super_admin create/update 201/200, overlap→400 (atomic rollback), coach write→403, filters, nested-band reads; ruff clean, `check` OK.
 
 `NormSerializer` with writable nested `NormBand` (per API.md §4). `NormViewSet`:
 list + filter (`?exercise=&age_min=&age_max=&gender=`), CRUD gated to `super_admin`
@@ -423,6 +424,7 @@ atomically (one transaction) and re-runs the overlap validation. Writes are
 `super_admin` only. The SPA norm editor (F9) and results view (F6) consume these reads.
 
 # BCKND-30 — Physical-norm coverage validation command
+> ✅ **Done** (2026-07-07) — `catalog/management/commands/check_physical_norms.py` (read-only): iterates every `BatteryItem`, and for each single year of its battery's TOIFA `[age_min, age_max]` × gender calls `get_norm(on_date=today)`; reports each gap and `raise CommandError` (exit 1) if any. Verified by factory tests (full coverage→exit 0, one norm missing→CommandError, per-single-year gap detected) and a dev-DB smoke run (exit 0).
 
 A `check_physical_norms` management command: for every `BatteryItem` exercise, assert a
 `Norm` exists (active, current `valid_from`) covering each single year in the battery's
@@ -434,6 +436,7 @@ so `finalize` never hits an unexpected `unscored` indicator in production. Read-
 group can't fully score.
 
 # BCKND-31 — Django admin for norms + thresholds
+> ✅ **Done** (2026-07-07) — `catalog/admin.py`: `NormAdmin` with a `NormBand` `TabularInline` (list_display exercise/gender/age_min/age_max/valid_from/is_active; list_filter exercise/gender/is_active) and `DarajaThresholdAdmin`. The inline's `BaseInlineFormSet.clean()` runs `assert_bands_no_overlap` on the submitted bands, surfacing overlaps as an inline form error. Verified: `manage.py check` 0 issues.
 
 Register `Norm` (with `NormBand` inline) and `DarajaThreshold` in Django admin, with
 `list_filter` by `exercise`/`gender`/`age`. This is the primary surface for "baholash
