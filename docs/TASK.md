@@ -457,6 +457,7 @@ flexibility kept signed. Versioned by `valid_from` so re-seeding a new edition p
 Evaluation snapshots. Depends on the Exercise pool (BCKND-24).
 
 # BCKND-33 — Norm lookup + band + threshold tests
+> ✅ **Done** (2026-07-07) — `catalog/factories.py`: `NormFactory`/`NormBandFactory`/`DarajaThresholdFactory`. Tests: `test_bands.py` (pure overlap validation), `test_norms.py` (`get_norm` exact/adult-bucket 18&29/version-by-session-date/inactive→None, DarajaThreshold ordering+uniqueness, `check_physical_norms` coverage on factory data), `test_norm_api.py` (nested create 201, overlap 400 + atomic rollback, update replaces band set, coach write 403, exercise/gender filter, daraja read-only 405). Suite 46→66 green; ruff clean. NOTE: the `seed_physical` idempotency test is pending BCKND-32 (that command is not built yet).
 
 pytest: `get_norm` (exact age match, single-year vs 18–29 bucket, version selection by
 `valid_from`, no-norm → `None`), NormBand overlap validation, `DarajaThreshold` ranges, and

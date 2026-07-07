@@ -1,10 +1,16 @@
+from datetime import date
+from decimal import Decimal
+
 import factory
 
 from apps.catalog.models import (
     AgeCategory,
     BatteryItem,
+    DarajaThreshold,
     District,
     Exercise,
+    Norm,
+    NormBand,
     Organization,
     Region,
     SportType,
@@ -85,3 +91,35 @@ class BatteryItemFactory(factory.django.DjangoModelFactory):
     battery = factory.SubFactory(TestBatteryFactory)
     exercise = factory.SubFactory(ExerciseFactory)
     order = factory.Sequence(lambda n: n + 1)
+
+
+class NormFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Norm
+
+    exercise = factory.SubFactory(ExerciseFactory)
+    age_min = 14
+    age_max = 14
+    gender = Gender.MALE
+    valid_from = date(2026, 1, 1)
+    is_active = True
+
+
+class NormBandFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = NormBand
+
+    norm = factory.SubFactory(NormFactory)
+    points = 10
+    lower_bound = Decimal("0")
+    upper_bound = Decimal("10")
+
+
+class DarajaThresholdFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = DarajaThreshold
+        django_get_or_create = ("level",)
+
+    level = DarajaThreshold.Level.FIRST
+    total_min = 48
+    total_max = 50
