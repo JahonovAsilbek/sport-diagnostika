@@ -160,6 +160,7 @@ they are added in B3 (catalog); B2 builds the framework that will consume them.
 ---
 
 # BCKND-10 — Role enum + extend User model
+> ✅ **Done** (2026-07-07) — `Role` TextChoices (super_admin/region_admin/coach/lab_operator/ministry, Uzbek labels) + `User.role` (default `lab_operator`). Migration `0002_user_role` applied. Verified: ruff, check, `makemigrations --check` clean, enum + default.
 
 Add `Role(TextChoices)` to `apps/accounts` with: `super_admin`, `region_admin`,
 `coach`, `lab_operator`, `ministry`. Add a `role` field to `User`
