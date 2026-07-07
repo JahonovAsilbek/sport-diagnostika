@@ -1,37 +1,14 @@
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
-from rest_framework.permissions import SAFE_METHODS, BasePermission
 from rest_framework.response import Response
 
 from apps.athletes.filters import AthleteFilterSet
 from apps.athletes.models import Athlete
 from apps.athletes.serializers import AthleteSerializer
 from apps.catalog.models import AgeCategory
-from apps.common.permissions import COACH, LAB_OPERATOR, REGION_ADMIN, SUPER_ADMIN
+from apps.common.permissions import COACH, LAB_OPERATOR, REGION_ADMIN, DataEntryOrReadOnly
 from apps.common.scoping import ScopedQuerysetMixin
-
-# Data-entry roles that may write athletes. ministry is read-only oversight; super_admin
-# writes unrestricted (below); region_admin/coach/lab_operator are scoped on create.
-WRITE_ROLES = {SUPER_ADMIN, REGION_ADMIN, COACH, LAB_OPERATOR}
-
-
-class AthletePermission(BasePermission):
-    """Authenticated read for any role (the queryset is scope-filtered); write for the
-    data-entry roles only (API.md capability matrix)."""
-
-    def has_permission(self, request, view):
-        user = request.user
-        if not (user and user.is_authenticated):
-            return False
-        if request.method in SAFE_METHODS:
-            return True
-        return getattr(user, "role", None) in WRITE_ROLES
-
-    def has_object_permission(self, request, view, obj):
-        # Defense-in-depth: the scoped get_queryset already 404s an out-of-scope pk
-        # before this runs; re-affirm the read/write capability split.
-        return self.has_permission(request, view)
 
 
 class AthleteViewSet(ScopedQuerysetMixin, viewsets.ModelViewSet):
@@ -45,7 +22,7 @@ class AthleteViewSet(ScopedQuerysetMixin, viewsets.ModelViewSet):
         "region", "district", "organization", "sport_type", "coach"
     )
     serializer_class = AthleteSerializer
-    permission_classes = [AthletePermission]
+    permission_classes = [DataEntryOrReadOnly]
     filterset_class = AthleteFilterSet
     search_fields = ["last_name", "first_name", "middle_name"]
     ordering_fields = ["last_name", "birth_year", "created_at"]

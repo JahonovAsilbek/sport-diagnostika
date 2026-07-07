@@ -621,6 +621,7 @@ triggers scoring (B7).
 ---
 
 # BCKND-39 — TestSession + Measurement models
+> ✅ **Done** (2026-07-07) — new app `apps/measurements`. `TestSession` (athlete, date, entered_by PROTECT, source manual|excel, status draft|finalized + **snapshot dims** age_category/gender/region/organization/sport_type frozen at open + nullable height/weight) and `Measurement` (session, exercise, raw_value; unique per session×exercise). `import_batch` FK **deferred to B11** (ImportBatch not built yet); `source` distinguishes manual/excel meanwhile. No `block` snapshot (block-independent). Migration applied; `--check` clean.
 
 `apps/measurements`. `TestSession` (`athlete` FK, `date`, `entered_by` FK→User,
 `source` manual|excel, `import_batch` FK null, `status` draft|finalized) + **snapshot
@@ -635,6 +636,7 @@ future morpho (BMI is deferred), not on the athlete. The period (quarter/half/ye
 derived from `date`.
 
 # BCKND-40 — Session + battery-driven entry API
+> ✅ **Done** (2026-07-07) — `TestSessionViewSet` CRUD (`ScopedQuerysetMixin` region/org/`athlete__coach`; **draft-only** mutation). `open_session` snapshots the athlete's dims + computes `age_category` at the session date (`AgeOutOfRange`→400). `GET /sessions/{id}/battery/` → the ordered 5 (reuses catalog `TestBatterySerializer`); no battery → 400. `POST /sessions/{id}/measurements/` bulk upsert with `parse_raw_value` per value_type (mm:ss→seconds, signed cm, non-negative counts / positive times; no magic bounds — thresholds are data). Scoped-create guard: a coach/operator/region_admin can only open a session for an in-scope athlete (else 403). `DataEntryOrReadOnly` **extracted to `common/permissions.py`** and adopted by athletes too (one source).
 
 `TestSessionViewSet` (CRUD; only `draft` editable). The entry form is driven by the
 athlete's battery: `GET /sessions/{id}/battery/` (or on session open) returns the ordered
@@ -648,6 +650,7 @@ request.user`. Manual entry only. If the group's `TestBattery` is undefined, the
 can't open (admin must define it first — SCORING.md §7).
 
 # BCKND-41 — finalize endpoint + scoring trigger
+> ✅ **Done** (2026-07-07) — `POST /sessions/{id}/finalize/`: validates all 5 battery exercises present (missing → `400` + `missing` list; battery undefined → 400; already finalized → 400), transitions draft→finalized, returns the session. Per the roadmap the **scoring→Evaluation trigger is wired in B7/BCKND-46** ("Wire BCKND-41's finalize to call `evaluate_session`"); B6 does validation + transition only, so no B7 blocker.
 
 `POST /sessions/{id}/finalize/`: validate that all **5 battery exercises** are present —
 missing → `400` with the missing list — then trigger scoring (B7) → `Evaluation`, set
@@ -659,6 +662,7 @@ norm the indicator is `unscored` and finalize is blocked with an admin signal
 (SCORING.md §7). The scoring logic itself is B7; this task wires the trigger + validation.
 
 # BCKND-42 — Measurements tests
+> ✅ **Done** (2026-07-07) — `TestSessionFactory`/`MeasurementFactory` + **57 tests** across 5 files (models/selectors/services/api/scoping): `parse_raw_value` matrix (mm:ss/seconds/count/signed-cm + error cases), `open_session` snapshot + AgeOutOfRange, `save_measurements`, `finalize_session`; session CRUD + snapshot dims, battery action (ordered 5), bulk entry (`"1:22"`→82.00), finalize success + missing→400, draft-only guards; per-role scoping, out-of-scope 404, scoped-create guard (coach foreign athlete→403). Full suite **166 passed**, ruff clean, `makemigrations --check` clean. **B6 Measurements complete → B7 (scoring engine ★) next.**
 
 pytest: session CRUD, battery-driven entry (returns the correct 5 per age×gender), bulk
 entry, validation (`value_type` ranges, mm:ss, signed flexibility, required 5), finalize
