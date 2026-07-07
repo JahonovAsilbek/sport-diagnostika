@@ -445,6 +445,7 @@ Edge case: the NormBand inline runs the overlap validation on save. `super_admin
 `DarajaThreshold` is editable so the client can adjust the 48/38/30 cut-offs.
 
 # BCKND-32 — Seed command: seed_physical (norm tables + batteries + thresholds)
+> ✅ **Done** (2026-07-07) — the 24 client tables were **parsed** (not hand-typed) into `backend/apps/catalog/data/physical_norms.json`; table→(age × gender) is deterministic (document order + exercise variant floor/pullup=male, bench=female), spot-checked against source + SCORING.md §9. `seed_physical` builds contiguous `[lower, upper)` bands, and seeds Norm/NormBand + TestBattery/BatteryItem + DarajaThreshold (48/38/30). Verified: +120 norms/+360 bands/+12 batteries/+60 items on run 1, **+0 on run 2** (idempotent); `check_physical_norms` passes; 14-yo male 100 m 14.4 → 8 pts (SCORING §9). 3 tests. **B4 Norms complete → B5 (athletes) next.** (TOIFA 4/5 split follows seed_catalog's best-effort; norms are per single year, independent of the split.)
 
 Idempotent `seed_physical` command (SCORING.md §10): load the **~24 client tables**
 (11 single years × 2 genders + 18–29 × 2 genders) from
