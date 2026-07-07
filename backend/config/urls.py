@@ -13,6 +13,7 @@ from apps.common.views import health
 api_v1 = [
     path("health/", health, name="health"),
     path("", include("apps.accounts.urls")),
+    path("catalog/", include("apps.catalog.urls")),
 ]
 
 urlpatterns = [
