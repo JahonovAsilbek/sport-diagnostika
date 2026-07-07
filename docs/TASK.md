@@ -555,6 +555,7 @@ framework (coach → own athletes is the trickiest scope).
 ---
 
 # BCKND-34 — Athlete model
+> ✅ **Done** (2026-07-07) — new app `apps/athletes`. `Athlete` model (last/first/middle name, `birth_year`, `gender`, region/district(null)/organization/sport_type FKs `PROTECT`, `coach` `SET_NULL` with `limit_choices_to` role=coach, razryad/training_experience/main_competitions, is_active). `block` property = `organization.type` (classification only). `clean()` validates district ∈ region. `birth_year` indexed (feeds the age_category filter). Migration `0001_initial` applied; `makemigrations --check` clean.
 
 `apps/athletes`. `Athlete` (per DATA_MODEL): `last_name`, `first_name`,
 `middle_name`, `birth_year`, `gender`, `region` FK, `district` FK, `organization`
@@ -568,6 +569,7 @@ Edge case: validate `coach` is a User with `role=coach`, and `district` belongs 
 `birth_date` gives the correct age at the session date; confirm precision with the client.
 
 # BCKND-35 — Age-category (TOIFA) computation
+> ✅ **Done** (2026-07-07) — `athletes/selectors.py`: `age_category_for(birth_year, on_date)` (age = `on_date.year − birth_year` → the matching TOIFA), `match_age_category(categories, age)` (the shared matching rule, so the list serializer maps from a cached TOIFA list — no N+1), and `age_at`. Raises `AgeOutOfRange` (with `.age`) when the age falls outside every category — never silently buckets. Verified against the seeded TOIFA: 7/8→ordinal 1, 18/29→ordinal 6, ages 6 & 30 raise.
 
 A pure helper `age_category_for(birth_year, on_date)` (athletes domain): age =
 `on_date.year - birth_year`, mapped to a TOIFA `AgeCategory` by `age_min`/`age_max`.
@@ -577,6 +579,7 @@ Age above 29 or below 7 → flag as out-of-range, don't silently bucket it. The 
 4th/5th toifa split is the open item (SCORING.md §11).
 
 # BCKND-36 — Athlete serializers + CRUD API + filters
+> ✅ **Done** (2026-07-07) — `AthleteSerializer` (computed read-only `full_name`, `block`, `age_category` — best-effort at today's date, `null` when out of range; writable FKs; validates district∈region + coach role). `AthleteViewSet` CRUD at `/api/v1/athletes/`; `AthleteFilterSet` (region/district/organization/sport_type/gender/coach/is_active + `search` on names + `age_category` **translated to a birth_year range in SQL**, not per-row). Stub sub-routes `sessions`/`evaluations`/`recommendations` → `[]`, `latest-evaluation` → 204 (each `get_object()`-scoped; bodies land in B6/B7/B10). Delete is a soft `is_active=False`.
 
 `AthleteSerializer` (+ computed `age_category`, `block`, `full_name`).
 `AthleteViewSet` (CRUD). Filters: `region/district/organization/sport_type/gender/
@@ -588,6 +591,7 @@ range in the SQL query (don't compute per-row in Python at scale). `block` (from
 `organization.type`) is a classification filter, not a scoring axis.
 
 # BCKND-37 — Athlete scoping (wire BCKND-14)
+> ✅ **Done** (2026-07-07) — `AthleteViewSet(ScopedQuerysetMixin)` with `scope_region_field`/`scope_organization_field`/`scope_coach_field` → super_admin/ministry all · region_admin by region · lab_operator by org · coach by `coach=self`. Object-level via the scoped `get_queryset` (out-of-scope pk → 404) + a defensive `has_object_permission`. `perform_create/update` `_guard_scope` (mirrors accounts `_guard_region_admin`): coach → forces `coach=self`, org must be own else 403; lab_operator → org must be own; region_admin → region/org must be in-region. `AthletePermission`: read for any authenticated, write for super_admin/region_admin/coach/lab_operator (ministry read-only). First real run of the BCKND-14 framework against `User.region`/`organization`.
 
 Wire the BCKND-14 scoping framework to athletes — the canonical scoped entity:
 `super_admin`/`ministry` → all; `region_admin` → by `region`; `coach` → `coach=self`;
@@ -599,6 +603,7 @@ where BCKND-14's framework first runs against real `User.region`/`organization`
 fields (added in BCKND-20).
 
 # BCKND-38 — Athlete tests + factory
+> ✅ **Done** (2026-07-07) — `AthleteFactory` (org kept in the athlete's region) + **40 tests** across 5 files (test_models/age_category/filters/api/scoping): full_name/block/`clean()`; TOIFA boundaries (7/8/18/29, out-of-range raises); age_category→birth_year filter (both boundaries) + gender/is_active/coach filters; CRUD + computed fields + soft-delete + the 4 sub-route stubs; per-role visibility, out-of-scope detail/sub-route → 404, coach-create forces `coach=self`, org/region create guards → 403. Full suite **109 passed**, ruff clean, `makemigrations --check` clean. **B5 Athletes complete → B6 (measurements) next.**
 
 pytest: CRUD, scoping per role (coach sees only own, region_admin only region),
 TOIFA age-category derivation (boundaries, 18–29, out-of-range), filters, validation

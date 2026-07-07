@@ -9,8 +9,9 @@ metadata:
 
 The static landing (lite at root, premium under `premium/`) is evolving into a
 full **Python web platform** built from `SPORT.docx` (TTZ). Architecture agreed
-2026-06-16; **pivoted to physical-readiness-first 2026-07-07**; implementation not
-yet started.
+2026-06-16; **pivoted to physical-readiness-first 2026-07-07**. Backend implemented
+through **B5 Athletes** (accounts · catalog + seeded norms/batteries · athletes) against
+the running colima Postgres/Redis stack; per-task progress lives in `docs/TASK.md`.
 
 **Stack (decided):** Django 5 + DRF · Vue 3 + Vite + Pinia SPA · PostgreSQL 16 ·
 Celery + Redis (fon + cache) · JWT auth · Docker Compose on own VPS · Nginx +
@@ -56,6 +57,16 @@ replaces old `TestType`) · `TestBattery` + `BatteryItem` · `Norm`
 **Security core (unchanged):** region-scoping enforced server-side on every request,
 never trusting client filters. **5 roles:** Super admin, Viloyat admin, Murabbiy,
 Laboratoriya xodimi/operator, Vazirlik vakili.
+
+**Scoped-write convention** (established in `athletes`, reuse for every scoped data
+ViewSet in B6+): `ScopedQuerysetMixin` + `scope_region_field`/`scope_organization_field`/
+`scope_coach_field` filters reads so an out-of-scope pk naturally 404s; a `_guard_scope`
+in `perform_create/update` (mirrors accounts `_guard_region_admin`) enforces writes — a
+coach-created row **forces `coach=self`**, scoped creators cannot place a row outside
+their own org/region (else 403), and `ministry` is **read-only** on data entities.
+`age_category` (TOIFA) is **computed, never stored** (`athletes.selectors.age_category_for`
+raises `AgeOutOfRange` outside 7–29); list filters translate it to a `birth_year` range in
+SQL, not per-row.
 
 Full docs (all English): `docs/ARCHITECTURE.md`, `docs/DATA_MODEL.md`, `docs/API.md`,
 `docs/SCORING.md`, `docs/DEFERRED.md`, `docs/ROADMAP.md`, `docs/TASK.md`. Docs are
