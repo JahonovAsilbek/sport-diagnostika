@@ -98,6 +98,7 @@ otherwise Django binds to the default `auth.User` and swapping it later leads
 to migration hell. Hence this task sits inside B1, before B2 (roles/JWT).
 
 # BCKND-6 — Celery app wiring
+> ✅ **Done** (2026-07-07) — `config/celery.py` (app `sport_diagnostika`, `DJANGO_SETTINGS_MODULE` setdefault, `autodiscover_tasks`, `debug_task`), `config/__init__` exports `celery_app`, base `CELERY_*` → REDIS_URL. Verified: broker connects to Redis, `debug_task` registered.
 
 `config/celery.py`: `Celery("sport_diagnostika")`,
 `config_from_object("django.conf:settings", namespace="CELERY")`,
@@ -110,6 +111,7 @@ setdefault in `celery.py` is mandatory. `autodiscover_tasks` finds the `tasks.py
 in later apps (used in B7/B11/B12).
 
 # BCKND-7 — DRF + OpenAPI (drf-spectacular) configuration
+> ✅ **Done** (2026-07-07) — `REST_FRAMEWORK` (JWTAuth, IsAuthenticated, DefaultPagination, filter backends, spectacular AutoSchema), `SIMPLE_JWT` (30 min / 7 d, rotate+blacklist), `SPECTACULAR_SETTINGS`, `token_blacklist` app, `CORS_ALLOWED_ORIGINS`, urls `api/v1/` + `api/schema/` + `api/docs/`. Verified: schema generates+validates; `/api/schema/` and `/api/docs/` are public 200.
 
 base settings `REST_FRAMEWORK`: `DEFAULT_AUTHENTICATION_CLASSES`
 (JWTAuthentication), `DEFAULT_PERMISSION_CLASSES` (IsAuthenticated),
@@ -125,6 +127,7 @@ for SIMPLE_JWT BLACKLIST and must be migrated — it is added in this task.
 Swagger must not require auth in dev.
 
 # BCKND-8 — Health-check endpoint + URL wiring
+> ✅ **Done** (2026-07-07) — `apps/common/views.health`: `GET /api/v1/health/` (AllowAny) → `{status, db, cache, time}`; `SELECT 1` + cache round-trip; 503 when a component is down. Verified: 200 when up; 503 (cache=down, db=ok) when cache unreachable.
 
 A health view in `apps/common`: `GET /api/v1/health/` (AllowAny) →
 `{status, db, cache, time}`. It checks the DB with `SELECT 1` and the cache with

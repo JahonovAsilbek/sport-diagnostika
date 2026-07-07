@@ -4,6 +4,7 @@ Secrets and environment-specific values are read from the environment via
 django-environ. `DATABASES`/`CACHES` (BCKND-3), DRF/JWT/OpenAPI (BCKND-7) and Celery
 (BCKND-6) are wired in their own tasks.
 """
+from datetime import timedelta
 from pathlib import Path
 
 import environ
@@ -29,6 +30,7 @@ DJANGO_APPS = [
 
 THIRD_PARTY_APPS = [
     "rest_framework",
+    "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     "django_filters",
     "drf_spectacular",
@@ -90,6 +92,12 @@ CACHES = {
     }
 }
 
+# Celery — broker and result backend default to REDIS_URL.
+CELERY_BROKER_URL = env("CELERY_BROKER_URL", default=env("REDIS_URL"))
+CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", default=env("REDIS_URL"))
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TIMEZONE = "Asia/Tashkent"
+
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
@@ -115,3 +123,38 @@ STORAGES = {
 }
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# CORS — allowed origins from env (dev overrides with CORS_ALLOW_ALL_ORIGINS).
+CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[])
+
+# Django REST Framework
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ),
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
+    "DEFAULT_PAGINATION_CLASS": "apps.common.pagination.DefaultPagination",
+    "DEFAULT_FILTER_BACKENDS": (
+        "django_filters.rest_framework.DjangoFilterBackend",
+        "rest_framework.filters.SearchFilter",
+        "rest_framework.filters.OrderingFilter",
+    ),
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+# JWT — full login/refresh/logout lands in B2; the config lives here.
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+}
+
+# OpenAPI schema (drf-spectacular)
+SPECTACULAR_SETTINGS = {
+    "TITLE": "SPORT-DIAGNOSTIKA API",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    # Schema + Swagger UI are public (no auth) — required in dev.
+    "SERVE_PERMISSIONS": ["rest_framework.permissions.AllowAny"],
+}
