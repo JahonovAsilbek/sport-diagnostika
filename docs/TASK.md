@@ -1,18 +1,23 @@
 # SPORT-DIAGNOSTIKA.UZ — Tasks
 
 Small, sequential tasks. Source: `ROADMAP.md` (blocks) · `ARCHITECTURE.md` ·
-`DATA_MODEL.md` · `API.md` · `SCORING.md`.
+`DATA_MODEL.md` · `API.md` · `SCORING.md`. Parked scope: `DEFERRED.md`.
 
 Prefixes: **BCKND** (backend) · **DVPS** (devops) · **FRNTND** (frontend).
 Each task is one self-contained unit. Block by block: the next block does not
 start until the current one is finished.
 
-> Status: **fully split** — all **BCKND (B1–B13)**, all **DVPS (D1–D7)**, and all
-> **FRNTND (F1–F10)** blocks are broken into tasks, plus **gap-review additions**
-> (BCKND-68/69/70, FRNTND-25/26, DVPS-20) at the end. Tasks are ordered by dependency,
-> not by track; cross-track DVPS tasks (7/8/9) sit with the backend blocks that need
-> them. Open choices flagged in tasks: TypeScript vs JS (FRNTND-1), UI kit
-> (FRNTND-4). Ready to implement on an explicit go, starting BCKND-1.
+> Status: **fully split — physical-readiness scope.** All **BCKND (B1–B13)**, all
+> **DVPS (D1–D7)**, and all **FRNTND (F1–F10)** blocks are broken into tasks, plus the
+> **gap-review additions** (BCKND-68/69/70, FRNTND-25/26, DVPS-20). The physical-first
+> re-scope rewrote **B3** (Exercise pool / TestBattery / TOIFA), **B4** (Norm/NormBand
+> 10/8/6 + DarajaThreshold + `seed_physical`), **B6** (5-exercise battery entry), **B7**
+> (single scheme: raw → points → physical_total → daraja), and **B8–B12** (physical). The
+> parked tasks (functional/morpho/psych/BMI, OTM/OPSTTM strategies, weight categories,
+> sport/block norms) are collected — **not deleted** — in the **DEFERRED** section at the
+> end (+ `docs/DEFERRED.md`). B1/B2 and the DVPS/JWT/Celery/OpenAPI plumbing are unchanged.
+> Open choices flagged in tasks: TypeScript vs JS (FRNTND-1), UI kit (FRNTND-4). Ready to
+> implement on an explicit go, starting BCKND-1.
 
 ---
 
@@ -224,10 +229,10 @@ scope fields and wires BCKND-14.
 ---
 
 **BLOCK B3 — Reference Data** (BCKND-17 … BCKND-25) · dependency: BCKND-B2
-Goal: the catalog (Region, District, Organization, SportType, AgeCategory,
-WeightCategory, TestType) — models, read APIs, Django admin, and seed data. Also
-adds the `User.region`/`User.organization` scope fields and wires the BCKND-14
-scoping framework. Norm/NormBand are a separate block (B4).
+Goal: the catalog (Region, District, Organization, SportType, **AgeCategory (TOIFA)**,
+the **Exercise pool**, **TestBattery + BatteryItem**) — models, read APIs, Django admin,
+and seed data. Also adds the `User.region`/`User.organization` scope fields and wires the
+BCKND-14 scoping framework. Norm/NormBand are a separate block (B4).
 
 ---
 
@@ -240,27 +245,31 @@ Edge case: `District` ordered within its region; unique `(region, name)`.
 `Region.code` is a stable identifier used by seeds/imports (don't key on the
 display name, which is Uzbek and may vary).
 
-# BCKND-18 — Organization + sport/age/weight reference models
+# BCKND-18 — Organization + SportType + AgeCategory (TOIFA) models
 
 `Organization` (`name`, `type` OTM|OPSTTM as TextChoices, `region` FK,
-`district` FK). `SportType` (`name`, `code` unique). `AgeCategory` (`name`,
-`min_age`, `max_age` nullable). `WeightCategory` (`sport_type` FK, `gender`,
-`name`, `min_kg`, `max_kg`). Migration.
-Edge case: `AgeCategory.max_age` is nullable for "22+"; validate that categories
-don't overlap. `WeightCategory` belongs to a sport + gender. An athlete's block is
-read from `Organization.type` (single source) — never duplicated onto the athlete.
+`district` FK). `SportType` (`name`, `code` unique). `AgeCategory` (TOIFA)
+(`ordinal` 1–6 unique, `name`, `age_min`, `age_max`). Migration.
+Edge case: `AgeCategory` is the **TOIFA** grouping — six ordinals: `1: 7–8 · 2: 9–10 ·
+3: 11–12 · 4/5: 13–17 (split TBC) · 6: 18–29`; validate the ranges don't overlap.
+`Organization.type` (OTM|OPSTTM) is a **classification / filter** attribute only ("which
+athletes are OPSTTM") — it does **not** affect physical scoring and is never duplicated
+onto the athlete. `weight_category` is **deferred** (morpho) — see the DEFERRED section.
 
-# BCKND-19 — TestType model
+# BCKND-19 — Exercise pool + TestBattery + BatteryItem models
 
-`TestType` (`name`, `block` OTM|OPSTTM|both, `category`
-physical|functional|morpho|psych, `unit`, `direction` lower|higher_is_better,
-`valid_min`, `valid_max`, `order`, `is_active`). Migration. This underpins Norm
-(B4), Measurement (B6) and the scoring engine (B7). `valid_min`/`valid_max` bound
-acceptable raw input (used by BCKND-40 entry validation).
-Edge case: `block=both` means a test is shared by OTM & OPSTTM (the physical /
-functional tests); norms still differ per block (Norm has a `block` field).
-`category` + `block` together decide which aggregation an indicator feeds (per
-SCORING.md). `order` controls UI/seed listing.
+`Exercise` (the exercise pool; replaces the old `TestType` — now deferred, see DEFERRED):
+`name` (Uzbek), `unit`, `value_type` (`seconds`|`minsec`|`count`|`cm_signed`),
+`direction` (`higher`|`lower_is_better`), `order`, `is_active`. `TestBattery`
+(`age_category` FK, `gender`, `is_active`). `BatteryItem` (`battery` FK, `exercise` FK,
+`order`) — exactly 5 per battery. Migration.
+Edge case: `value_type` tells the SPA how to render/store the input (mm:ss → seconds;
+signed cm for flexibility). A `TestBattery` is one per `(age_category, gender)` and defines
+the ordered 5 exercises the athlete performs — the entry form (B6) is built from it. #4/#5
+differ **by gender** (boys turnikda tortilish ↔ girls skameykaga tayanib qoʻl bukish) and
+running distances differ **by age** (30 m → 100 m). `unit`/`value_type` bound how raw input
+is validated (BCKND-40). The battery **rows** are seeded together with the norm tables by
+`seed_physical` (BCKND-32).
 
 # BCKND-20 — User region/organization scope fields + wire scoping
 
@@ -276,49 +285,57 @@ create: `region_admin` must have `region`; `coach`/`lab_operator` must have
 # BCKND-21 — Catalog serializers + read APIs
 
 DRF serializers + ViewSets for all catalog models. Filters: `districts?region=`,
-`organizations?type=&region=`, `weight-categories?sport_type=&gender=`,
-`test-types?block=&category=`. Read = any authenticated user; write gated to
+`organizations?type=&region=`, `exercises?is_active=`,
+`batteries?age_category=&gender=`. Read = any authenticated user; write gated to
 `super_admin` (BCKND-13). Routes under `/api/v1/catalog/` per API.md §4.
 Edge case: catalog is read-heavy and changes rarely → cache list responses (Redis)
 and invalidate on write. Reference lists are NOT region-scoped (everyone sees all
-regions/sports); only data entities (athletes/measurements) are scoped.
+regions/sports/exercises); only data entities (athletes/measurements) are scoped.
+`GET /catalog/batteries/?age_category=&gender=` returns the ordered 5 exercises that
+drive the entry form (B6).
 
 # BCKND-22 — Django admin for catalog (TZ #16)
 
-Register Region, District, Organization, SportType, AgeCategory, WeightCategory,
-TestType in Django admin with `list_display`, search, `list_filter`, and inlines
-(District inline under Region; WeightCategory inline under SportType). Satisfies
-the reference-data part of the TZ #16 admin panel.
+Register Region, District, Organization, SportType, AgeCategory, Exercise,
+TestBattery in Django admin with `list_display`, search, `list_filter`, and inlines
+(District inline under Region; BatteryItem inline under TestBattery). Satisfies the
+reference-data part of the TZ #16 admin panel.
 Edge case: admin is for `super_admin` (`is_staff`/`is_superuser`) only and is
-distinct from the SPA. Useful filters: `Organization.type`, `TestType.block`/
-`category`.
+distinct from the SPA. The BatteryItem inline enforces the ordered 5-exercise
+selection per `(age_category, gender)`. Useful filters: `Organization.type`,
+`Exercise.value_type`/`direction`.
 
-# BCKND-23 — Seed command: geography + categories
+# BCKND-23 — Seed command: geography + TOIFA categories + sport types
 
 Idempotent `seed_catalog` management command (`get_or_create`): 14 regions
-(Qoraqalpogʻiston, Toshkent city, 12 regions), their districts, 5 age categories
-(12–13, 14–15, 16–17, 18–21, 22+), and the base sport types (30+: gandbol, futbol,
-boks, dzyudo, kurash, athletics, swimming, badminton, voleybol, …).
-Edge case: idempotent (`get_or_create` by stable `code`) so re-running never
-duplicates. Region/sport display `name`s are the real Uzbek values (proper nouns)
-even though code/docs are English.
+(Qoraqalpogʻiston, Toshkent city, 12 regions), their districts, the **6 TOIFA age
+categories** (`1: 7–8 · 2: 9–10 · 3: 11–12 · 4/5: 13–17 (split TBC) · 6: 18–29`), and
+the base sport types (30+: gandbol, futbol, boks, dzyudo, kurash, athletics, swimming,
+badminton, voleybol, …).
+Edge case: idempotent (`get_or_create` by stable `code`/`ordinal`) so re-running never
+duplicates. Region/sport display `name`s are the real Uzbek values (proper nouns) even
+though code/docs are English. The 13–17 → 4th/5th toifa split is an open item
+(SCORING.md §11) — seed a best-effort split, easy to adjust.
 
-# BCKND-24 — Seed command: test types (OTM + OPSTTM)
+# BCKND-24 — Seed command: exercise pool
 
-Seed `TestType` rows from SCORING.md: OTM 10 (5 physical + 5 functional) and the
-OPSTTM-only morpho (7) + psych (6), with correct `block`/`category`/`unit`/
-`direction`/`order`. Shared physical & functional tests are seeded once with
-`block=both`; morpho/psych are `block=OPSTTM`.
-Edge case: `direction` must match SCORING.md (30m sprint = lower_is_better,
-pull-ups = higher_is_better, resting heart rate = lower_is_better, …). Because
-physical/functional tests are shared (`block=both`), per-block differences live in
-the norms (B4), not in duplicate TestType rows.
+Seed the ~9 `Exercise` rows (the pool) from SCORING.md §2 with correct
+`unit`/`value_type`/`direction`/`order`: 30 m · 100 m · 400 m ga yugurish (lower);
+turgan joydan uzunlikka sakrash · gimnastika oʻrindigʻida oldinga egilish (signed) ·
+argʻimchoqda sakrash · yerga tayanib qoʻllarni bukish · skameykaga tayanib qoʻllarni
+bukish · turnikda tortilish (higher). Idempotent.
+Edge case: `direction` must match SCORING.md (running = lower_is_better; jumps / counts =
+higher_is_better; flexibility is **signed cm**, higher_is_better). The **TestBattery/
+BatteryItem rows** (which 5 per age×gender) are seeded together with the norm tables by
+`seed_physical` (BCKND-32), since both derive from the same source tables. Idempotent by
+exercise name/order.
 
 # BCKND-25 — Catalog tests
 
-pytest: model constraints (unique `code`, age-category non-overlap), API read/write
-permissions (`super_admin` writes, others read-only, `ministry` read), filters,
-`seed_catalog`/test-type seed idempotency, and the User region/org field +
+pytest: model constraints (unique `code`, unique TOIFA `ordinal`, age-category
+non-overlap), API read/write permissions (`super_admin` writes, others read-only,
+`ministry` read), filters (batteries by `age_category`/`gender`, exercises),
+`seed_catalog` + exercise-pool seed idempotency, and the User region/org field +
 per-role validation (BCKND-20). Factories for catalog models.
 Edge case: assert a non-`super_admin` gets `403` on catalog writes; running the
 seed twice yields no duplicates; User scope validation rejects a `region_admin`
@@ -327,87 +344,95 @@ without a region. Once this task is finished, B3 is closed — then B4 (norms).
 ---
 
 **BLOCK B4 — Norms** (BCKND-26 … BCKND-33) · dependency: BCKND-B3
-Goal: all data-driven scoring criteria — Norm/NormBand models, the norm
-lookup-with-fallback, the raw→score band resolver, percentage→level thresholds,
-admin, API, and illustrative seeds. This is the data the scoring engine (B7)
-consumes; the engine itself is B7.
+Goal: all data-driven physical scoring criteria — Norm/NormBand models, the
+numeric-age norm lookup, the total→daraja thresholds, admin, API, coverage
+validation, and the `seed_physical` command that loads the ~24 client tables +
+batteries. This is the data the scoring engine (B7) consumes; the engine itself is B7.
 
 ---
 
 # BCKND-26 — Norm + NormBand models
 
-`Norm` (header): `test_type` FK, `age_category` FK, `gender`, `sport_type` FK
-(null = all sports), `block`, `valid_from`. `NormBand` (line): `norm` FK,
-`score` (1–5), `lower_bound`, `upper_bound`. Migration. Both on `TimeStampedModel`.
-Edge case: NormBand bounds use the `[lower, upper)` convention; on save validate
-that a Norm's 5 bands cover the full range with no gaps/overlaps. `valid_from`
-enables versioning (older Evaluations stay reproducible).
+`Norm` (header): `exercise` FK, `age_min`, `age_max`, `gender`, `valid_from`,
+`is_active`. **No sport_type, no block.** `NormBand` (line): `norm` FK,
+`points` (10|8|6), `lower_bound`, `upper_bound`. Migration. Both on `TimeStampedModel`.
+Edge case: NormBand bounds use the `[lower, upper)` convention (lower inclusive, upper
+exclusive); `direction` is already baked into the ordering of bounds (SCORING.md §3.4).
+For 7–17 a norm has `age_min = age_max = year`; for adults `age_min = 18, age_max = 29`.
+On save validate the bands don't overlap. `valid_from` enables versioning (older
+Evaluations stay reproducible). Bounds are numeric: time in **seconds** (mm:ss
+converted), counts as integers, flexibility as **signed cm**.
 
-# BCKND-27 — Norm lookup with fallback
+# BCKND-27 — Norm lookup selector (get_norm)
 
-A selector `get_norm(test_type, age_category, gender, sport_type, block, on_date)`
-with precedence: `sport+age+gender` → fall back to `age+gender` (sport_type null);
-among matches pick the latest `valid_from <= on_date`. Returns a `Norm` or `None`.
-Edge case: most-specific match wins (a sport-specific norm overrides the generic
-one). No norm found → return `None`; the caller marks that indicator `unscored`
-(SCORING.md §3.6). Version is chosen by the session date, not "now", for
-reproducibility.
+A selector `get_norm(exercise, gender, age, on_date)`: match
+`exercise + gender + age ∈ [age_min, age_max]`, among matches pick the latest
+`valid_from <= on_date`. Returns a `Norm` or `None`. **No sport/block, no fallback** —
+the lookup is exact (physical norms are sport- and block-independent).
+Edge case: `age` is the athlete's age at the session date (numeric), not a category FK.
+7–17 resolve to a single-year norm; 18–29 to the adult norm. No norm found → return
+`None`; the caller marks that indicator `unscored` (SCORING.md §3.6). Version is chosen
+by the session date, not "now", for reproducibility.
 
-# BCKND-28 — Band resolution (raw_value → score 1–5)
+# BCKND-28 — DarajaThreshold model
 
-A pure function `resolve_score(norm, raw_value) → int` in `apps/catalog` domain:
-find the band whose `[lower, upper)` contains `raw_value`; clamp out-of-range to
-the best (5) / worst (1) band per SCORING.md §3.5. No DB, fully unit-testable.
-Edge case: `[lower, upper)` boundaries — no double-counting at band joins. The
-resolver is direction-agnostic: `direction` is already baked into how the bands
-were entered (SCORING.md §3.4). Below the best / above the worst → clamp, never error.
+Model `DarajaThreshold` (`level` I|II|III, `total_min`, `total_max`) — the total→daraja
+cut-offs as DATA, not hardcoded (SCORING.md §5). Defaults `I: 48–50 · II: 38–46 ·
+III: 30–36 · <30: none`. Feeds B7's daraja resolver. (This slot previously held the
+raw→score band-resolution, which is now the scoring domain's `points.py`, BCKND-44.)
+Edge case: keep the cut-offs data-driven so the client can adjust without a code change.
+`color` derives from the daraja (I→green, II→yellow, III/none→red). Confirm the thresholds
+are constant across all tables (open item, SCORING.md §11). Validate the ranges don't overlap.
 
 # BCKND-29 — Norm serializers + nested API
 
 `NormSerializer` with writable nested `NormBand` (per API.md §4). `NormViewSet`:
-list + filter (`?test_type=&age_category=&gender=&sport_type=&block=`), CRUD gated
-to `super_admin` (`region_admin` read). `GET /catalog/norms/{id}/` returns the
-bands. Routes `/api/v1/catalog/norms/`.
+list + filter (`?exercise=&age_min=&age_max=&gender=`), CRUD gated to `super_admin`
+(`region_admin` read). `GET /catalog/norms/{id}/` returns the bands. A `DarajaThreshold`
+read endpoint. Routes `/api/v1/catalog/norms/`.
 Edge case: writable nested bands — creating/updating a norm replaces its band set
-atomically (one transaction) and re-runs the gap/overlap validation. Writes are
-`super_admin` only.
+atomically (one transaction) and re-runs the overlap validation. Writes are
+`super_admin` only. The SPA norm editor (F9) and results view (F6) consume these reads.
 
-# BCKND-30 — LevelThreshold config (percentage → level/color)
+# BCKND-30 — Physical-norm coverage validation command
 
-Model `LevelThreshold` (`block`, `lower_pct`, `level`, `color`) — the
-percentage→level cut-offs as DATA, not hardcoded (SCORING.md §5 note). OTM 5
-levels (very_high/high/medium/low/very_low), OPSTTM 3 levels (high/normal/low).
-Seed defaults. This feeds B7's aggregation → `level`/`color`.
-Edge case: keep thresholds data-driven — OPSTTM 75/50 are illustrative and the
-specialist confirms them later. Color derives from level per block. Validate the
-thresholds partition 0–100 with no gaps.
+A `check_physical_norms` management command: for every `BatteryItem` exercise, assert a
+`Norm` exists (active, current `valid_from`) covering each single year in the battery's
+TOIFA `[age_min, age_max]` for that gender. Report gaps. Run after `seed_physical` and
+before go-live.
+Edge case: this pre-flights the "no norm for exercise × age × gender" case (SCORING.md §7)
+so `finalize` never hits an unexpected `unscored` indicator in production. Read-only
+(reports, never writes). A gap for any battery exercise means the physical form for that
+group can't fully score.
 
 # BCKND-31 — Django admin for norms + thresholds
 
-Register `Norm` (with `NormBand` inline, 5 rows) and `LevelThreshold` in Django
-admin, with `list_filter` by block/test_type/age_category/gender. This is the
-primary surface for "baholash mezonlari" (TZ #16) — how the specialist enters real
-numbers later.
-Edge case: the NormBand inline must run the gap/overlap validation on save.
-`super_admin` only.
+Register `Norm` (with `NormBand` inline) and `DarajaThreshold` in Django admin, with
+`list_filter` by `exercise`/`gender`/`age`. This is the primary surface for "baholash
+mezonlari" (TZ #16) — how the specialist edits the real numbers.
+Edge case: the NormBand inline runs the overlap validation on save. `super_admin` only.
+`DarajaThreshold` is editable so the client can adjust the 48/38/30 cut-offs.
 
-# BCKND-32 — Seed: illustrative norms + level thresholds
+# BCKND-32 — Seed command: seed_physical (norm tables + batteries + thresholds)
 
-Idempotent seed command: the level thresholds (OTM 5-level, OPSTTM 3-level
-defaults) and a small set of **illustrative** norm bands (SCORING.md samples) so
-the engine is testable end-to-end before the specialist supplies real values.
-Edge case: clearly mark seeded norms as illustrative/placeholder; real values come
-from the sport-science specialist (SCORING.md §11). Idempotent (`get_or_create`).
+Idempotent `seed_physical` command (SCORING.md §10): load the **~24 client tables**
+(11 single years × 2 genders + 18–29 × 2 genders) from
+`resources/Jismoniy tayyorgarlik mezonlari …` into `Norm`/`NormBand`, create the
+`TestBattery`/`BatteryItem` rows (the ordered 5 per age×gender) from the same tables, and
+the `DarajaThreshold` defaults (48/38/30).
+Edge case: idempotent (`get_or_create`, keyed on exercise+age+gender+valid_from for norms,
+age_category+gender for batteries). mm:ss table cells are normalized to seconds; signed
+flexibility kept signed. Versioned by `valid_from` so re-seeding a new edition preserves old
+Evaluation snapshots. Depends on the Exercise pool (BCKND-24).
 
-# BCKND-33 — Norm lookup/resolution tests
+# BCKND-33 — Norm lookup + band + threshold tests
 
-pytest: lookup precedence (sport-specific beats generic), version selection by
-`valid_from`, no-norm → `None`, band resolution (in-range, both boundaries of
-`[lower, upper)`, clamp high/low), and the percentage→level mapping. Pure-function
-tests need no DB.
-Edge case: table-driven tests for band edges (exactly the lower bound, exactly the
-upper bound, below min, above max). Verify a sport-specific norm overrides the
-generic one. Once this task is finished, B4 is closed — then B5 (athletes).
+pytest: `get_norm` (exact age match, single-year vs 18–29 bucket, version selection by
+`valid_from`, no-norm → `None`), NormBand overlap validation, `DarajaThreshold` ranges, and
+`seed_physical`/`check_physical_norms` idempotency + coverage. Pure-function tests need no DB.
+Edge case: table-driven tests for band edges (exactly the lower bound, exactly the upper
+bound); assert the adult 18–29 norm resolves for ages 18 and 29; version chosen by session
+date. Once this task is finished, B4 is closed — then B5 (athletes).
 
 ---
 
@@ -484,9 +509,9 @@ closed.
 ---
 
 **BLOCK B5 — Athletes** (BCKND-34 … BCKND-38) · dependency: BCKND-B3
-Goal: the athlete registry — model, CRUD API with filters, derived age category,
-coach linking, and the first real exercise of the BCKND-14 scoping framework
-(coach → own athletes is the trickiest scope).
+Goal: the athlete registry — model, CRUD API with filters, derived TOIFA age
+category, coach linking, and the first real exercise of the BCKND-14 scoping
+framework (coach → own athletes is the trickiest scope).
 
 ---
 
@@ -494,31 +519,34 @@ coach linking, and the first real exercise of the BCKND-14 scoping framework
 
 `apps/athletes`. `Athlete` (per DATA_MODEL): `last_name`, `first_name`,
 `middle_name`, `birth_year`, `gender`, `region` FK, `district` FK, `organization`
-FK, `sport_type` FK, `razryad`, `coach` FK→User, `weight_category` FK,
-`training_experience`, `main_competitions`, `is_active` (on TimeStampedModel).
-Migration. `block` is a property read from `organization.type` (not stored).
+FK, `sport_type` FK, `razryad`, `coach` FK→User, `training_experience`,
+`main_competitions`, `is_active` (on TimeStampedModel). Migration. `block` is a
+property read from `organization.type` (classification only).
 Edge case: validate `coach` is a User with `role=coach`, and `district` belongs to
-`region`. `age_category` is NOT stored — derived (BCKND-35). `block` derived from
-`organization.type` (single source).
+`region`. `age_category` (TOIFA) is NOT stored — derived at session time (BCKND-35).
+`weight_category` is **deferred** (morpho) — not on the athlete (see DEFERRED).
+**Open item:** `birth_year` vs `birth_date` — norms are per single year, so a full
+`birth_date` gives the correct age at the session date; confirm precision with the client.
 
-# BCKND-35 — Age-category computation
+# BCKND-35 — Age-category (TOIFA) computation
 
 A pure helper `age_category_for(birth_year, on_date)` (athletes domain): age =
-`on_date.year - birth_year`, mapped to an `AgeCategory` by `min_age`/`max_age`.
-Used at session/evaluation time, not stored.
+`on_date.year - birth_year`, mapped to a TOIFA `AgeCategory` by `age_min`/`age_max`.
+Used at session/evaluation time (it drives the `TestBattery` selection), not stored.
 Edge case: the category depends on the measurement date (compute at session time).
-Handle "22+" (`max_age` null). Age below the lowest category → flag as out-of-range,
-don't silently bucket it.
+Age above 29 or below 7 → flag as out-of-range, don't silently bucket it. The 13–17 →
+4th/5th toifa split is the open item (SCORING.md §11).
 
 # BCKND-36 — Athlete serializers + CRUD API + filters
 
 `AthleteSerializer` (+ computed `age_category`, `block`, `full_name`).
 `AthleteViewSet` (CRUD). Filters: `region/district/organization/sport_type/gender/
-age_category/block/coach/is_active/search`. Routes `/api/v1/athletes/`. Stub
+age_category/coach/is_active/search`. Routes `/api/v1/athletes/`. Stub
 sub-routes `/athletes/{id}/sessions/`, `/evaluations/`, `/latest-evaluation/`,
 `/recommendations/` (filled by B6/B7/B10).
 Edge case: the `age_category` filter is computed → translate it to a `birth_year`
-range in the SQL query (don't compute per-row in Python at scale).
+range in the SQL query (don't compute per-row in Python at scale). `block` (from
+`organization.type`) is a classification filter, not a scoring axis.
 
 # BCKND-37 — Athlete scoping (wire BCKND-14)
 
@@ -534,105 +562,121 @@ fields (added in BCKND-20).
 # BCKND-38 — Athlete tests + factory
 
 pytest: CRUD, scoping per role (coach sees only own, region_admin only region),
-age-category derivation (boundaries, 22+), filters, validation (coach role,
-district ∈ region). `AthleteFactory`.
+TOIFA age-category derivation (boundaries, 18–29, out-of-range), filters, validation
+(coach role, district ∈ region). `AthleteFactory`.
 Edge case: scope-leakage tests (out-of-scope athlete by id → 403/404); age-boundary
-tests at category edges. Once this task is finished, B5 is closed.
+tests at TOIFA edges. Once this task is finished, B5 is closed.
 
 ---
 
 **BLOCK B6 — Measurements** (BCKND-39 … BCKND-42) · dependency: BCKND-B4, BCKND-B5
-Goal: test sessions and raw measurements, manual entry only (device integration is
-out of scope — ROADMAP), with a `finalize` action that triggers scoring (B7).
+Goal: test sessions and raw measurements for the **physical battery**, manual entry
+only (device integration is out of scope — ROADMAP), with a `finalize` action that
+triggers scoring (B7).
 
 ---
 
 # BCKND-39 — TestSession + Measurement models
 
-`apps/measurements`. `TestSession` (`athlete` FK, `date`, `height_cm`, `weight_kg`,
-`block` snapshot, `region`/`organization`/`sport_type` snapshots, `entered_by`
-FK→User, `source` manual|excel, `import_batch` FK null, `status` draft|finalized).
-`Measurement` (`session` FK, `test_type` FK, `raw_value`). Migration.
-Edge case: `block`, `region`, `organization`, `sport_type` are snapshotted from the
-athlete at creation, so a later transfer (BCKND-68) doesn't rewrite historical/period
-rankings. `source` defaults to `manual` (no device work). `height`/`weight` live on
-the session (for BMI), not on the athlete. The period (quarter/half/year) is derived
-from `date`.
+`apps/measurements`. `TestSession` (`athlete` FK, `date`, `entered_by` FK→User,
+`source` manual|excel, `import_batch` FK null, `status` draft|finalized) + **snapshot
+dims** (`age_category`, `gender`, `region`, `organization`, `sport_type`) + optional
+`height_cm`/`weight_kg` (nullable, future morpho). `Measurement` (`session` FK,
+`exercise` FK, `raw_value`). Migration.
+Edge case: the snapshot dims freeze where the athlete was at session time, so a later
+transfer (BCKND-68) doesn't rewrite historical/period rankings. **No `block` snapshot** —
+physical is block-independent (`Organization.type` stays classification only). `source`
+defaults to `manual` (no device work). `height`/`weight` are nullable placeholders for
+future morpho (BMI is deferred), not on the athlete. The period (quarter/half/year) is
+derived from `date`.
 
-# BCKND-40 — Session + measurement entry API
+# BCKND-40 — Session + battery-driven entry API
 
-`TestSessionViewSet` (CRUD; only `draft` editable). `POST /sessions/{id}/measurements/`
-bulk raw values. Filter by athlete. Scoping (`lab_operator` → own org, `coach` →
-own athletes). Validate `raw_value` against the TestType min/max.
-Edge case: only `draft` sessions are editable; `finalized` are read-only. Reject
-absurd/negative values per test. `entered_by = request.user`. Manual entry only.
+`TestSessionViewSet` (CRUD; only `draft` editable). The entry form is driven by the
+athlete's battery: `GET /sessions/{id}/battery/` (or on session open) returns the ordered
+5 exercises for the athlete's `(age_category, gender)`. `POST /sessions/{id}/measurements/`
+bulk raw values keyed by `exercise`. Filter by athlete. Scoping (`lab_operator` → own org,
+`coach` → own athletes). Validate `raw_value` per the `Exercise` `unit`/`value_type`.
+Edge case: only `draft` sessions are editable; `finalized` are read-only. Validate by
+`value_type`: `minsec` mm:ss → seconds, `cm_signed` allows negatives, counts are
+non-negative integers, times are positive. Reject absurd values. `entered_by =
+request.user`. Manual entry only. If the group's `TestBattery` is undefined, the form
+can't open (admin must define it first — SCORING.md §7).
 
 # BCKND-41 — finalize endpoint + scoring trigger
 
-`POST /sessions/{id}/finalize/`: validate that all required block tests are present
-(OTM 10 / OPSTTM 23) — missing → `400` with the missing list — then trigger scoring
-(B7) → `Evaluation`, set `status=finalized`, return the evaluation id. Scoring for a
-single athlete is computed synchronously.
-Edge case: finalize requires the complete required set for the block. Idempotent:
-re-finalize recomputes/replaces the Evaluation. The scoring logic itself is B7; this
-task wires the trigger + validation.
+`POST /sessions/{id}/finalize/`: validate that all **5 battery exercises** are present —
+missing → `400` with the missing list — then trigger scoring (B7) → `Evaluation`, set
+`status=finalized`, return the evaluation id. Scoring for a single athlete is computed
+synchronously.
+Edge case: finalize requires the complete 5-exercise battery for the athlete's group.
+Idempotent: re-finalize recomputes/replaces the Evaluation. If any exercise has no matching
+norm the indicator is `unscored` and finalize is blocked with an admin signal
+(SCORING.md §7). The scoring logic itself is B7; this task wires the trigger + validation.
 
 # BCKND-42 — Measurements tests
 
-pytest: session CRUD, bulk entry, validation (ranges, required set), finalize
-success + failure (missing tests), scoping. Factories.
-Edge case: finalize with an incomplete set → `400`; draft vs finalized editability;
+pytest: session CRUD, battery-driven entry (returns the correct 5 per age×gender), bulk
+entry, validation (`value_type` ranges, mm:ss, signed flexibility, required 5), finalize
+success + failure (missing exercises), scoping. Factories.
+Edge case: finalize with an incomplete battery → `400`; draft vs finalized editability;
 scope. Once this task is finished, B6 is closed (the engine is B7).
 
 ---
 
 **BLOCK B7 — Scoring engine ★** (BCKND-43 … BCKND-48) · dependency: BCKND-B4, BCKND-B6
-Goal: the pure scoring domain — BMI, norm→score, OTM/OPSTTM strategies, aggregation,
-level/color, the Evaluation snapshot, and the recompute task. The heart of the system.
+Goal: the pure **single-scheme** scoring domain — raw → points (10/8/6) via bands +
+clamp, the battery resolver, the total → daraja mapping, the Evaluation snapshot, and
+the recompute task. The heart of the system. (The OTM/OPSTTM two-strategy model is
+parked — DEFERRED.)
 
 ---
 
 # BCKND-43 — Evaluation + IndicatorScore models
 
-`apps/scoring`. `Evaluation` (`session` 1:1, `athlete` denorm, `block`, **denorm
-ranking dims** `region`/`sport_type`/`age_category`/`gender`/`session_date`,
-`bmi_value`, `bmi_category`, `physical_pct`, `functional_pct`, `morpho_pct`,
-`psych_pct`, `total_points`, `percentage`, `level`, `color`, `ranking_score`,
-`computed_at`). `IndicatorScore` (`evaluation` FK, `test_type` FK, `category`,
-`raw_value`, `score` 1–5). Migration with a **composite index** on
-`(region, sport_type, age_category, gender, block, ranking_score)`.
-Edge case: Evaluation is a snapshot (cheap, reproducible rating reads). `session`
-1:1 unique. `ranking_score = percentage`. Ranking dims are denormalized/snapshotted
-so `RANK()` (B8) scans one indexed table without joining a possibly-transferred
-athlete; `age_category` is the snapshot computed at `session_date`.
+`apps/scoring`. `Evaluation` (`session` 1:1, `athlete` denorm, **denorm ranking dims**
+`age_category`(snapshot)/`gender`/`region`/`sport_type`/`session_date`, `physical_total`
+0–50, `daraja` I|II|III|none, `color` green|yellow|red, `ranking_score` (= physical_total),
+`computed_at`). `IndicatorScore` (`evaluation` FK, `exercise` FK, `raw_value`, `points`).
+Migration with a **composite index** on `(region, sport_type, age_category, gender,
+ranking_score)` — no block.
+Edge case: Evaluation is a snapshot (cheap, reproducible rating reads). `session` 1:1
+unique. `ranking_score = physical_total`. Ranking dims are denormalized/snapshotted so
+`RANK()` (B8) scans one indexed table without joining a possibly-transferred athlete;
+`age_category` is the snapshot computed at `session_date`.
 
-# BCKND-44 — BMI computation + category (domain)
+# BCKND-44 — points.py: raw → points (10/8/6) via bands + clamp
 
-Pure functions `scoring/domain/bmi.py`: `bmi(weight_kg, height_cm)` and
-`bmi_category(value)` per SCORING.md §6 (6 categories). No DB.
-Edge case: guard against missing/zero height-weight (no divide-by-zero).
-Informational for OTM; scored in OPSTTM morpho via a dedicated BMI norm.
+A pure function `resolve_points(norm, raw_value) → int` in `scoring/domain/points.py`:
+find the `NormBand` whose `[lower, upper)` contains `raw_value` → its `points` (10/8/6);
+clamp out-of-range per SCORING.md §3.5 — better than the best band → 10, worse than the
+worst band → 0. No DB, fully unit-testable.
+Edge case: `[lower, upper)` boundaries — no double-counting at band joins. The resolver is
+direction-agnostic: `direction` is already baked into how the bands were entered
+(SCORING.md §3.4). mm:ss values are normalized to seconds before comparison; signed
+flexibility compared as signed cm. Below the worst → 0 (below norm, never an error); above
+the best → 10.
 
-# BCKND-45 — Evaluation strategies (OTM / OPSTTM) (domain)
+# BCKND-45 — battery.py + daraja.py (domain resolvers)
 
-`scoring/domain/strategies.py`: a strategy interface +
-`OtmEvaluationStrategy` (10 tests → 50 → % → 5 levels; BMI informational) and
-`OpsttmEvaluationStrategy` (4 categories, **equal-weighted average** → % → 3
-levels; BMI inside morpho). Each takes scored indicators + level thresholds and
-returns the category %s, percentage, level, color. Pure, unit-testable.
-Edge case: OPSTTM categories are equally weighted (avg of the 4 category %s), NOT a
-flat sum (DATA_MODEL decision). level/color come from `LevelThreshold` (data, B4).
-Strategy is picked by block. Fully testable without a DB.
+`scoring/domain/battery.py`: `battery_for(age_category, gender)` → the ordered 5
+`Exercise`s the athlete performs. `scoring/domain/daraja.py`: `daraja_for(physical_total)`
+→ `(level, color)` via `DarajaThreshold` (I: 48–50 · II: 38–46 · III: 30–36 · <30: none;
+color green/yellow/red). Pure, unit-testable.
+Edge case: the battery differs by group — young (toifa 1–3): 30 m + argʻimchoq; older
+(toifa 4–5): 100 m + 400 m; #4/#5 differ by gender (SCORING.md §2). daraja bounds come from
+`DarajaThreshold` (data, B4), not hardcoded. `≥48` may flag "special-requirement direct" and
+`=50` "gʻoliblik" as optional display flags derived from the total.
 
 # BCKND-46 — Scoring service (orchestration) + finalize wiring
 
-`scoring/services.py` `evaluate_session(session)`: for each measurement →
-`get_norm` + `resolve_score` (B4) → `IndicatorScore`; compute BMI; run the block
-strategy → `Evaluation` snapshot; trigger recommendation generation (B10 hook).
-Wire BCKND-41's finalize to call this.
-Edge case: an unscored required indicator (no norm) is surfaced, not silently
-treated as 0. Wrap Evaluation + IndicatorScores in one transaction. Re-finalize
-replaces the prior Evaluation.
+`scoring/services.py` `evaluate_session(session)`: resolve the battery; for each
+measurement → `get_norm` (B4) + `resolve_points` (BCKND-44) → `IndicatorScore`; Σ points →
+`physical_total`; `daraja_for(total)` → daraja/color; write the `Evaluation` snapshot;
+trigger recommendation generation (B10 hook). Wire BCKND-41's finalize to call this.
+Edge case: an unscored indicator (no norm) is surfaced, not silently treated as 0 —
+finalize is blocked (SCORING.md §7). Wrap Evaluation + IndicatorScores in one transaction.
+Re-finalize replaces the prior Evaluation. `ranking_score = physical_total`.
 
 # BCKND-47 — Recompute task (Celery)
 
@@ -645,37 +689,41 @@ historical norms. It invalidates the rating cache (B8) for the affected partitio
 
 # BCKND-48 — Scoring engine tests
 
-pytest: BMI calc + categories (boundaries); band-resolution integration; the OTM
-worked example from SCORING.md §9 (→ 82% / high); the OPSTTM worked example (§9 →
-82% / high); unscored handling; finalize → Evaluation end-to-end.
-Edge case: reproduce the SCORING.md §9 worked examples exactly; assert OPSTTM
-equal-weighting. Once this task is finished, B7 is closed.
+pytest: band resolution (in-range, both `[lower, upper)` boundaries, clamp high→10 /
+low→0); battery resolution per age×gender; the SCORING.md §9 worked examples exactly
+(14-yosh oʻgʻil bola → total 42 → II daraja; the 7-yosh 30 m/argʻimchoq battery; the qiz
+#5 = skameyka); total → daraja mapping; unscored handling; finalize → Evaluation end-to-end.
+Edge case: reproduce the SCORING.md §9 worked examples exactly (42 → II daraja 🟡). Assert
+the clamp behavior and the single-year vs 18–29 norm. Once this task is finished, B7 is closed.
 
 ---
 
 **BLOCK B8 — Rating & Ranking** (BCKND-49 … BCKND-52 + DVPS-7) · dependency: BCKND-B7
-Goal: rankings via Postgres `RANK()`, the "Top Athletes" feature, region ranking,
-and Redis caching + invalidation. Needs Celery Beat (DVPS-7) for periodic refresh.
+Goal: rankings via Postgres `RANK()` over `(region, sport_type, age_category, gender)` —
+**no block** — the "Top Athletes" feature, region ranking, and Redis caching +
+invalidation. Needs Celery Beat (DVPS-7) for periodic refresh.
 
 ---
 
 # BCKND-49 — Ranking selectors (RANK() over Evaluation)
 
 Selectors using Postgres window functions: rank athletes within
-`(region, sport_type, age_category, gender, block)` by `ranking_score DESC`;
-"Top athletes" (limit N); region ranking (count of high-level per region + avg).
-Only the latest Evaluation per athlete counts.
-Edge case: ties share a rank (`RANK()`); secondary display order = latest
-evaluation date, then name. The `age_category` filter → `birth_year` range.
-Historical evaluations are excluded (latest per athlete only).
+`(region, sport_type, age_category, gender)` by `ranking_score DESC` — **no block** in
+the partition (physical is block-independent; `sport_type` stays a partition/filter dim
+from the athlete so "top athletes in a sport" is answerable). "Top athletes" (limit N);
+region ranking (count of high-daraja per region + avg). Only the latest Evaluation per
+athlete counts.
+Edge case: ties share a rank (`RANK()`); secondary display order = latest evaluation date,
+then name. The `age_category` filter → `birth_year` range. Historical evaluations are
+excluded (latest per athlete only).
 
 # BCKND-50 — Rating API (top / athletes / regions)
 
 `apps/rating` endpoints per API.md §7: `GET /rating/top/`, `/rating/athletes/`,
-`/rating/regions/`, with filters + scoping. Each row returns `rank`, `ranking_score`,
-`level`, `color`.
-Edge case: scoping applies (a `region_admin` sees only their region's ranking).
-Athletes without an Evaluation are excluded.
+`/rating/regions/`, with filters + scoping. Each row returns `rank`, `ranking_score`
+(= physical_total), `daraja`, `color`.
+Edge case: scoping applies (a `region_admin` sees only their region's ranking). Athletes
+without an Evaluation are excluded. Filters: sport/region/age/gender (no block).
 
 # BCKND-51 — Redis caching + invalidation
 
@@ -683,7 +731,7 @@ Cache rating responses in Redis keyed by the normalized filter set; invalidate t
 affected partition when a new Evaluation is computed (BCKND-46) or recompute runs
 (BCKND-47). TTL as a safety net.
 Edge case: invalidate on Evaluation write for the matching
-`(region, sport, age, gender, block)` so rankings never go stale; TTL is only a
+`(region, sport, age, gender)` — no block — so rankings never go stale; TTL is only a
 backstop.
 
 # DVPS-7 — Celery Beat database scheduler (django-celery-beat) — needed by B8
@@ -699,7 +747,7 @@ B12) depend on.
 
 # BCKND-52 — Rating tests
 
-pytest: ranking order (desc, ties), top-N, region ranking counts, cache hit +
+pytest: ranking order (desc, ties), top-N, region ranking counts (by daraja), cache hit +
 invalidation, scoping.
 Edge case: invalidation test (a new Evaluation changes the cached top); tie-break
 order. Once this task is finished, B8 is closed.
@@ -707,24 +755,24 @@ order. Once this task is finished, B8 is closed.
 ---
 
 **BLOCK B9 — Comparison** (BCKND-53 … BCKND-54) · dependency: BCKND-B7
-Goal: a side-by-side endpoint for 2–3 athletes.
+Goal: a side-by-side endpoint for 2–3 athletes (physical results).
 
 ---
 
 # BCKND-53 — Comparison endpoint
 
 `GET /comparison/?athletes=1,2,3` → side-by-side: each athlete's latest Evaluation
-(block, `ranking_score`, level, category %s, indicator scores) plus the `leader`.
-`apps/comparison` is thin — it reads the scoring selectors. Scoping applies.
+(`physical_total`, `daraja`, `color`, per-exercise `IndicatorScore` points) plus the
+`leader`. `apps/comparison` is thin — it reads the scoring selectors. Scoping applies.
 Edge case: 2–3 athletes only (validate count); all must be in scope (else `403`);
-athletes without an Evaluation are shown as no-data. Cross-block comparison (OTM vs
-OPSTTM) — `ranking_score` is comparable (% for both) but indicator sets differ, so
-surface per-category where available.
+athletes without an Evaluation are shown as no-data. Compare `physical_total` (0–50) and
+per-exercise points; batteries differ by age×gender, so surface per-exercise where the
+exercise matches.
 
 # BCKND-54 — Comparison tests
 
-pytest: 2 and 3 athletes, leader detection, scope enforcement, missing-evaluation
-handling, count validation.
+pytest: 2 and 3 athletes, leader detection (highest `physical_total`), scope enforcement,
+missing-evaluation handling, count validation.
 Edge case: `>3` or `<2` athletes → `400`; out-of-scope athlete → `403`. Once this
 task is finished, B9 is closed.
 
@@ -737,25 +785,26 @@ Goal: rule-based recommendations generated on `finalize`, with admin-managed rul
 
 # BCKND-55 — RecommendationRule + Recommendation models
 
-`RecommendationRule` (`test_type`/`category`, `condition` (level/score threshold),
+`RecommendationRule` (`exercise` FK / category, `condition` (points/total threshold),
 `template_text`, `is_active`). `Recommendation` (`evaluation` FK, `rule` FK, `text`,
-`category`, `created_at`). Migration. Django admin for rules (TZ #16).
+`created_at`). Migration. Django admin for rules (TZ #16).
 Edge case: rules are DATA (admin-editable), not hardcoded. `condition` is a simple
-declarative shape (indicator/category, operator, threshold). Keep it evaluable
-without code changes.
+declarative shape (exercise/total, operator, threshold) — e.g. "turnikda tortilish
+points ≤ 6" or "physical_total < 30". Keep it evaluable without code changes.
 
 # BCKND-56 — Recommendation generation (on finalize)
 
 A service `generate_recommendations(evaluation)`: evaluate active rules against the
-evaluation's indicator scores / category %s and create `Recommendation` rows. Hook
-into BCKND-46 (scoring service). Expose `GET /athletes/{id}/recommendations/`
+evaluation's per-exercise points / `physical_total` and create `Recommendation` rows.
+Hook into BCKND-46 (scoring service). Expose `GET /athletes/{id}/recommendations/`
 (latest evaluation) + `/recommendation-rules/` CRUD (`super_admin`).
 Edge case: regenerate on re-finalize (clear old, create new). Empty if nothing
-matches. Rule evaluation is pure/declarative → unit-testable.
+matches. Rule evaluation is pure/declarative → unit-testable. Samples from SCORING.md §8
+(turnikda tortilish ≤ 6 → strength low; physical_total < 30 → below badge norm).
 
 # BCKND-57 — Recommendation tests
 
-pytest: rule matching (threshold met / not met), generation on finalize,
+pytest: rule matching (threshold met / not met on points/total), generation on finalize,
 regeneration, rules CRUD permissions.
 Edge case: a rule firing exactly at the threshold boundary; rules CRUD gated to
 `super_admin`. Once this task is finished, B10 is closed.
@@ -763,8 +812,8 @@ Edge case: a rule firing exactly at the threshold boundary; rules CRUD gated to
 ---
 
 **BLOCK B11 — Excel import/export** (BCKND-58 … BCKND-61 + DVPS-8) · dependency: BCKND-B5, BCKND-B6
-Goal: bulk Excel upload pipeline (staging → validation → commit) + template. Needs a
-shared media volume (DVPS-8).
+Goal: bulk Excel upload pipeline for **physical** measurements (staging → validation →
+commit) + template. Needs a shared media volume (DVPS-8).
 
 ---
 
@@ -772,9 +821,11 @@ shared media volume (DVPS-8).
 
 `ImportBatch` (`uploaded_by`, `file`, `status`, `row_count`, `error_count`,
 `created_at`). `ImportRow` (`batch` FK, `row_number`, `raw_data` json, `status`,
-`errors` json). `GET /imports/template/?block=` → an Excel template (openpyxl).
-Edge case: template columns match the block's required fields + test set. The
-uploaded file is stored in MEDIA (needs the DVPS-8 media volume).
+`errors` json). `GET /imports/template/?age_category=&gender=` → an Excel template
+(openpyxl) with the group's 5 battery exercises as columns.
+Edge case: template columns match the athlete-identifying fields + the 5 battery
+exercises for the requested age×gender. The uploaded file is stored in MEDIA (needs the
+DVPS-8 media volume).
 
 # BCKND-59 — Import upload + async validation (Celery)
 
@@ -782,17 +833,17 @@ uploaded file is stored in MEDIA (needs the DVPS-8 media volume).
 task to parse + validate rows into `ImportRow` (`validated`/`error`).
 `GET /imports/{id}/` → status + rows + errors. openpyxl parse.
 Edge case: validation runs in the worker (large files); each row is validated
-independently (athlete match, value ranges, required tests); errors are collected
-per row — the batch is not aborted on the first error. **Upload security:** validate
-file type/extension + size limit + max row count; sanitize against CSV/Excel formula
-injection (cells starting with `= + - @` neutralized); never trust client-supplied
-values.
+independently (athlete match, `value_type` ranges, all 5 battery exercises present);
+errors are collected per row — the batch is not aborted on the first error. **Upload
+security:** validate file type/extension + size limit + max row count; sanitize against
+CSV/Excel formula injection (cells starting with `= + - @` neutralized); never trust
+client-supplied values.
 
 # BCKND-60 — Import commit
 
 `POST /imports/{id}/commit/` → create athletes/sessions/measurements from the
 `validated` rows (skip `error` rows) in a transaction; status `committed`. Shares
-the same validation/finalize rules as manual entry.
+the same validation/finalize rules as manual entry (the 5-exercise battery).
 Edge case: only validated rows commit; partial commit is allowed (error rows skipped
 + reported). Guard against re-commit (don't double-insert).
 
@@ -807,32 +858,33 @@ recreation.
 
 # BCKND-61 — Import tests
 
-pytest: template generation, upload → validation (valid + error rows), commit (skips
-errors), permissions/scoping.
+pytest: template generation (per age×gender battery), upload → validation (valid + error
+rows), commit (skips errors), permissions/scoping.
 Edge case: a file with mixed valid/invalid rows → partial commit + error report;
 re-commit guard. Once this task is finished, B11 is closed.
 
 ---
 
 **BLOCK B12 — Reports** (BCKND-62 … BCKND-64 + DVPS-9) · dependency: BCKND-B8
-Goal: async PDF/Word/Excel report generation with status/download. Needs WeasyPrint
-system libs (DVPS-9) and the shared media volume (DVPS-8).
+Goal: async PDF/Word/Excel report generation for **physical** results with
+status/download. Needs WeasyPrint system libs (DVPS-9) and the shared media volume (DVPS-8).
 
 ---
 
 # BCKND-62 — Report model + request API
 
-`Report` (`type` athlete|region|sport|opsttm|otm|republic, `format` pdf|word|excel,
+`Report` (`type` athlete|region|sport|republic, `format` pdf|word|excel,
 `params` json, `requested_by`, `status` pending|processing|done|failed, `file`,
 `created_at`, `completed_at`). `POST /reports/` → `202` + id; `GET /reports/`,
 `/reports/{id}/`, `/reports/{id}/download/`. `apps/reports`.
 Edge case: scope the `params` (a `region_admin` can only request their region).
-Status lifecycle pending → processing → done|failed. Download only when `done`.
+Status lifecycle pending → processing → done|failed. Download only when `done`. Report
+content is physical (physical_total, daraja, per-exercise points, rankings).
 
 # BCKND-63 — Report generators (Excel/Word/PDF) + Celery task
 
 Celery task `generate_report(report_id)`: build the dataset (rating/scoring/athlete
-selectors), render to the chosen format — openpyxl (Excel), python-docx (Word),
+selectors — physical), render to the chosen format — openpyxl (Excel), python-docx (Word),
 WeasyPrint (PDF) — save to MEDIA, set status.
 Edge case: runs in the worker (heavy); WeasyPrint needs system libs (DVPS-9); files
 saved to the shared media volume (DVPS-8). On failure set `status=failed` + error;
@@ -872,15 +924,15 @@ mutations only, never reads. Don't recursively log AuditLog itself.
 
 # BCKND-66 — Dashboard / stats endpoint
 
-`GET /stats/overview/` → role-scoped counts (`athletes_total`, `by_block`,
-`by_level`, `regions`, `recent_sessions`) per API.md §12.
+`GET /stats/overview/` → role-scoped counts (`athletes_total`, `by_daraja`
+(I/II/III/none), `by_region`, `by_sport`, `recent_sessions`) per API.md §12.
 Edge case: numbers are limited to the user's scope (region/org). Use DB-side
 aggregate queries and cache the result.
 
 # BCKND-67 — Audit & stats tests
 
 pytest: audit entries on create/update/delete, IP capture, stats scoping +
-correctness.
+correctness (by_daraja).
 Edge case: stats respect scope (a `region_admin` sees only their region's counts);
 audit captures the acting user. Once this task is finished, B13 is closed — all
 BCKND blocks are now split.
@@ -898,7 +950,7 @@ and dev docs.
 `Makefile` targets wrapping `docker compose`: `up`, `down`, `logs`, `migrate`,
 `makemigrations`, `shell`, `test`, `lint`, `format`, `seed`, `createsuperuser`,
 `psql`. A `bootstrap` script: copy `.env.example`→`.env`, build, up, migrate, seed.
-`seed` runs all idempotent seeders in order (catalog → test types → norms).
+`seed` runs all idempotent seeders in order (catalog → exercises → `seed_physical`).
 Edge case: targets run from the repo root; `seed` must be idempotent (re-runnable).
 Document targets in the README.
 
@@ -1050,10 +1102,10 @@ accept the localStorage tradeoff for tokens.
 # FRNTND-4 — UI kit + base layout primitives
 
 Configure a UI library (PrimeVue or Naive UI), base components (button, table, form
-inputs, modal, toast), theme, and the **English-enum → Uzbek-label** map (levels,
-categories) so the UI reads in Uzbek. Responsive base (TZ #15 "mobile-friendly").
+inputs, modal, toast), theme, and the **English-enum → Uzbek-label** map (daraja,
+colors) so the UI reads in Uzbek. Responsive base (TZ #15 "mobile-friendly").
 Edge case: pick ONE UI kit and stick to it. The product UI is Uzbek-facing — this is
-where English enum keys (high/normal/low, etc.) map to Uzbek display labels.
+where English enum keys (daraja I/II/III, green/yellow/red) map to Uzbek display labels.
 
 ---
 
@@ -1094,18 +1146,19 @@ Goal: reference-data views + reusable pickers, plus norm management for super_ad
 
 # FRNTND-8 — Catalog browse views + reusable pickers
 
-Read views for reference data (regions, sport types, age categories, test types) and
-reusable select components (region/district cascade, sport picker, etc.) used across
-forms and filters. Cache catalog in a Pinia store.
+Read views for reference data (regions, sport types, TOIFA age categories, exercises,
+batteries) and reusable select components (region/district cascade, sport picker, etc.)
+used across forms and filters. Cache catalog in a Pinia store.
 Edge case: catalog rarely changes → cache it; the reusable pickers are shared by
 athlete forms (F4) and rating filters (F7).
 
 # FRNTND-9 — Norms & catalog management (super_admin)
 
-Admin UI the SPA owns: a Norm + bands editor and any catalog CRUD not left to Django
-admin. Gated to super_admin.
-Edge case: the band editor enforces 5-band coverage client-side (mirror BCKND-26);
-super_admin only; pure reference CRUD can stay in Django admin if simpler.
+Admin UI the SPA owns: a Norm + bands editor (`NormBand` 10/8/6 rows) and the
+`DarajaThreshold` editor, plus any catalog CRUD not left to Django admin. Gated to
+super_admin.
+Edge case: the band editor enforces non-overlapping `[lower, upper)` bands client-side
+(mirror BCKND-26); super_admin only; pure reference CRUD can stay in Django admin if simpler.
 
 ---
 
@@ -1117,70 +1170,78 @@ Goal: athlete list, card, and create/edit form.
 # FRNTND-10 — Athlete list + filters
 
 A paginated athlete table with filters
-(region/district/org/sport/gender/age/block/coach/search); the server enforces
+(region/district/org/sport/gender/age/coach/search); the server enforces
 scope. Row → athlete card.
 Edge case: filters map to query params (API.md §5); don't duplicate scope logic
 client-side; debounce search; loading/empty states.
 
 # FRNTND-11 — Athlete card page
 
-Athlete detail: personal data, BMI, session history, latest evaluation summary,
-recommendations, and a link to comparison. Tabbed.
-Edge case: handle athletes with no evaluation yet (no-data states); show derived age
-category + block.
+Athlete detail: personal data, derived TOIFA age category + block, session history,
+latest evaluation summary (physical_total + daraja + color), recommendations, and a
+link to comparison. Tabbed.
+Edge case: handle athletes with no evaluation yet (no-data states); show the derived
+TOIFA + block; BMI is deferred (not shown).
 
 # FRNTND-12 — Athlete create/edit form
 
-Form with reference pickers (region→district cascade, org, sport, weight category,
-coach), validation, role-gated writes.
+Form with reference pickers (region→district cascade, org, sport, coach),
+validation, role-gated writes.
 Edge case: district depends on region (cascade); client validation mirrors the
-server (coach role, district ∈ region); only write-allowed roles see the form.
+server (coach role, district ∈ region); only write-allowed roles see the form. No
+weight-category picker (deferred).
 
 ---
 
 **BLOCK F5 — Measurements UI** (FRNTND-13 … FRNTND-15) · dependency: BCKND-B6, BCKND-B11
-Goal: session + measurement entry, finalize, and the Excel import UI.
+Goal: the physical battery entry form, finalize, and the Excel import UI.
 
 ---
 
-# FRNTND-13 — Session + measurement entry
+# FRNTND-13 — Session + battery entry
 
-Create a session (date, height, weight) and enter raw values via a form generated
-from the block's TestType set (OTM 10 / OPSTTM 23); save as draft.
-Edge case: the form is data-driven from TestType; validate ranges client-side; only
-draft is editable.
+Create a session (date; optional height/weight placeholders) and enter raw values via a
+form **generated from the athlete's `TestBattery`** — the 5 age×gender-specific exercises,
+each rendered per its `value_type` (mm:ss for times, signed cm for flexibility, integer
+counts); save as draft.
+Edge case: the form is data-driven from the battery endpoint (BCKND-40) — 5 inputs, not a
+fixed set; validate ranges/format client-side per `value_type`; only draft is editable; if
+the group's battery is undefined, show an "admin must configure" message.
 
 # FRNTND-14 — Finalize + result display
 
-Finalize action (server validates the required set); on success show the computed
-evaluation (score, %, level, color). Handle the missing-tests `400`.
-Edge case: show which tests are missing on `400`; finalized → read-only; show the
-color indicator immediately.
+Finalize action (server validates the 5 required exercises); on success show the computed
+evaluation — `physical_total` (0–50), `daraja` (I/II/III/none), `color`, and per-exercise
+`points` (10/8/6). Handle the missing-exercises `400`.
+Edge case: show which battery exercises are missing on `400`; finalized → read-only; show
+the daraja color indicator immediately; scoring is server-computed (no client scoring).
 
 # FRNTND-15 — Excel import UI
 
-Template download, upload, per-row validation progress/errors, commit of valid rows;
-polls `/imports/{id}`.
+Template download (per age×gender battery), upload, per-row validation progress/errors,
+commit of valid rows; polls `/imports/{id}`.
 Edge case: show per-row errors; allow partial commit; poll async status; large-file
 upload feedback.
 
 ---
 
 **BLOCK F6 — Results UI** (FRNTND-16 … FRNTND-17) · dependency: BCKND-B7
-Goal: the evaluation result view and history/trend.
+Goal: the physical evaluation result view and history/trend.
 
 ---
 
 # FRNTND-16 — Evaluation result view
 
-Detailed evaluation: per-category breakdown (physical/functional/morpho/psych %s),
-per-indicator scores, BMI + category, overall level + color, recommendations.
-Edge case: render OTM (5-level, 2 categories) vs OPSTTM (3-level, 4 categories)
-layouts; color-coded; Uzbek level labels.
+Detailed evaluation: the 5 per-exercise scores (raw value → 10/8/6 points),
+`physical_total`, `daraja` + `color`, and recommendations. Uzbek daraja labels;
+color-coded.
+Edge case: render the 5 battery exercises with their raw values and points; show the total,
+the daraja badge and color; BMI / other categories are deferred (not shown).
 
 # FRNTND-17 — Evaluation history + trend
 
-An athlete's evaluations over time (table + a simple trend chart of `ranking_score`).
+An athlete's evaluations over time (table + a simple trend chart of `ranking_score`
+(= physical_total), and the daraja per date).
 Edge case: the chart handles 1 vs many points; this is the coach's monitoring view
 (progress over time).
 
@@ -1193,14 +1254,15 @@ Goal: the rating table, the headline "Top Athletes" feature, and region ranking.
 
 # FRNTND-18 — Rating table + Top Athletes
 
-Rating views: filters (sport/region/age/gender/block), a ranked table
-(rank/score/level/color), with "Top Athletes" prominent — the headline feature (TZ).
+Rating views: filters (sport/region/age/gender — no block), a ranked table
+(rank/score/**daraja**/color), with "Top Athletes" prominent — the headline feature (TZ).
 Edge case: the "Top Athletes" filter set (sport+region+age+gender) is the headline
-feature; color indicators; scoped by role.
+feature; daraja color indicators; scoped by role.
 
 # FRNTND-19 — Region ranking view
 
-A region-ranking table (high-count per region, average) for ministry/super_admin.
+A region-ranking table (high-daraja count per region, average physical_total) for
+ministry/super_admin.
 Edge case: visible to ministry/super_admin (region_admin sees own); optional
 chart/map.
 
@@ -1213,10 +1275,10 @@ Goal: the side-by-side comparison view.
 
 # FRNTND-20 — Comparison view
 
-Pick 2–3 athletes and show them side-by-side: scores, category %s,
-indicator-by-indicator, with the leader highlighted.
-Edge case: 2–3 only; highlight the leader and the per-indicator winner; handle
-cross-block comparison gracefully.
+Pick 2–3 athletes and show them side-by-side: physical_total, daraja,
+exercise-by-exercise points, with the leader highlighted.
+Edge case: 2–3 only; highlight the leader (highest physical_total) and the per-exercise
+winner; note batteries differ by age×gender.
 
 ---
 
@@ -1228,7 +1290,7 @@ Goal: recommendations display and the report request/download flow.
 # FRNTND-21 — Recommendations view
 
 Show generated recommendations on the athlete/evaluation; (admin) manage
-recommendation rules.
+recommendation rules (conditions on points/total).
 Edge case: recommendations come from the latest evaluation; rules management gated to
 super_admin.
 
@@ -1248,14 +1310,14 @@ Goal: the role-scoped dashboard with stats and charts.
 
 # FRNTND-23 — Dashboard / home
 
-A role-scoped dashboard: key counts (athletes, by block, by level), recent activity,
+A role-scoped dashboard: key counts (athletes, by daraja), recent activity,
 quick links; fed by `/stats/overview`.
 Edge case: role-scoped numbers; different emphasis per role (ministry → national,
 coach → own athletes).
 
 # FRNTND-24 — Charts + polish
 
-Charts (level distribution, by region), responsive polish, and consistent
+Charts (daraja distribution, by region), responsive polish, and consistent
 loading/empty/error states + Uzbek i18n across the app.
 Edge case: charts degrade gracefully with little data; consistent Uzbek labels
 (English enum → Uzbek map); mobile responsiveness (TZ #15). Once this task is
@@ -1303,8 +1365,8 @@ the period; combine with role scope; no period entity (derived from `session_dat
 
 Set up vue-i18n with 4 locales — **uz, ru, kk, en** — for UI strings only. A locale
 switcher in the app shell; persist the choice; default `uz`. The
-English-enum → localized-label maps (levels, categories, BMI) live in the locale files.
-Edge case: reference/content data (region/sport/test names, recommendation texts)
+English-enum → localized-label maps (daraja, colors) live in the locale files.
+Edge case: reference/content data (region/sport/exercise names, recommendation texts)
 stays Uzbek (decision #13) — only UI chrome + enum labels are translated; fall back
 to `uz` for missing keys.
 
@@ -1319,7 +1381,67 @@ URL/query for shareable links.
 # DVPS-20 — QA: TZ → task traceability matrix + UAT checklist (QA/process)
 
 Create `docs/TRACEABILITY.md` mapping every TZ requirement (the 18 sections + the
-two-block scoring rules + the "Top Athletes" feature) to the implementing task(s) and
-an acceptance check; plus a UAT checklist for client sign-off.
+physical 10/8/6 → daraja scoring + the "Top Athletes" feature) to the implementing
+task(s) and an acceptance check; plus a UAT checklist for client sign-off.
 Edge case: every TZ requirement must map to ≥1 task (coverage gaps surface here);
 keep it updated as tasks change; this is the QA acceptance basis.
+
+---
+
+## DEFERRED (parked — see `docs/DEFERRED.md`)
+
+The physical-first re-scope parked the tasks below. They are **not deleted** — the design
+is correct in spirit but cannot be built until the client delivers the functional /
+morphofunctional / psychological criteria (and their real structure may differ, as the
+physical criteria did). One-line rationale per item; revisit when those criteria arrive.
+
+# DEF-1 — WeightCategory model (was part of BCKND-18)
+
+`WeightCategory(sport_type, gender, name, min_kg, max_kg)` + the `weight-categories`
+API/filter. Rationale: weight belongs to the morphofunctional category, which has no
+criteria yet; the physical scheme groups by age × gender only, and `weight_category` is
+not on the Athlete either.
+
+# DEF-2 — TestType block/category model + OTM/OPSTTM test seed (was BCKND-19, BCKND-24)
+
+The old `TestType(block, category, unit, direction, …)` model and the OTM-10
+(5 physical + 5 functional) / OPSTTM morpho(7) + psych(6) test seed. Rationale: replaced by
+the block-independent `Exercise` pool + `TestBattery`; the non-physical test lists
+(functional/morpho/psych) wait for real criteria (`DEFERRED.md` §2).
+
+# DEF-3 — Sport/block-specific norms + lookup fallback (was part of BCKND-26/27)
+
+`Norm.sport_type` / `Norm.block` and the `sport+age+gender → age+gender` lookup fallback.
+Rationale: physical norms are sport- and block-independent; the lookup is now an exact
+numeric-age match (`DEFERRED.md` §4).
+
+# DEF-4 — LevelThreshold (percentage → 5/3 levels) (was BCKND-30)
+
+The OTM 5-level / OPSTTM 3-level percentage cut-offs config + seed. Rationale: physical uses
+`physical_total` (0–50) → `DarajaThreshold` (I/II/III), not a percentage → 5/3-level mapping.
+
+# DEF-5 — BMI computation + category (was BCKND-44)
+
+`bmi(weight_kg, height_cm)` + `bmi_category(value)` (7 categories). Rationale: BMI is
+morphofunctional and informational only, with no active criteria (`DEFERRED.md` §3).
+`TestSession.height_cm`/`weight_kg` remain nullable placeholders for this future work.
+
+# DEF-6 — OTM/OPSTTM evaluation strategies (was BCKND-45)
+
+`OtmEvaluationStrategy` / `OpsttmEvaluationStrategy` (strategy polymorphism; per-block
+percentage + 5/3 levels + equal-weighted category average). Rationale: superseded by the
+single physical scheme; `Organization.type` is now a classification attribute only
+(`DEFERRED.md` §1).
+
+# DEF-7 — Multi-category Evaluation fields + non-physical report types (touched BCKND-43, BCKND-62)
+
+The multi-category `Evaluation` fields (`bmi_value`, `physical_pct`/`functional_pct`/
+`morpho_pct`/`psych_pct`, `percentage`, `level`) and the OTM/OPSTTM report types. Rationale:
+how physical + functional + morpho + psych combine into one verdict is undefined until those
+criteria exist (`DEFERRED.md` §4); Evaluation now stores `physical_total`/`daraja` only.
+
+# DEF-8 — Excel bulk-import of non-physical norms (touched B4)
+
+Bulk norm import for the functional/morpho/psych categories. Rationale: only the physical
+tables exist today; they load via `seed_physical` (BCKND-32). Other-category import waits
+for criteria (`DEFERRED.md` §4).

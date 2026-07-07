@@ -1,177 +1,135 @@
-# SPORT-DIAGNOSTIKA.UZ — Scoring specification
+# SPORT-DIAGNOSTIKA.UZ — Scoring specification (physical readiness)
 
-The complete logic of the scoring engine. Models: `DATA_MODEL.md`.
+The complete logic of the scoring engine for **physical readiness** — the one category
+with real client criteria. Models: `DATA_MODEL.md`. Parked categories: `DEFERRED.md`.
 This document is the source of the `apps/scoring/domain/` implementation.
 
-> Status: **methodology agreed**. The exact norm numbers (bounds) are obtained
-> from a sports-science specialist — the samples below are **illustrative**.
+> Status: **methodology agreed** from the client's `Jismoniy tayyorgarlik mezonlari`
+> tables. The exact band numbers are **data** (seeded from those tables), not code.
 
 ---
 
 ## 1. Principle
 
-A raw test result (`Measurement.raw_value`) → is converted to a **score of 1–5**,
-via the `Norm` + `NormBand` table. No bound lives in the code — everything is
-data. Score → category percentage → overall percentage → level → color.
+A raw exercise result (`Measurement.raw_value`) → **points (10 / 8 / 6)** via the
+`Norm` + `NormBand` table. No bound lives in code — everything is data. Sum the 5
+exercises → total (max 50) → **daraja (I / II / III)** via `DarajaThreshold`.
 
 ```
-raw_value ──(NormBand)──► score 1-5 ──(aggregation)──► category % ──► overall %
-                                                                        │
-                                                          level + color ◄┘
+raw_value ──(NormBand)──► points 10/8/6 ──(Σ over 5 exercises)──► total 0–50
+                                                                     │
+                                                    daraja + color ◄─┘
 ```
+
+There is **one scheme** (block-independent). The two-strategy OTM/OPSTTM model is parked
+(`DEFERRED.md`).
 
 ---
 
-## 2. Test/indicator catalog (TestType seed)
+## 2. Exercise pool & batteries
 
-Each `TestType`: `block · category · unit · direction`.
-`direction`: `lower_is_better` (time — less = better) or `higher_is_better`.
+The pool has ~9 exercises; each `(age_category × gender)` **battery** picks an ordered 5.
+`Exercise.direction`: `lower_is_better` (time — less = better) or `higher_is_better`.
 
-### OTM block — 10 tests (5 + 5)
-
-| # | Test | category | unit | direction |
-|---|---|---|---|---|
-| 1 | Speed (30m sprint) | physical | s | lower |
-| 2 | Strength (pull-ups) | physical | reps | higher |
-| 3 | Endurance (1000m run) | physical | s | lower |
-| 4 | Agility (agility test) | physical | s | lower |
-| 5 | Flexibility/coordination | physical | cm | higher |
-| 6 | Resting heart rate | functional | bpm | lower |
-| 7 | Post-load heart rate | functional | bpm | lower |
-| 8 | Recovery time | functional | s | lower |
-| 9 | Vital lung capacity | functional | ml | higher |
-| 10 | Aerobic capacity | functional | ml/kg/min | higher |
-
-### OPSTTM block — 23 indicators (5 + 5 + 7 + 6)
-
-**Physical (5):** speed · strength · endurance · agility · coordination
-**Functional (5):** resting heart rate · post-load heart rate · recovery · lung capacity · aerobic capacity
-**Morphofunctional (7):** height · weight · **BMI** · chest circumference · grip strength · body composition (% fat) · somatotype
-**Psychological (6):** pre-start anxiety · stress tolerance · reaction speed · attention stability · self-confidence · emotional state
-
-> `direction` is set in the seed for each indicator. Psychological tests are
-> usually test scores (higher = better); pre-start anxiety may be inverted
-> (the specialist decides).
-
----
-
-## 3. Raw value → score (1–5) algorithm
-
-1. The matching `Norm` for the athlete's given test, age category, gender (and,
-   if needed, sport type, block) is found (lookup — §4).
-2. Whichever `NormBand` range the `raw_value` falls into, that band's `score`
-   is taken.
-3. **Bound rule:** a band range is `[lower_bound, upper_bound)` —
-   lower inclusive, upper exclusive (no ambiguity at the join points).
-4. **`direction` is accounted for not in the band but in the bound values** —
-   that is, norm bands are entered in the order matching `direction` (in the
-   30m sprint, a smaller time = score 5). The engine assigns a score based on
-   the band range and does not reason about direction.
-5. **Out of range (clamp):** a value better than even the best band →
-   `score = 5`; worse than even the worst band → `score = 1`. Never an
-   error.
-6. **If no norm is found:** no score is assigned, the indicator is marked
-   `unscored`, the admin is signaled (audit). The session is not finalized (§7).
-
-**Sample (illustrative)** — 30m sprint, age 14–15, male, OTM:
-
-| score | range (s) |
-|---|---|
-| 5 | < 4.5 |
-| 4 | 4.5 – 4.8 |
-| 3 | 4.8 – 5.2 |
-| 2 | 5.2 – 5.6 |
-| 1 | ≥ 5.6 |
-
----
-
-## 4. Norm lookup and fallback
-
-It takes the first match, going from specific to general:
-
-```
-1) test_type + age_category + gender + sport_type + block   (most specific)
-2) test_type + age_category + gender + block                (sport-agnostic)
-```
-
-A norm with `sport_type = null` = common to all sport types (mainly OTM and
-OPSTTM physical/functional). A sport-specific norm (OPSTTM, "matching the
-sport type's requirement") overrides the generic one.
-
-Norms are **versioned** (`valid_from`). Since an `Evaluation` is a snapshot,
-old evaluations are stored based on the norm at that time; if a norm changes,
-the admin recomputes via `POST /evaluations/recompute/`.
-
----
-
-## 5. Block aggregation
-
-### OTM — 5 levels
-
-```
-physical_points   = Σ score(5 physical tests)    # max 25
-functional_points = Σ score(5 functional tests)  # max 25
-total_points      = physical_points + functional_points   # max 50
-percentage        = total_points / 50 × 100
-ranking_score     = percentage
-```
-BMI is computed and its category/color is shown, but it **does not count toward
-the score**.
-
-| percentage | level | color |
+| Exercise (uz) | unit / value_type | direction |
 |---|---|---|
-| 90–100 | very high | 🟢 green |
-| 75–89 | high | 🟢 green |
-| 60–74 | medium | 🟡 yellow |
-| 40–59 | low | 🔴 red |
-| 0–39 | very low | 🔴 red |
+| 30 m ga yuqori startdan yugurish | s (`seconds`) | lower |
+| 100 m ga pastki startdan yugurish | s (`seconds`) | lower |
+| 400 m ga pastki startdan yugurish | daq:s (`minsec`→s) | lower |
+| Turgan joydan uzunlikka sakrash | sm (`count`/cm) | higher |
+| Gimnastika oʻrindigʻida oldinga egilish | sm signed (`cm_signed`) | higher |
+| Argʻimchoqda sakrash (1 daq) | marta (`count`) | higher |
+| Yerga tayanib qoʻllarni bukish (30 s) | marta (`count`) | higher |
+| Skameykaga tayanib qoʻllarni bukish (30 s) | marta (`count`) | higher |
+| Turnikda tortilish | marta (`count`) | higher |
 
-### OPSTTM — 3 levels (categories equally weighted)
-
-```
-physical_pct   = Σ score(physical)  / (5 × 5) × 100
-functional_pct = Σ score(functional)/ (5 × 5) × 100
-morpho_pct     = Σ score(morpho+BMI) / (7 × 5) × 100
-psych_pct      = Σ score(psychological)/ (6 × 5) × 100
-percentage     = (physical_pct + functional_pct + morpho_pct + psych_pct) / 4
-ranking_score  = percentage
-```
-
-| percentage (illustrative — confirmed by the specialist) | level | color |
-|---|---|---|
-| ≥ 75 | high | 🟢 green |
-| 50 – 74 | normal | 🟡 yellow |
-| < 50 | low | 🔴 red |
-
-> The OPSTTM 3-level bounds (75/50) are **approximate**; the exact value comes
-> from the specialist. It is recommended to store the level bounds too in a
-> configuration table similar to `Norm` (not hardcoded in the code) —
-> `LevelThreshold(block, lower, level)`.
+> **The battery differs by group** (this is the crux):
+> - **young (toifa 1–3, 7–12):** 30 m · uzunlikka sakrash · oldinga egilish ·
+>   push-ups (**boys**: yerga / **girls**: skameyka) · argʻimchoq.
+> - **older (toifa 4–5, 13–17):** 100 m · 400 m · uzunlikka sakrash · oldinga egilish ·
+>   (**boys**: turnikda tortilish / **girls**: skameyka).
+> - **adults (toifa 6, 18–29):** 100 m · argʻimchoq · uzunlikka sakrash · oldinga egilish
+>   · (**men**: turnikda tortilish / **women**: skameyka).
+>
+> So exercise #4/#5 differ **by gender**, and the running distances differ **by age**.
+> The exact 5 per group are stored in `TestBattery`/`BatteryItem`, seeded from the tables.
 
 ---
 
-## 6. BMI (body mass index)
+## 3. Raw value → points (10/8/6) algorithm
 
-```
-BMI = weight(kg) / height(m)²        # from TestSession.weight_kg, height_cm
-```
+1. Find the athlete's `age` at the session date; from it derive the `AgeCategory` (TOIFA)
+   and thus the `TestBattery` (which 5 exercises).
+2. For each battery exercise, find the matching `Norm`:
+   `exercise + gender + (age between age_min and age_max)` (§4).
+3. The `NormBand` whose `[lower_bound, upper_bound)` contains `raw_value` gives the
+   `points` (10, 8 or 6).
+4. **`direction` is baked into the bounds**, not reasoned about by the engine: for a
+   `lower_is_better` exercise the best (10-point) band holds the smallest numbers, exactly
+   as printed in the tables. The engine only checks which range the value falls into.
+5. **Clamp (out of range):** a value better than the best band → `points = 10`; worse
+   than the worst band → `points = 0` (below norm — never an error).
+6. **If no norm is found:** the indicator is `unscored`, finalize is blocked, the admin
+   is signalled (audit). (§7)
 
-Health category (both blocks — informational):
+**Sample (real — 14-yosh oʻgʻil bola, 100 m):**
 
-| BMI | category |
+| points | range (s) |
 |---|---|
-| < 16 | severe underweight |
-| 16 – 18.4 | underweight |
-| 18.5 – 24.9 | normal |
-| 25 – 29.9 | overweight |
-| 30 – 34.9 | obesity class I |
-| ≥ 35 | obesity class II |
+| 10 | 14.0 – 14.2 |
+| 8 | 14.3 – 14.5 |
+| 6 | 14.6 – 14.8 |
+| — | < 14.0 → clamp 10 ; > 14.8 → 0 |
 
-- **OTM:** only this category + color is shown (`bmi_category`). Not in the score.
-- **OPSTTM:** besides the category above, BMI is also converted to a **1–5 score**
-  within the morphofunctional category (via a separate `Norm` for BMI — for
-  example, the "normal" range = 5 points, decreasing the further out it goes).
-  The optimal BMI may differ by sport type (the specialist enters the norm).
+> mm:ss values (400 m e.g. `1:20`) are normalized to seconds before comparison.
+> Signed flexibility (`+9`, and negatives) is stored/compared as signed cm.
+
+---
+
+## 4. Norm lookup
+
+Physical norms are **sport- and block-independent**. Lookup is exact:
+
+```
+exercise + gender + age ∈ [age_min, age_max]   (+ latest valid_from ≤ session_date)
+```
+
+- 7–17: a norm per single year (`age_min = age_max = year`).
+- 18–29: one norm (`age_min = 18, age_max = 29`).
+- Norms are **versioned** (`valid_from`). Because `Evaluation` is a snapshot, old
+  evaluations keep the norm that applied then; after a norm change the admin recomputes
+  via `POST /evaluations/recompute/`.
+
+---
+
+## 5. Aggregation → total → daraja
+
+```
+physical_total = Σ points over the 5 battery exercises        # each 10/8/6/0 → max 50
+ranking_score  = physical_total
+daraja         = DarajaThreshold(physical_total)
+```
+
+| total | daraja | color |
+|---|---|---|
+| 48 – 50 | I daraja | 🟢 green |
+| 38 – 46 | II daraja | 🟡 yellow |
+| 30 – 36 | III daraja | 🔴 red |
+| < 30 | none (nishonsiz) | 🔴 red |
+
+- `≥ 48` also flags "next year recommended for the special requirement directly"
+  (from the tables); `= 50` = "gʻoliblik" (victory). These are display flags derived from
+  the total, optional to surface.
+- Daraja bounds live in `DarajaThreshold` (data). **Open item:** confirm they are
+  constant across all tables (they appear fixed at 48/38/30).
+
+---
+
+## 6. Deferred: BMI & other categories
+
+BMI, functional, morphofunctional and psychological scoring are **not** part of physical
+readiness and have **no criteria yet** — see `DEFERRED.md`. `TestSession.height_cm` /
+`weight_kg` are nullable placeholders for that future work.
 
 ---
 
@@ -179,58 +137,57 @@ Health category (both blocks — informational):
 
 | Case | Behavior |
 |---|---|
-| Incomplete session (block tests not complete) | `finalize` is rejected → `400`, the list of missing tests is returned |
-| No norm found | the indicator is `unscored`, the session is not finalized, the admin is signaled |
-| Out-of-range value | clamp (5 or 1) — §3.5 |
-| Negative/absurd raw value | validation on input (`min/max` on the test type) → `422` |
-| Equal `ranking_score` in the ranking | the same `rank` (SQL `RANK()`); secondary order for display: last evaluation date, then full name |
-| Block test set | for each block, the list of "mandatory tests" (OTM=10, OPSTTM=23) is determined by `TestType.is_active` + block |
+| Incomplete session (not all 5 battery exercises entered) | `finalize` rejected → `400`, missing exercises returned |
+| No norm for exercise × age × gender | indicator `unscored`, session not finalized, admin signalled |
+| Value better than best band | clamp → 10 (§3.5) |
+| Value worse than worst band | 0 points (below norm) → likely `daraja = none` |
+| Negative/absurd raw value | input validation (exercise unit bounds) → `422` (flexibility negatives are valid) |
+| mm:ss time | normalized to seconds before band comparison |
+| Equal `ranking_score` | same `RANK()`; display tiebreak: latest evaluation date, then full name |
+| Battery undefined for a group | cannot open the physical form; admin must define the `TestBattery` first |
 
 ---
 
 ## 8. Recommendation generation (dependency)
 
-During `finalize`, once the scores are computed, the `RecommendationRule`s are
-checked: if a `condition` (for example "endurance score ≤ 2" or
-"functional_pct < 50") is satisfied, a `Recommendation` is written from the
-`template_text`. The rules are admin-managed, not in the code. Sample:
+During `finalize`, once points are computed, `RecommendationRule`s are checked: if a
+`condition` holds (e.g. "turnikda tortilish points ≤ 6" or "physical_total < 30"), a
+`Recommendation` is written from `template_text`. Rules are admin-managed, not in code.
+Samples:
 
-- endurance ≤ 2 → "Endurance is low. Increasing the volume of aerobic exercises is recommended."
-- recovery ≤ 2 → "The heart rate recovers slowly after load. Increase recovery exercises."
+- turnikda tortilish ≤ 6 → "Kuch koʻrsatkichi past. Kuch mashqlari hajmini oshirish tavsiya etiladi."
+- physical_total < 30 → "Koʻkrak nishoni meʼyoriga yetmadi. Umumiy jismoniy tayyorgarlikni oshirish kerak."
 
 ---
 
-## 9. Worked examples
+## 9. Worked examples (real numbers)
 
-**OTM athlete** (height 1.78, weight 70):
-- BMI = 70 / 1.78² = 22.1 → "normal" 🟢 (informational)
-- Physical: 5+4+4+5+3 = 21 / 25
-- Functional: 4+3+4+4+5 = 20 / 25
-- total = 41 / 50 → 82% → **high** 🟢 · ranking_score = 82
+**14-yosh oʻgʻil bola** (battery: 100 m · 400 m · uzunlikka sakrash · oldinga egilish · turnikda tortilish):
+- 100 m `14.4 s` → 8 · 400 m `1:22` → 8 · uzunlikka `178 sm` → 10 · egilish `+9` → 8 ·
+  turnik `13 marta` → 8
+- total = 8+8+10+8+8 = **42** → **II daraja** 🟡 · ranking_score = 42
 
-**OPSTTM athlete:**
-- physical_pct = 22/25 = 88%, functional_pct = 20/25 = 80%,
-  morpho_pct = 28/35 = 80%, psych_pct = 24/30 = 80%
-- percentage = (88+80+80+80)/4 = 82% → **high** 🟢 · ranking_score = 82
+**14-yosh qiz bola** — same battery **except #5** = skameykaga tayanib qoʻl bukish (not
+turnik). Illustrates that the exercise set itself is gender-specific.
+
+**7-yosh bola** — battery uses **30 m** sprint and **argʻimchoq**, not 100 m/400 m —
+illustrating age-driven exercise selection.
 
 ---
 
 ## 10. Loading and storing norms
 
-- **Admin UI** (Django admin + DRF) — manual entry/editing of norms + bands.
-- **Excel import** — bulk loading of norms (future: management command
-  `seed_norms` + fixture).
-- **Versioning** — `valid_from`; the old Evaluation snapshot is preserved.
+- **Admin UI** (Django admin + DRF) — manual entry/editing of `Exercise`, `TestBattery`,
+  `Norm` + `NormBand`, `DarajaThreshold`.
+- **Seed command** — `seed_physical` loads the ~24 tables
+  (11 years × 2 genders + 18–29 × 2 genders) into `Norm`/`NormBand` + the batteries.
+- **Versioning** — `valid_from`; old Evaluation snapshots are preserved.
 
 ---
 
-## 11. Information needed from the specialist (open)
-
-The following are obtained from the sports-science specialist/client — the
-model is ready, only the data is filled in:
-
-1. The exact **NormBand bounds** for each test (in the age × gender × sport cross-section).
-2. The OPSTTM **3-level bounds** (high/normal/low percentage).
-3. The **measurement methodology** and `direction` of the psychological tests.
-4. The sport-type-specific **BMI optimal ranges** (for OPSTTM morpho).
-5. The full list of recommendation **rules**.
+## 11. Open items to confirm with the client
+1. Exact **TOIFA 4/5 boundary** within ages 13–17.
+2. **Below-worst-band** result (0 / "did not meet") and **above-best clamp** (→10).
+3. **birth_date vs birth_year** precision (norms are per single year).
+4. Whether **"Maxsus talab boʻyicha"** implies a second (general) norm tier.
+5. Confirm `DarajaThreshold` is constant across all tables (48/38/30).

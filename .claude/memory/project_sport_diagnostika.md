@@ -6,6 +6,8 @@ originSessionId: 88e28f80-af71-4306-99ce-935db4fcd38d
 ---
 **Project:** SPORT-DIAGNOSTIKA.UZ — landing + login pages for a future platform that tracks physical/functional readiness of OPSTTM athletes and OTM (university) student-athletes across Uzbekistan. Original spec: `SPORT.docx` in repo root.
 
+> **Platform pivot (2026-07-07):** the platform being built is now **physical-readiness-first** — only the state "Jismoniy tayyorgarlik darajasi" standard has client criteria; the rest is deferred. This does NOT change the landing site below. See [[project_physical_readiness]].
+
 **Repo:** `https://github.com/JahonovAsilbek/sport-diagnostika`. Custom domain via root `CNAME` (likely `sport-diagnostika.uz`). Deployed via GitHub Pages from `main` branch root. Local path: `/Users/asilbekjahonov/personal/sport`.
 
 **Current layout (as of 2026-05-08):**

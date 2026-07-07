@@ -90,36 +90,77 @@ scope.
 ## 4. Catalog (reference data)
 
 Read — all authenticated users. Write — `super_admin`
-(for norms, `region_admin` can also read).
+(for norms/batteries/thresholds, `region_admin` can also read).
 
 | Method | Path | Description |
 |---|---|---|
 | GET | `/catalog/regions/` | regions (14) |
 | GET | `/catalog/districts/?region=3` | districts |
-| GET·POST | `/catalog/organizations/?type=OPSTTM&region=3` | organizations |
+| GET·POST | `/catalog/organizations/?type=OPSTTM&region=3` | organizations (`type` = classification only) |
 | GET | `/catalog/sport-types/` | sport types (30+) |
-| GET | `/catalog/age-categories/` | age categories (5) |
-| GET | `/catalog/weight-categories/?sport_type=5&gender=male` | weight categories |
-| GET·POST | `/catalog/test-types/?block=OTM&category=physical` | test types |
-| GET·POST | `/catalog/norms/?test_type=12&age_category=2&gender=male&sport_type=5` | norms |
+| GET | `/catalog/age-categories/` | age categories (TOIFA, ordinal 1–6, `age_min`/`age_max`) |
+| GET·POST | `/catalog/exercises/?is_active=true` | exercise pool (replaces test-types) |
+| GET·POST | `/catalog/batteries/?age_category=4&gender=male` | test batteries (one per age category × gender) |
+| GET | `/catalog/batteries/resolve/?athlete=101` | resolve the ordered 5 exercises for an athlete |
+| GET | `/catalog/batteries/resolve/?age=14&gender=male` | …or by explicit age + gender |
+| GET·POST | `/catalog/norms/?exercise=7&gender=male&age=14` | norms (by exercise × gender × age) |
 | GET·PUT | `/catalog/norms/{id}/` | norm + its bands (nested) |
+| GET·POST | `/catalog/daraja-thresholds/` | daraja bounds (I/II/III → total range) |
+
+> `weight-categories` are **deferred** (morphofunctional) — see `DEFERRED.md`. Norms are
+> **not** filtered by `sport_type` or `block`: the physical standard is universal by
+> `age × gender`.
+
+**Exercise** — `GET /catalog/exercises/`
+```json
+{ "id": 7, "name": "100 m ga pastki startdan yugurish", "unit": "s",
+  "value_type": "seconds", "direction": "lower_is_better", "order": 2, "is_active": true }
+```
+
+**Battery resolution** — `GET /catalog/batteries/resolve/?athlete=101`
+```json
+{
+  "age_category": { "id": 4, "ordinal": 4, "name": "13–15" },
+  "gender": "male", "age": 14,
+  "exercises": [
+    { "order": 1, "id": 7,  "name": "100 m ga pastki startdan yugurish", "value_type": "seconds" },
+    { "order": 2, "id": 8,  "name": "400 m ga pastki startdan yugurish", "value_type": "minsec" },
+    { "order": 3, "id": 11, "name": "Turgan joydan uzunlikka sakrash",   "value_type": "count" },
+    { "order": 4, "id": 12, "name": "Gimnastika oʻrindigʻida oldinga egilish", "value_type": "cm_signed" },
+    { "order": 5, "id": 15, "name": "Turnikda tortilish", "value_type": "count" }
+  ]
+}
+```
+> The data-entry form is built directly from this ordered list of 5 exercises.
 
 **Norm (with nested bands)** — `GET /catalog/norms/{id}/`
 ```json
 {
-  "id": 12, "test_type": { "id": 7, "name": "30m sprint", "unit": "s",
-    "direction": "lower_is_better" },
-  "age_category": { "id": 2, "name": "14–15" }, "gender": "male",
-  "sport_type": null, "block": "OTM",
+  "id": 12,
+  "exercise": { "id": 7, "name": "100 m ga pastki startdan yugurish", "unit": "s",
+    "value_type": "seconds", "direction": "lower_is_better" },
+  "age_min": 14, "age_max": 14, "gender": "male",
+  "valid_from": "2026-01-01", "is_active": true,
   "bands": [
-    { "score": 5, "lower_bound": 0,   "upper_bound": 4.5 },
-    { "score": 4, "lower_bound": 4.5, "upper_bound": 4.8 },
-    { "score": 3, "lower_bound": 4.8, "upper_bound": 5.2 },
-    { "score": 2, "lower_bound": 5.2, "upper_bound": 5.6 },
-    { "score": 1, "lower_bound": 5.6, "upper_bound": 999 }
+    { "points": 10, "lower_bound": 14.0, "upper_bound": 14.3 },
+    { "points": 8,  "lower_bound": 14.3, "upper_bound": 14.6 },
+    { "points": 6,  "lower_bound": 14.6, "upper_bound": 14.9 }
   ]
 }
 ```
+> Bands are `[lower_bound, upper_bound)` (lower inclusive, upper exclusive); `direction` is
+> baked into the ordering of bounds. A value better than the best band clamps to `10`;
+> worse than the worst band scores `0`.
+
+**Daraja thresholds** — `GET /catalog/daraja-thresholds/`
+```json
+{ "results": [
+    { "level": "I",   "total_min": 48, "total_max": 50 },
+    { "level": "II",  "total_min": 38, "total_max": 46 },
+    { "level": "III", "total_min": 30, "total_max": 36 }
+] }
+```
+> `physical_total < 30` → `daraja = none` (nishonsiz). Bounds are data, editable by the admin.
 
 ---
 
@@ -135,10 +176,11 @@ Read — all authenticated users. Write — `super_admin`
 | GET | `/athletes/{id}/latest-evaluation/` | latest evaluation |
 | GET | `/athletes/{id}/recommendations/` | recommendations |
 
-**Filters:** `region · district · organization · sport_type · gender ·
-age_category · block · coach · is_active · search`.
-> `age_category` — computed from `birth_year` relative to the current date; the server
-> computes it dynamically in the filter.
+**Filters:** `region · district · organization · organization_type · sport_type · gender ·
+age_category · coach · is_active · search`.
+> `age_category` (TOIFA) — computed from age relative to the session/current date; the
+> server computes it dynamically in the filter. `organization_type (OTM|OPSTTM)` is a
+> **classification** filter only — it does not affect scoring.
 
 **POST `/athletes/`**
 ```json
@@ -146,11 +188,13 @@ age_category · block · coach · is_active · search`.
   "last_name": "Aliyev", "first_name": "Akmal", "middle_name": "B.",
   "birth_year": 2008, "gender": "male",
   "region": 3, "district": 14, "organization": 7, "sport_type": 5,
-  "razryad": "1-razryad", "coach": 22, "weight_category": 9,
+  "razryad": "1-razryad", "coach": 22,
   "training_experience": 4, "main_competitions": "National championship 2025"
 }
 ```
-> `block` is returned but not submitted — it is derived from `organization.type`.
+> `age_category` is **computed** (not submitted). `block` is no longer submitted or derived
+> for scoring — `organization.type (OTM|OPSTTM)` is exposed as a classification attribute
+> only. `weight_category` is **deferred** (`DEFERRED.md`).
 
 ---
 
@@ -166,29 +210,48 @@ age_category · block · coach · is_active · search`.
 **POST `/sessions/`** (open a session)
 ```json
 { "athlete": 101, "date": "2026-06-15", "height_cm": 178, "weight_kg": 70 }
-// response: { "id": 555, "block": "OTM", "status": "draft", ... }
+// response: { "id": 555, "status": "draft", "age_category": 4, "gender": "male", ... }
 ```
+> `height_cm` / `weight_kg` are optional (nullable placeholders for future morpho work).
+> The response carries the snapshot dims (age_category, gender, region, organization,
+> sport_type) frozen at session time.
 
-**POST `/sessions/555/measurements/`** (raw results)
+**POST `/sessions/555/measurements/`** (bulk raw results for the 5 battery exercises)
 ```json
 { "measurements": [
-    { "test_type": 7,  "raw_value": 4.6 },
-    { "test_type": 8,  "raw_value": 240 },
-    { "test_type": 15, "raw_value": 62 }
+    { "exercise": 7,  "raw_value": 14.4 },
+    { "exercise": 8,  "raw_value": "1:22" },
+    { "exercise": 11, "raw_value": 178 },
+    { "exercise": 12, "raw_value": 9 },
+    { "exercise": 15, "raw_value": 13 }
 ] }
 ```
+> One row per exercise in the athlete's resolved battery. `minsec` values (e.g. `"1:22"`)
+> are normalized to seconds; signed flexibility (e.g. `9` or `-3`) is stored as signed cm.
 
 **POST `/sessions/555/finalize/`** → `202 Accepted`
-The scoring engine runs (BMI, score, percentage, level, color + recommendations),
-an `Evaluation` snapshot is created, and the relevant rating cache is invalidated.
+The scoring engine runs (raw → points 10/8/6 via `NormBand` → `physical_total` → `daraja`
++ color + recommendations), an `Evaluation` snapshot is created, and the relevant rating
+cache is invalidated. Finalize is rejected (`400`) if not all 5 battery exercises are
+entered, or if a norm is missing for any exercise × age × gender.
 ```json
-{ "evaluation_id": 900, "status": "computed" }
+{
+  "evaluation_id": 900, "status": "computed",
+  "physical_total": 42, "daraja": "II", "color": "yellow",
+  "indicators": [
+    { "exercise": 7,  "raw_value": 14.4, "points": 8 },
+    { "exercise": 8,  "raw_value": 82.0, "points": 8 },
+    { "exercise": 11, "raw_value": 178,  "points": 10 },
+    { "exercise": 12, "raw_value": 9,    "points": 8 },
+    { "exercise": 15, "raw_value": 13,   "points": 8 }
+  ]
+}
 ```
 
 ### Excel import (async)
 | Method | Path | Description |
 |---|---|---|
-| GET | `/imports/template/?block=OTM` | download Excel template |
+| GET | `/imports/template/?age_category=4&gender=male` | download Excel template (columns = the battery exercises) |
 | POST | `/imports/` | upload file (multipart) → `ImportBatch` |
 | GET | `/imports/{id}/` | status + rows + errors |
 | POST | `/imports/{id}/commit/` | save the rows that passed validation |
@@ -206,25 +269,30 @@ Validation runs in Celery; `GET /imports/{id}/` returns the error rows.
 | GET | `/rating/top/` | "Top Athletes" (TOP N) |
 | GET | `/rating/regions/` | region rating |
 
-**GET `/rating/top/?sport_type=5&region=3&age_category=2&gender=male&block=OTM&limit=10`**
+Partition / filter dimensions: `region · sport_type · age_category · gender` (**no block**).
+An optional `period_type(quarter|half|year)` + value applies a `session_date` range; with no
+period, the latest Evaluation per athlete is used.
+
+**GET `/rating/top/?sport_type=5&region=3&age_category=4&gender=male&limit=10`**
 ```json
 { "filters": { "sport_type": "Handball", "region": "Namangan",
-               "age_category": "14–15", "gender": "male", "block": "OTM" },
+               "age_category": "13–15", "gender": "male" },
   "results": [
     { "rank": 1, "athlete": { "id": 101, "full_name": "Aliyev A." },
-      "ranking_score": 87.0, "level": "high", "color": "green" },
+      "ranking_score": 48, "daraja": "I", "color": "green" },
     { "rank": 2, "athlete": { "id": 140, "full_name": "Valiyev B." },
-      "ranking_score": 79.0, "level": "medium", "color": "yellow" }
+      "ranking_score": 42, "daraja": "II", "color": "yellow" }
   ] }
 ```
-> The result is cached in Redis (filter combination = key). When an athlete is newly
-> evaluated, the key is invalidated.
+> `ranking_score = physical_total (0–50)`. The result is cached in Redis (filter
+> combination = key). When an athlete is newly evaluated, the key is invalidated.
+> Ties share the same `rank`; display tiebreak: latest evaluation date, then full name.
 
-**GET `/rating/regions/?sport_type=5&age_category=2`** (region rating)
+**GET `/rating/regions/?sport_type=5&age_category=4`** (region rating)
 ```json
 { "results": [
-    { "rank": 1, "region": "Namangan", "high_count": 126, "avg_score": 71.2 },
-    { "rank": 2, "region": "Samarqand", "high_count": 118, "avg_score": 68.9 }
+    { "rank": 1, "region": "Namangan", "daraja_i_count": 126, "avg_score": 41.2 },
+    { "rank": 2, "region": "Samarqand", "daraja_i_count": 118, "avg_score": 39.8 }
 ] }
 ```
 
@@ -238,14 +306,19 @@ Validation runs in Celery; `GET /imports/{id}/` returns the error rows.
 
 ```json
 { "athletes": [
-    { "id": 101, "full_name": "Aliyev A.", "block": "OTM",
-      "ranking_score": 87.0, "level": "high",
-      "categories": { "physical": 92.0, "functional": 82.0 },
-      "indicators": [ { "test_type": "30m sprint", "score": 5 }, ... ] },
-    { "id": 140, "full_name": "Valiyev B.", "ranking_score": 79.0, ... }
+    { "id": 101, "full_name": "Aliyev A.",
+      "physical_total": 48, "ranking_score": 48, "daraja": "I", "color": "green",
+      "indicators": [
+        { "exercise": "100 m ga pastki startdan yugurish", "raw_value": 14.1, "points": 10 },
+        { "exercise": "Turnikda tortilish", "raw_value": 15, "points": 10 }
+      ] },
+    { "id": 140, "full_name": "Valiyev B.",
+      "physical_total": 42, "ranking_score": 42, "daraja": "II", "color": "yellow", "indicators": [ ] }
   ],
   "leader": 101 }
 ```
+> Comparison is per-exercise `points (10/8/6)` and the resulting `physical_total` / `daraja`
+> — no OTM/OPSTTM category percentages.
 
 ---
 
@@ -299,11 +372,13 @@ States: `pending → processing → done | failed`. When `done`,
 | GET | `/stats/overview/` | role-tailored dashboard numbers |
 
 ```json
-{ "athletes_total": 1240, "by_block": { "OTM": 800, "OPSTTM": 440 },
-  "by_level": { "high": 310, "medium": 600, "low": 330 },
+{ "athletes_total": 1240,
+  "by_organization_type": { "OTM": 800, "OPSTTM": 440 },
+  "by_daraja": { "I": 210, "II": 500, "III": 380, "none": 150 },
   "regions": 14, "recent_sessions": 42 }
 ```
-> The numbers are limited to the user's scope (region/org).
+> `by_organization_type` is a classification breakdown only. Numbers are limited to the
+> user's scope (region/org).
 
 ---
 
@@ -324,5 +399,5 @@ Long-running jobs (import, report, recompute after a norm change) follow the sam
 4. `done` → result/file available.
 
 **POST `/evaluations/recompute/`** (admin, after a norm change) → `202` + job id.
-All `Evaluation`s for the given slice (`block/sport/age/...`) are recomputed
-and the rating cache is cleared.
+All `Evaluation`s for the given slice (`exercise / age / gender / ...`) are recomputed
+against the current norms and the rating cache is cleared.
