@@ -147,3 +147,66 @@ class BatteryItem(TimeStampedModel):
 
     def __str__(self):
         return f"{self.battery} #{self.order} {self.exercise}"
+
+
+class Norm(TimeStampedModel):
+    """A scoring norm for one exercise × gender × age range, versioned by valid_from.
+
+    No sport_type / no block — physical norms are universal by age × gender. For 7–17
+    a norm covers a single year (age_min == age_max); adults use age_min=18, age_max=29.
+    """
+
+    exercise = models.ForeignKey(Exercise, on_delete=models.CASCADE, related_name="norms")
+    age_min = models.PositiveSmallIntegerField()
+    age_max = models.PositiveSmallIntegerField()
+    gender = models.CharField(max_length=6, choices=Gender.choices)
+    valid_from = models.DateField()
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["exercise", "gender", "age_min", "-valid_from"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["exercise", "age_min", "age_max", "gender", "valid_from"],
+                name="uniq_norm_version",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.exercise} {self.gender} {self.age_min}-{self.age_max} v{self.valid_from}"
+
+
+class NormBand(TimeStampedModel):
+    """A raw-value band → points. `[lower_bound, upper_bound)` (lower incl, upper excl);
+    `direction` is already baked into the bound ordering (SCORING.md §3.4)."""
+
+    norm = models.ForeignKey(Norm, on_delete=models.CASCADE, related_name="bands")
+    points = models.PositiveSmallIntegerField()  # 10 / 8 / 6 …
+    lower_bound = models.DecimalField(max_digits=8, decimal_places=2)
+    upper_bound = models.DecimalField(max_digits=8, decimal_places=2)
+
+    class Meta:
+        ordering = ["norm", "-points"]
+
+    def __str__(self):
+        return f"{self.norm} [{self.lower_bound}, {self.upper_bound}) → {self.points}"
+
+
+class DarajaThreshold(TimeStampedModel):
+    """Total (0–50) → daraja cut-offs, kept as data so the client can adjust them.
+    color derives from the level (I→green, II→yellow, III/none→red)."""
+
+    class Level(models.TextChoices):
+        FIRST = "I", "I daraja"
+        SECOND = "II", "II daraja"
+        THIRD = "III", "III daraja"
+
+    level = models.CharField(max_length=3, choices=Level.choices, unique=True)
+    total_min = models.PositiveSmallIntegerField()
+    total_max = models.PositiveSmallIntegerField()
+
+    class Meta:
+        ordering = ["-total_min"]
+
+    def __str__(self):
+        return f"{self.get_level_display()}: {self.total_min}-{self.total_max}"

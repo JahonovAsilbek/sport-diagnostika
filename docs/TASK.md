@@ -377,6 +377,7 @@ batteries. This is the data the scoring engine (B7) consumes; the engine itself 
 ---
 
 # BCKND-26 — Norm + NormBand models
+> ✅ **Done** (2026-07-07) — `Norm` (exercise/age_min/age_max/gender/valid_from/is_active, unique version constraint) + `NormBand` (points 10/8/6, `[lower, upper)` DecimalField, signed OK) on TimeStampedModel; `assert_bands_no_overlap` in `catalog/validators.py`. Migration `0002`. Verified: create + overlap raises.
 
 `Norm` (header): `exercise` FK, `age_min`, `age_max`, `gender`, `valid_from`,
 `is_active`. **No sport_type, no block.** `NormBand` (line): `norm` FK,
@@ -389,6 +390,7 @@ Evaluations stay reproducible). Bounds are numeric: time in **seconds** (mm:ss
 converted), counts as integers, flexibility as **signed cm**.
 
 # BCKND-27 — Norm lookup selector (get_norm)
+> ✅ **Done** (2026-07-07) — `catalog/selectors.get_norm(exercise, gender, age, on_date)` — exact `age ∈ [age_min, age_max]`, latest `valid_from ≤ on_date`, no fallback → `None`. Verified: version-by-date, single-year vs 18–29 bucket, no-match → None.
 
 A selector `get_norm(exercise, gender, age, on_date)`: match
 `exercise + gender + age ∈ [age_min, age_max]`, among matches pick the latest
@@ -400,6 +402,7 @@ Edge case: `age` is the athlete's age at the session date (numeric), not a categ
 by the session date, not "now", for reproducibility.
 
 # BCKND-28 — DarajaThreshold model
+> ✅ **Done** (2026-07-07) — `DarajaThreshold` (level I/II/III unique, total_min/total_max) in `0002`; color derives from the level in B7. Verified: 3 rows + ranges.
 
 Model `DarajaThreshold` (`level` I|II|III, `total_min`, `total_max`) — the total→daraja
 cut-offs as DATA, not hardcoded (SCORING.md §5). Defaults `I: 48–50 · II: 38–46 ·
