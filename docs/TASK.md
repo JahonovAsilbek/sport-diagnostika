@@ -682,6 +682,8 @@ parked — DEFERRED.)
 
 # BCKND-43 — Evaluation + IndicatorScore models
 
+> ✅ **Done** (2026-07-08) — new `apps/scoring`: `Evaluation` (session 1:1 CASCADE, athlete denorm PROTECT, snapshot dims `age_category`/`gender`/`region`/`sport_type`/`session_date`, `physical_total` 0–50, `daraja` I|II|III|none + `color` green|yellow|red as `TextChoices`, `ranking_score`=physical_total, explicit `computed_at`) + `IndicatorScore` (evaluation CASCADE, exercise PROTECT, raw_value, points; unique per exercise). Migration `0001` carries the **composite index** `eval_ranking_idx (region, sport_type, age_category, gender, ranking_score)`. `migrate` OK, `makemigrations --check` clean.
+
 `apps/scoring`. `Evaluation` (`session` 1:1, `athlete` denorm, **denorm ranking dims**
 `age_category`(snapshot)/`gender`/`region`/`sport_type`/`session_date`, `physical_total`
 0–50, `daraja` I|II|III|none, `color` green|yellow|red, `ranking_score` (= physical_total),
@@ -695,6 +697,8 @@ unique. `ranking_score = physical_total`. Ranking dims are denormalized/snapshot
 
 # BCKND-44 — points.py: raw → points (10/8/6) via bands + clamp
 
+> ✅ **Done** (2026-07-08) — `scoring/domain/points.py resolve_points(norm, raw_value)`: half-open `[lower, upper)` containment, then **direction-agnostic clamp** — materialize+sort bands by `lower_bound` (required: `NormBand` default ordering is `-points`), `top = max(points)`; past an outer edge whose band is the top-points band → top, else → 0. Direction is inferred from which end the top band sits on (no `Exercise.direction` read). 10 unit tests: in-range, both boundaries, clamp high→10/low→0 for **both** directions, unsorted input, single-band, no-bands.
+
 A pure function `resolve_points(norm, raw_value) → int` in `scoring/domain/points.py`:
 find the `NormBand` whose `[lower, upper)` contains `raw_value` → its `points` (10/8/6);
 clamp out-of-range per SCORING.md §3.5 — better than the best band → 10, worse than the
@@ -707,6 +711,8 @@ the best → 10.
 
 # BCKND-45 — battery.py + daraja.py (domain resolvers)
 
+> ✅ **Done** (2026-07-08) — `scoring/domain/battery.py battery_for(age_category, gender)` → ordered `Exercise`s (active `TestBattery`, prefetch `items__exercise`) or `None`; `scoring/domain/daraja.py daraja_for(total)` → `(level, color)` from `DarajaThreshold`, `("none","red")` below all (points ∈ {0,6,8,10} ⇒ even totals ⇒ 37/47 gaps unreachable). 6 tests: battery ordering, gender difference, undefined→None, inactive ignored; daraja full map incl. none.
+
 `scoring/domain/battery.py`: `battery_for(age_category, gender)` → the ordered 5
 `Exercise`s the athlete performs. `scoring/domain/daraja.py`: `daraja_for(physical_total)`
 → `(level, color)` via `DarajaThreshold` (I: 48–50 · II: 38–46 · III: 30–36 · <30: none;
@@ -718,6 +724,8 @@ Edge case: the battery differs by group — young (toifa 1–3): 30 m + argʻimc
 
 # BCKND-46 — Scoring service (orchestration) + finalize wiring
 
+> ✅ **Done** (2026-07-08) — `scoring/services.evaluate_session(session)` `@transaction.atomic`: battery → per-exercise `get_norm`(pinned to session.date)+`resolve_points` → `IndicatorScore`; a missing norm → `ValidationError({"unscored":[...]})` (blocks finalize, never scored 0, SCORING §7); Σ → daraja/color; **idempotent** (deletes prior Evaluation, recreates) so re-finalize/recompute replace cleanly. Finalize wired in `measurements/api.py`: `finalize_session` + `evaluate_session` share **one `transaction.atomic()`** (crit — `ATOMIC_REQUESTS=False`; an unscored failure rolls status back to draft), returns **200** `{evaluation_id, status:"computed", physical_total, daraja, color, ranking_score, indicators}`. Athlete `evaluations`/`latest-evaluation` sub-routes populated. Decision: finalize is **200** (sync compute), not API.md's 202 (self-contradicting label). Rollback verified end-to-end (finalize-without-norms → 400 → session stays draft, no Evaluation).
+
 `scoring/services.py` `evaluate_session(session)`: resolve the battery; for each
 measurement → `get_norm` (B4) + `resolve_points` (BCKND-44) → `IndicatorScore`; Σ points →
 `physical_total`; `daraja_for(total)` → daraja/color; write the `Evaluation` snapshot;
@@ -728,6 +736,8 @@ Re-finalize replaces the prior Evaluation. `ranking_score = physical_total`.
 
 # BCKND-47 — Recompute task (Celery)
 
+> ✅ **Done** (2026-07-08) — `scoring/tasks.recompute_evaluations(filter_kwargs)` `@shared_task`: streams finalized `TestSession`s (`.iterator(chunk_size=200)`), re-`evaluate_session` each; a now-unscorable session is skipped (its prior Evaluation kept), not fatal — returns `{recomputed, skipped}`. `POST /evaluations/recompute/` (`scoring/api.RecomputeView`, **super_admin only**): the slice comes from an **allowlist** `RecomputeFilterSerializer` (region/sport_type/age_category/gender/date-range → primitive kwargs; raw `request.data` never hits `.filter()`) → `202 {task_id}`. Tests run Celery eager (Redis-free). Rating-cache invalidation (B8) left as a hook.
+
 A Celery task `recompute_evaluations(filter)` for when norms change
 (`POST /evaluations/recompute/`, API.md §14). Runs in the worker (D1). Pairs with
 DVPS-7 for any scheduled/periodic recompute.
@@ -736,6 +746,8 @@ process. The norm version is pinned by session date, so recompute uses the corre
 historical norms. It invalidates the rating cache (B8) for the affected partitions.
 
 # BCKND-48 — Scoring engine tests
+
+> ✅ **Done** (2026-07-08) — **34 scoring tests** across `test_points`/`test_domain`/`test_services`/`test_api` + a shared `scenarios.py` (the §9 boy battery). Reproduces SCORING §9 **exactly** (14-yosh oʻgʻil 8+8+10+8+8 = **42 → II daraja 🟡**); band resolution + both clamp ends + both directions; battery per age×gender (boys turnik ↔ girls skameyka); daraja map incl. none; unscored→ValidationError (writes nothing); single-year vs 18–29 bucket; idempotent re-evaluate (replaces); recompute endpoint auth (super_admin 202 / others 403) + eager refresh; athlete evaluations/latest-evaluation. The B6 complete-battery finalize test was updated to seed norms (finalize now scores). Full suite **200 passed**, ruff clean, `makemigrations --check` clean. **B7 scoring engine complete → B8 (rating & ranking) next.**
 
 pytest: band resolution (in-range, both `[lower, upper)` boundaries, clamp high→10 /
 low→0); battery resolution per age×gender; the SCORING.md §9 worked examples exactly

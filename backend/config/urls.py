@@ -16,6 +16,7 @@ api_v1 = [
     path("catalog/", include("apps.catalog.urls")),
     path("", include("apps.athletes.urls")),
     path("", include("apps.measurements.urls")),
+    path("", include("apps.scoring.urls")),
 ]
 
 urlpatterns = [

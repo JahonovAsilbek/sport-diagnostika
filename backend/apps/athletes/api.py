@@ -9,6 +9,8 @@ from apps.athletes.serializers import AthleteSerializer
 from apps.catalog.models import AgeCategory
 from apps.common.permissions import COACH, LAB_OPERATOR, REGION_ADMIN, DataEntryOrReadOnly
 from apps.common.scoping import ScopedQuerysetMixin
+from apps.scoring.selectors import athlete_evaluations, latest_evaluation
+from apps.scoring.serializers import EvaluationSerializer
 
 
 class AthleteViewSet(ScopedQuerysetMixin, viewsets.ModelViewSet):
@@ -69,7 +71,7 @@ class AthleteViewSet(ScopedQuerysetMixin, viewsets.ModelViewSet):
         return {}
 
     # Sub-routes reserved so the URL space is stable for the SPA (F4). Bodies land with
-    # their blocks: sessions → B6, evaluations/latest-evaluation → B7, recommendations → B10.
+    # their blocks: sessions → B6, recommendations → B10.
     # Each calls get_object() so the sub-route is scope-checked too (out-of-scope pk → 404).
     @action(detail=True, methods=["get"])
     def sessions(self, request, pk=None):
@@ -78,13 +80,19 @@ class AthleteViewSet(ScopedQuerysetMixin, viewsets.ModelViewSet):
 
     @action(detail=True, methods=["get"])
     def evaluations(self, request, pk=None):
-        self.get_object()
-        return Response([])
+        """The athlete's Evaluation snapshots, newest first (un-paginated history)."""
+        athlete = self.get_object()
+        evaluations = athlete_evaluations(athlete)
+        return Response(EvaluationSerializer(evaluations, many=True).data)
 
     @action(detail=True, methods=["get"], url_path="latest-evaluation")
     def latest_evaluation(self, request, pk=None):
-        self.get_object()
-        return Response(status=204)
+        """The athlete's most recent Evaluation, or 204 if none yet."""
+        athlete = self.get_object()
+        evaluation = latest_evaluation(athlete)
+        if evaluation is None:
+            return Response(status=204)
+        return Response(EvaluationSerializer(evaluation).data)
 
     @action(detail=True, methods=["get"])
     def recommendations(self, request, pk=None):

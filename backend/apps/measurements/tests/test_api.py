@@ -10,12 +10,16 @@ from apps.athletes.factories import AthleteFactory
 from apps.catalog.factories import (
     AgeCategoryFactory,
     BatteryItemFactory,
+    DarajaThresholdFactory,
     ExerciseFactory,
+    NormBandFactory,
+    NormFactory,
     TestBatteryFactory,
 )
 from apps.catalog.models import Exercise
 from apps.measurements.factories import TestSessionFactory
 from apps.measurements.models import Measurement, TestSession
+from apps.scoring.models import Evaluation
 
 pytestmark = pytest.mark.django_db
 
@@ -58,6 +62,23 @@ def _measurements_body(exercises):
         {"exercise": ex.id, "raw_value": v}
         for ex, v in zip(exercises, RAW_VALUES, strict=True)
     ]}
+
+
+def _seed_norms(session, exercises):
+    """Seed a norm (one 8-point band spanning every RAW_VALUE) per battery exercise for the
+    session's age×gender, plus the three daraja thresholds — so finalize scores 5×8 = 40 →
+    II daraja instead of blocking on an unscored indicator (B7 wires scoring into finalize)."""
+    age = session.date.year - session.athlete.birth_year
+    for exercise in exercises:
+        norm = NormFactory(
+            exercise=exercise, gender=session.gender, age_min=age, age_max=age
+        )
+        NormBandFactory(
+            norm=norm, points=8, lower_bound=Decimal("-100"), upper_bound=Decimal("1000")
+        )
+    DarajaThresholdFactory(level="I", total_min=48, total_max=50)
+    DarajaThresholdFactory(level="II", total_min=38, total_max=46)
+    DarajaThresholdFactory(level="III", total_min=30, total_max=36)
 
 
 # --- auth --------------------------------------------------------------------------
@@ -149,15 +170,21 @@ def test_measurements_action_rejects_exercise_outside_battery():
 
 # --- finalize action ---------------------------------------------------------------
 
-def test_finalize_complete_battery_transitions_to_finalized():
+def test_finalize_complete_battery_scores_and_finalizes():
     session, exercises = _battery_complete_session()
+    _seed_norms(session, exercises)
     client = _client(UserFactory(role="super_admin"))
     assert client.post(
         f"{SESSIONS}{session.id}/measurements/", _measurements_body(exercises), format="json"
     ).status_code == 200
     resp = client.post(f"{SESSIONS}{session.id}/finalize/")
     assert resp.status_code == 200
-    assert resp.json()["status"] == "finalized"
+    body = resp.json()
+    assert body["status"] == "computed"
+    assert body["evaluation_id"]
+    assert body["physical_total"] == 40  # 5 × 8 points
+    assert body["daraja"] == "II"
+    assert len(body["indicators"]) == 5
     session.refresh_from_db()
     assert session.status == TestSession.Status.FINALIZED
 
@@ -175,6 +202,22 @@ def test_finalize_with_missing_measurement_is_400():
     resp = client.post(f"{SESSIONS}{session.id}/finalize/")
     assert resp.status_code == 400
     assert "missing" in resp.json()
+
+
+def test_finalize_with_missing_norm_is_400_and_rolls_back_to_draft():
+    # Complete battery + measurements but NO seeded norms → every indicator is unscored.
+    # finalize + scoring share one transaction, so the 400 must leave the session in draft.
+    session, exercises = _battery_complete_session()
+    client = _client(UserFactory(role="super_admin"))
+    assert client.post(
+        f"{SESSIONS}{session.id}/measurements/", _measurements_body(exercises), format="json"
+    ).status_code == 200
+    resp = client.post(f"{SESSIONS}{session.id}/finalize/")
+    assert resp.status_code == 400
+    assert "unscored" in resp.json()
+    session.refresh_from_db()
+    assert session.status == TestSession.Status.DRAFT  # rolled back
+    assert not Evaluation.objects.filter(session=session).exists()
 
 
 # --- draft-only editability --------------------------------------------------------

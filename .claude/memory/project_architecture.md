@@ -10,10 +10,10 @@ metadata:
 The static landing (lite at root, premium under `premium/`) is evolving into a
 full **Python web platform** built from `SPORT.docx` (TTZ). Architecture agreed
 2026-06-16; **pivoted to physical-readiness-first 2026-07-07**. Backend implemented
-through **B6 Measurements** (accounts · catalog + seeded norms/batteries · athletes ·
-measurements = test sessions + raw entry + finalize) against the running colima
-Postgres/Redis stack; per-task progress lives in `docs/TASK.md`. **B7 (scoring engine ★)
-is next** — finalize's scoring→Evaluation link is wired there (BCKND-46).
+through **B7 Scoring engine ★** (accounts · catalog + seeded norms/batteries · athletes ·
+measurements · scoring = raw→points→Evaluation snapshot + finalize wiring + recompute)
+against the running colima Postgres/Redis stack; per-task progress lives in `docs/TASK.md`.
+**B8 (rating & ranking) is next** — `RANK()` over `Evaluation` + Redis cache.
 
 **Stack (decided):** Django 5 + DRF · Vue 3 + Vite + Pinia SPA · PostgreSQL 16 ·
 Celery + Redis (fon + cache) · JWT auth · Docker Compose on own VPS · Nginx +
@@ -73,6 +73,23 @@ validates the full 5-exercise battery before transitioning.
 `age_category` (TOIFA) is **computed, never stored** (`athletes.selectors.age_category_for`
 raises `AgeOutOfRange` outside 7–29); list filters translate it to a `birth_year` range in
 SQL, not per-row.
+
+**Scoring engine (`apps/scoring`, B7).** `domain/points.resolve_points(norm, raw)` is
+**direction-agnostic**: it re-sorts bands by `lower_bound` (needed — `NormBand` default
+ordering is `-points`) and infers direction from which end the top-points band sits on, so
+it never reads `Exercise.direction` (clamp: past the top band's outer edge → 10, past the
+worst → 0). `services.evaluate_session` is `@transaction.atomic` and **idempotent** (deletes
++ recreates the session's Evaluation), so recompute/re-finalize replace cleanly; a missing
+norm → `ValidationError({"unscored":[...]})`, never scored 0. **Dependency rule:** scoring
+sits *below* measurements/athletes — measurements/athletes may import scoring at the API
+layer only (`measurements/api.py` finalize, `athletes/api.py` sub-routes); scoring imports
+their selectors/models, never their `api`. **Finalize wiring:** the `/sessions/{id}/finalize/`
+action wraps `finalize_session` + `evaluate_session` in **one** `transaction.atomic()`
+(`ATOMIC_REQUESTS=False`, so without it an unscored failure would strand the session
+finalized-but-unscored), and returns **200** with the evaluation body (API.md says 202 but
+its body is synchronous — 200 is correct). Recompute (`POST /evaluations/recompute/`,
+super_admin) validates through an allowlist serializer — raw request data never reaches
+`.filter()`. Tests run Celery **eager** (`config/settings/test.py`, Redis-free).
 
 Full docs (all English): `docs/ARCHITECTURE.md`, `docs/DATA_MODEL.md`, `docs/API.md`,
 `docs/SCORING.md`, `docs/DEFERRED.md`, `docs/ROADMAP.md`, `docs/TASK.md`. Docs are

@@ -1,3 +1,4 @@
+from django.db import transaction
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
@@ -11,6 +12,8 @@ from apps.measurements.models import TestSession
 from apps.measurements.selectors import resolve_battery
 from apps.measurements.serializers import MeasurementBulkSerializer, TestSessionSerializer
 from apps.measurements.services import finalize_session, save_measurements
+from apps.scoring.serializers import EvaluationSerializer
+from apps.scoring.services import evaluate_session
 
 
 class TestSessionViewSet(ScopedQuerysetMixin, viewsets.ModelViewSet):
@@ -78,7 +81,14 @@ class TestSessionViewSet(ScopedQuerysetMixin, viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"])
     def finalize(self, request, pk=None):
-        """Validate the complete battery, transition draft→finalized (scoring is B7)."""
+        """Validate the complete battery, transition draft→finalized, then score it.
+
+        The validation + status flip + `Evaluation` share one transaction (BCKND-46): a
+        scoring failure — e.g. a missing norm makes an indicator unscored → 400 — rolls the
+        status back to draft so the session can be re-finalized once the norm exists.
+        """
         session = self.get_object()
-        finalize_session(session)
-        return Response(self.get_serializer(session).data)
+        with transaction.atomic():
+            finalize_session(session)
+            evaluation = evaluate_session(session)
+        return Response({**EvaluationSerializer(evaluation).data, "status": "computed"})
