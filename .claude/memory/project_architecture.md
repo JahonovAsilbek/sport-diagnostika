@@ -10,10 +10,10 @@ metadata:
 The static landing (lite at root, premium under `premium/`) is evolving into a
 full **Python web platform** built from `SPORT.docx` (TTZ). Architecture agreed
 2026-06-16; **pivoted to physical-readiness-first 2026-07-07**. Backend implemented
-through **B7 Scoring engine ★** (accounts · catalog + seeded norms/batteries · athletes ·
-measurements · scoring = raw→points→Evaluation snapshot + finalize wiring + recompute)
+through **B8 Rating & Ranking ★** (accounts · catalog + seeded norms/batteries · athletes ·
+measurements · scoring · rating = `RANK()` leaderboards + region ranking + Redis cache)
 against the running colima Postgres/Redis stack; per-task progress lives in `docs/TASK.md`.
-**B8 (rating & ranking) is next** — `RANK()` over `Evaluation` + Redis cache.
+**B9 (comparison) is next** — a thin side-by-side endpoint reading the scoring selectors.
 
 **Stack (decided):** Django 5 + DRF · Vue 3 + Vite + Pinia SPA · PostgreSQL 16 ·
 Celery + Redis (fon + cache) · JWT auth · Docker Compose on own VPS · Nginx +
@@ -90,6 +90,23 @@ finalized-but-unscored), and returns **200** with the evaluation body (API.md sa
 its body is synchronous — 200 is correct). Recompute (`POST /evaluations/recompute/`,
 super_admin) validates through an allowlist serializer — raw request data never reaches
 `.filter()`. Tests run Celery **eager** (`config/settings/test.py`, Redis-free).
+
+**Rating (`apps/rating`, B8).** Ranking is **computed, not stored**. `selectors.py`: latest
+Evaluation per athlete via `DISTINCT ON (athlete_id)` **as a subquery**, then a separate outer
+query with `Window(Rank(), partition_by=[region,sport_type,age_category,gender],
+order_by=ranking_score DESC)` — the two can't share one query (DISTINCT ON ↔ window collide).
+Ties share rank (only score in the window order); display tiebreak `-session_date, name`.
+Region ranking aggregates then **ranks in Python** (a SQL window over GROUP BY is fragile).
+Scope is applied **before** the window. **Cache (`cache.py`)**: keyed `rating:{endpoint}:
+{scope_token}:{filters}:{gen}` — the **scope_token is mandatory** (else two region_admins share
+a key → ranking leak). Invalidation = a global generation counter bumped on ANY Evaluation
+write, wired from `rating/apps.py ready()` via `post_save`/`post_delete` on `Evaluation` →
+`transaction.on_commit(bump_generation)` (so scoring never imports rating; recompute covered
+free). All cache access is best-effort (Redis outage can't break a write/read). Cached values
+must be **plain lists** (DRF `ReturnList` isn't picklable). Testing on_commit invalidation needs
+the `django_capture_on_commit_callbacks` fixture (pytest wraps tests in a rolled-back txn).
+**DVPS-7:** `django-celery-beat` installed; compose `beat` uses `DatabaseScheduler` and waits on
+`web` healthy (migrations first). No `PeriodicTask` yet — invalidation is event-driven.
 
 Full docs (all English): `docs/ARCHITECTURE.md`, `docs/DATA_MODEL.md`, `docs/API.md`,
 `docs/SCORING.md`, `docs/DEFERRED.md`, `docs/ROADMAP.md`, `docs/TASK.md`. Docs are

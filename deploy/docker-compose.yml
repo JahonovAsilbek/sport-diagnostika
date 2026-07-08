@@ -75,15 +75,21 @@ services:
     depends_on: *db-redis-healthy
     networks: [sport]
 
-  # Exactly one beat instance (avoids duplicate scheduled tasks). Default scheduler
-  # for now; django-celery-beat arrives with scheduled recompute in B8/B12.
+  # Exactly one beat instance (avoids duplicate scheduled tasks). Uses the
+  # django-celery-beat DatabaseScheduler (DVPS-7) so periodic tasks are DB-backed and
+  # editable from the admin — waits on `web` (which migrates) so its tables exist first.
   beat:
     image: sport-backend:dev
-    # Schedule file goes to /tmp — /app is a read-only bind-mount for the non-root user.
-    command: ["celery", "-A", "config", "beat", "-l", "info", "--schedule", "/tmp/celerybeat-schedule"]
+    command: ["celery", "-A", "config", "beat", "-l", "info", "--scheduler", "django_celery_beat.schedulers:DatabaseScheduler"]
     env_file: ../backend/.env
     environment: *backend-env
-    depends_on: *db-redis-healthy
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      web:
+        condition: service_healthy
     networks: [sport]
 
 volumes:

@@ -767,6 +767,8 @@ invalidation. Needs Celery Beat (DVPS-7) for periodic refresh.
 
 # BCKND-49 — Ranking selectors (RANK() over Evaluation)
 
+> ✅ **Done** (2026-07-08) — `apps/rating/selectors.py`: `_latest_ids()` (Postgres `DISTINCT ON (athlete_id)` → latest Evaluation per athlete) as a subquery, then a separate windowed outer query (the two can't share one query). `ranked_athletes(filters, user)` = scope-filtered set + `Window(Rank(), partition_by=[region,sport_type,age_category,gender], order_by=ranking_score DESC)` → ties share rank; display order `rank, -session_date, last_name, first_name`. `top_athletes(...limit=10)`; `region_rating(...)` aggregates `Count(filter=Q(daraja="I"))` + `Avg(ranking_score)`, **ranked in Python** (window over GROUP BY is fragile). Scope applied *before* the window (region_admin correct, coach among own). Verified read-only SQL smoke on PG16 + tests.
+
 Selectors using Postgres window functions: rank athletes within
 `(region, sport_type, age_category, gender)` by `ranking_score DESC` — **no block** in
 the partition (physical is block-independent; `sport_type` stays a partition/filter dim
@@ -779,6 +781,8 @@ excluded (latest per athlete only).
 
 # BCKND-50 — Rating API (top / athletes / regions)
 
+> ✅ **Done** (2026-07-08) — three views (matching the non-CRUD `APIView` convention of `RecomputeView`): `TopRatingView` (`{filters, results}` envelope, limit N), `AthletesRatingView(ListAPIView)` (paginated — LIMIT/OFFSET after the window keeps page-2 ranks continuous), `RegionsRatingView`. `RatingFilterSerializer` validates query params (region/sport_type/age_category PK + gender + limit; `age_category` = **direct snapshot FK**, not a birth_year range; `period_type` deferred to B12, unknown params ignored). Row shape per API.md §7 (`rank`, nested `athlete{id,full_name}`, `ranking_score`, `daraja`, `color`). `IsAuthenticated`; scoping enforced in the selectors. Mounted at `/api/v1/rating/`.
+
 `apps/rating` endpoints per API.md §7: `GET /rating/top/`, `/rating/athletes/`,
 `/rating/regions/`, with filters + scoping. Each row returns `rank`, `ranking_score`
 (= physical_total), `daraja`, `color`.
@@ -786,6 +790,8 @@ Edge case: scoping applies (a `region_admin` sees only their region's ranking). 
 without an Evaluation are excluded. Filters: sport/region/age/gender (no block).
 
 # BCKND-51 — Redis caching + invalidation
+
+> ✅ **Done** (2026-07-08) — `apps/rating/cache.py`: `cached_response(endpoint, user, filters, build)` keyed `rating:{endpoint}:{scope_token}:{filters}:{gen}`. **Scope token is mandatory** (super/ministry→`all`, region_admin→`r{id}`, coach→`c{id}`, lab→`o{id}`) — without it two region_admins with identical filters would share a key and leak rankings (tested). Invalidation = a **global generation counter** bumped on any Evaluation write (never stale; TTL 300s backstop); persistent (`timeout=None`). Wired from `rating/apps.py ready()` via `post_save`/`post_delete` on `Evaluation` → `transaction.on_commit(bump_generation)` (rating→scoring; scoring stays unaware; recompute covered for free). All cache access is best-effort — a Redis outage can't break a write or a read. `top`/`regions` cached; `/athletes/` uncached (paginated, indexed). Cached values unwrapped to plain lists (DRF `ReturnList` isn't picklable).
 
 Cache rating responses in Redis keyed by the normalized filter set; invalidate the
 affected partition when a new Evaluation is computed (BCKND-46) or recompute runs
@@ -795,6 +801,8 @@ Edge case: invalidate on Evaluation write for the matching
 backstop.
 
 # DVPS-7 — Celery Beat database scheduler (django-celery-beat) — needed by B8
+
+> ✅ **Done** (2026-07-08) — `django-celery-beat~=2.9.0` added to requirements + installed into `backend/.venv`; `"django_celery_beat"` in THIRD_PARTY_APPS; `migrate` applied its tables (`--check` clean). Compose `beat` command → `--scheduler django_celery_beat.schedulers:DatabaseScheduler` (dropped the file `--schedule`), and `beat.depends_on` now also waits on `web` **healthy** so migrations run before the DatabaseScheduler needs its tables (else crash-loop). `docker compose config` valid. No `PeriodicTask` defined yet — pure scheduler infra (B8 invalidation is event-driven; periodic jobs land in B12).
 
 Add `django-celery-beat` to requirements; add to INSTALLED_APPS; migrate; switch the
 `beat` service command (from DVPS-5) to
@@ -806,6 +814,8 @@ instance to avoid duplicate periodic runs. This is the cross-track task B8 (and 
 B12) depend on.
 
 # BCKND-52 — Rating tests
+
+> ✅ **Done** (2026-07-08) — **18 tests** across `test_selectors`/`test_api`/`test_cache` + a `helpers.py` (partition-scoped Evaluation builder). Ranking desc + **tie-share-rank** + latest-per-athlete-only + top-N + independent partitions + region daraja-I counts/avg; endpoint shapes/filters/pagination + per-role scoping (region_admin sees own region) + bad-PK 400; cache hit (queryset.update bypasses the signal → stale-cached proves the hit), **invalidation on Evaluation write** (`django_capture_on_commit_callbacks` to fire the on_commit bump), scope-token isolation + cross-region leak prevention. Full suite **218 passed**, ruff clean, `makemigrations --check` clean, `docker compose config` valid. **B8 rating & ranking complete → B9 (comparison) next.**
 
 pytest: ranking order (desc, ties), top-N, region ranking counts (by daraja), cache hit +
 invalidation, scoping.

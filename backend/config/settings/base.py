@@ -34,6 +34,7 @@ THIRD_PARTY_APPS = [
     "corsheaders",
     "django_filters",
     "drf_spectacular",
+    "django_celery_beat",
 ]
 
 LOCAL_APPS = [
@@ -43,6 +44,7 @@ LOCAL_APPS = [
     "apps.athletes",
     "apps.measurements",
     "apps.scoring",
+    "apps.rating",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS

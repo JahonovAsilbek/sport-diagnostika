@@ -17,6 +17,7 @@ api_v1 = [
     path("", include("apps.athletes.urls")),
     path("", include("apps.measurements.urls")),
     path("", include("apps.scoring.urls")),
+    path("rating/", include("apps.rating.urls")),
 ]
 
 urlpatterns = [
