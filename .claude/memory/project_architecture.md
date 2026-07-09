@@ -10,10 +10,11 @@ metadata:
 The static landing (lite at root, premium under `premium/`) is evolving into a
 full **Python web platform** built from `SPORT.docx` (TTZ). Architecture agreed
 2026-06-16; **pivoted to physical-readiness-first 2026-07-07**. Backend implemented
-through **B8 Rating & Ranking ★** (accounts · catalog + seeded norms/batteries · athletes ·
-measurements · scoring · rating = `RANK()` leaderboards + region ranking + Redis cache)
-against the running colima Postgres/Redis stack; per-task progress lives in `docs/TASK.md`.
-**B9 (comparison) is next** — a thin side-by-side endpoint reading the scoring selectors.
+through **B9 Comparison** (accounts · catalog + seeded norms/batteries · athletes ·
+measurements · scoring · rating · comparison = a thin `GET /comparison/` side-by-side of
+2–3 athletes reading the scoring selectors) against the running colima Postgres/Redis stack;
+per-task progress lives in `docs/TASK.md`. **B10 (recommendations) is next** — rule-based
+recommendations generated on `finalize`, admin-managed rules.
 
 **Stack (decided):** Django 5 + DRF · Vue 3 + Vite + Pinia SPA · PostgreSQL 16 ·
 Celery + Redis (fon + cache) · JWT auth · Docker Compose on own VPS · Nginx +

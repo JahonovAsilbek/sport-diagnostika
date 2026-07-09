@@ -831,6 +831,8 @@ Goal: a side-by-side endpoint for 2–3 athletes (physical results).
 
 # BCKND-53 — Comparison endpoint
 
+> ✅ **Done** (2026-07-09) — thin `apps/comparison` (no model): `GET /comparison/?athletes=1,2,3` → `ComparisonView(APIView)` reads `scoring.selectors.latest_evaluation` per athlete → `{athletes:[{id, full_name, physical_total, ranking_score, daraja, color, indicators:[{exercise(name), raw_value, points}]}], leader}`. Validates 2–3 distinct ids (else 400); every id must be in the caller's scoped athlete set (`scope_queryset` region/org/coach) else **403** (missing/non-existent id counts as out-of-scope — no existence leak); no-evaluation athlete → no-data row (null totals, `[]` indicators), never the leader; `leader` = highest `physical_total`, request order breaks ties, null if none. Response preserves request order.
+
 `GET /comparison/?athletes=1,2,3` → side-by-side: each athlete's latest Evaluation
 (`physical_total`, `daraja`, `color`, per-exercise `IndicatorScore` points) plus the
 `leader`. `apps/comparison` is thin — it reads the scoring selectors. Scoping applies.
@@ -840,6 +842,8 @@ per-exercise points; batteries differ by age×gender, so surface per-exercise wh
 exercise matches.
 
 # BCKND-54 — Comparison tests
+
+> ✅ **Done** (2026-07-09) — **11 tests** (`apps/comparison/tests/test_api.py`): 2- and 3-athlete side-by-side, leader = highest total, no-data athlete (null totals + empty indicators, never leads), leader null when nobody's evaluated, count validation (<2 / >3 / non-integer → 400), out-of-scope athlete → 403, coach compares own athletes, non-existent id → 403, 401 unauth. Full suite **229 passed**, ruff clean, `makemigrations --check` clean (no model). **B9 comparison complete → B10 (recommendations) next.**
 
 pytest: 2 and 3 athletes, leader detection (highest `physical_total`), scope enforcement,
 missing-evaluation handling, count validation.
