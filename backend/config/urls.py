@@ -19,6 +19,7 @@ api_v1 = [
     path("", include("apps.scoring.urls")),
     path("rating/", include("apps.rating.urls")),
     path("", include("apps.comparison.urls")),
+    path("", include("apps.recommendations.urls")),
 ]
 
 urlpatterns = [

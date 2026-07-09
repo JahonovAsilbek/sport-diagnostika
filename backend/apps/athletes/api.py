@@ -9,6 +9,8 @@ from apps.athletes.serializers import AthleteSerializer
 from apps.catalog.models import AgeCategory
 from apps.common.permissions import COACH, LAB_OPERATOR, REGION_ADMIN, DataEntryOrReadOnly
 from apps.common.scoping import ScopedQuerysetMixin
+from apps.recommendations.selectors import recommendations_for_athlete
+from apps.recommendations.serializers import RecommendationSerializer
 from apps.scoring.selectors import athlete_evaluations, latest_evaluation
 from apps.scoring.serializers import EvaluationSerializer
 
@@ -70,9 +72,9 @@ class AthleteViewSet(ScopedQuerysetMixin, viewsets.ModelViewSet):
                 raise PermissionDenied("Tashkilot region_admin viloyatida bo'lishi kerak.")
         return {}
 
-    # Sub-routes reserved so the URL space is stable for the SPA (F4). Bodies land with
-    # their blocks: sessions → B6, recommendations → B10.
-    # Each calls get_object() so the sub-route is scope-checked too (out-of-scope pk → 404).
+    # Sub-routes reserved so the URL space is stable for the SPA (F4). sessions → B6 (kept a
+    # stub — sessions are listed via /sessions/?athlete=). Each calls get_object() so the
+    # sub-route is scope-checked too (out-of-scope pk → 404).
     @action(detail=True, methods=["get"])
     def sessions(self, request, pk=None):
         self.get_object()
@@ -96,5 +98,7 @@ class AthleteViewSet(ScopedQuerysetMixin, viewsets.ModelViewSet):
 
     @action(detail=True, methods=["get"])
     def recommendations(self, request, pk=None):
-        self.get_object()
-        return Response([])
+        """Recommendations from the athlete's latest Evaluation (un-paginated list)."""
+        athlete = self.get_object()
+        recommendations = recommendations_for_athlete(athlete)
+        return Response(RecommendationSerializer(recommendations, many=True).data)

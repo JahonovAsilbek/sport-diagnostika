@@ -46,6 +46,7 @@ LOCAL_APPS = [
     "apps.scoring",
     "apps.rating",
     "apps.comparison",
+    "apps.recommendations",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS

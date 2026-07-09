@@ -10,11 +10,11 @@ metadata:
 The static landing (lite at root, premium under `premium/`) is evolving into a
 full **Python web platform** built from `SPORT.docx` (TTZ). Architecture agreed
 2026-06-16; **pivoted to physical-readiness-first 2026-07-07**. Backend implemented
-through **B9 Comparison** (accounts · catalog + seeded norms/batteries · athletes ·
-measurements · scoring · rating · comparison = a thin `GET /comparison/` side-by-side of
-2–3 athletes reading the scoring selectors) against the running colima Postgres/Redis stack;
-per-task progress lives in `docs/TASK.md`. **B10 (recommendations) is next** — rule-based
-recommendations generated on `finalize`, admin-managed rules.
+through **B10 Recommendations** (accounts · catalog + seeded norms/batteries · athletes ·
+measurements · scoring · rating · comparison · recommendations = rule-based recs generated on
+finalize) against the running colima Postgres/Redis stack; per-task progress lives in
+`docs/TASK.md`. **B11 (Excel import/export) is next** — bulk upload pipeline for physical
+measurements (staging → validation → commit) + template; needs a shared media volume (DVPS-8).
 
 **Stack (decided):** Django 5 + DRF · Vue 3 + Vite + Pinia SPA · PostgreSQL 16 ·
 Celery + Redis (fon + cache) · JWT auth · Docker Compose on own VPS · Nginx +
@@ -108,6 +108,19 @@ must be **plain lists** (DRF `ReturnList` isn't picklable). Testing on_commit in
 the `django_capture_on_commit_callbacks` fixture (pytest wraps tests in a rolled-back txn).
 **DVPS-7:** `django-celery-beat` installed; compose `beat` uses `DatabaseScheduler` and waits on
 `web` healthy (migrations first). No `PeriodicTask` yet — invalidation is event-driven.
+
+**Recommendations (`apps/recommendations`, B10).** Admin-managed `RecommendationRule` is DATA
+(declarative: `exercise` nullable [null=total, set=that exercise's points] · comparator
+lte/lt/gte/gt · threshold · template_text). `Recommendation.rule` is **SET_NULL** (delete a rule,
+keep the rec's snapshotted text). **Generation is wired by a signal like B8's cache** — `post_save`
+on `Evaluation` (**`created`-guard**, no post_delete) → `transaction.on_commit(generate for the pk)`.
+on_commit is load-bearing: it defers past `IndicatorScore.bulk_create` (which runs *after*
+`Evaluation.create` in finalize's txn) so the indicators exist, and fires at the outer commit
+in-request before finalize returns. The entry point is **best-effort** (try/except + log) — a rule
+bug must never 500 a committed finalize. `_rule_fires` is pure; an exercise absent from the athlete's
+battery never fires (not treated as 0). Rule CRUD (`/recommendation-rules/`) is **super_admin-only**
+(all methods — internal config); coaches read the generated *text* via `/athletes/{id}/
+recommendations/`. Signal-generation tests need `django_capture_on_commit_callbacks`.
 
 Full docs (all English): `docs/ARCHITECTURE.md`, `docs/DATA_MODEL.md`, `docs/API.md`,
 `docs/SCORING.md`, `docs/DEFERRED.md`, `docs/ROADMAP.md`, `docs/TASK.md`. Docs are

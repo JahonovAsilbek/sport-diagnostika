@@ -859,6 +859,8 @@ Goal: rule-based recommendations generated on `finalize`, with admin-managed rul
 
 # BCKND-55 — RecommendationRule + Recommendation models
 
+> ✅ **Done** (2026-07-09) — new `apps/recommendations`: `RecommendationRule` (declarative condition — `exercise` FK PROTECT nullable [null → targets `physical_total`, set → that exercise's points], `comparator` lte/lt/gte/gt, `threshold`, `template_text`, `is_active`) + `Recommendation` (`evaluation` FK CASCADE, `rule` FK **SET_NULL** so an admin can delete an obsolete rule while the rec keeps its snapshotted `text`, `text`). Migration + Django admin (rules editable, recommendations read-only). `migrate` OK, `--check` clean.
+
 `RecommendationRule` (`exercise` FK / category, `condition` (points/total threshold),
 `template_text`, `is_active`). `Recommendation` (`evaluation` FK, `rule` FK, `text`,
 `created_at`). Migration. Django admin for rules (TZ #16).
@@ -867,6 +869,8 @@ declarative shape (exercise/total, operator, threshold) — e.g. "turnikda torti
 points ≤ 6" or "physical_total < 30". Keep it evaluable without code changes.
 
 # BCKND-56 — Recommendation generation (on finalize)
+
+> ✅ **Done** (2026-07-09) — `services.py`: pure `_rule_fires(rule, total, points_by_exercise)` (comparator map; exercise-not-in-battery → never fires) + `generate_recommendations(evaluation)` `@atomic` (clears old → `bulk_create` firing rules; idempotent). **Wired by signal** (`recommendations/apps.py ready()` connects `post_save` on `Evaluation`, **`created`-guard**, → `transaction.on_commit(generate for the new pk)`): on_commit runs when finalize's outer `atomic()` commits — *after* `IndicatorScore.bulk_create` and in-request before the response; scoring never imports recommendations. Entry point is **best-effort** (try/except + `logger.exception`) so a rule bug can't 500 a committed finalize; re-finalize/recompute regenerate (old eval CASCADEs its recs, new eval → fresh generation). API: `GET /athletes/{id}/recommendations/` (latest eval, un-paginated, select_related to avoid N+1) + `/recommendation-rules/` CRUD gated to **super_admin** (all methods; serializer `validate()` rejects threshold >10 exercise / >50 total).
 
 A service `generate_recommendations(evaluation)`: evaluate active rules against the
 evaluation's per-exercise points / `physical_total` and create `Recommendation` rows.
@@ -877,6 +881,8 @@ matches. Rule evaluation is pure/declarative → unit-testable. Samples from SCO
 (turnikda tortilish ≤ 6 → strength low; physical_total < 30 → below badge norm).
 
 # BCKND-57 — Recommendation tests
+
+> ✅ **Done** (2026-07-09) — **20 tests** (`test_services` 11 + `test_api` 9). Pure `_rule_fires`: total below/at threshold (strict `lt` boundary), exercise `lte` **boundary fires at exactly 6**, above-threshold no-fire, exercise-absent skip, gte/gt; `generate_recommendations`: total/exercise rules fire + snapshot text, not-met/inactive → nothing, **regeneration idempotent** (no dupes). API: **finalize→recs via the signal** (`django_capture_on_commit_callbacks(execute=True)`), athlete recs sub-route + `[]` when no eval, rule CRUD super_admin full cycle, non-super (incl. GET) → 403, 401 unauth, threshold >10/>50 → 400. Full suite **249 passed**, ruff clean, `makemigrations --check` clean. **B10 recommendations complete → B11 (Excel import/export) next.**
 
 pytest: rule matching (threshold met / not met on points/total), generation on finalize,
 regeneration, rules CRUD permissions.
