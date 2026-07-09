@@ -24,6 +24,7 @@ PAST = date(2020, 1, 1)
 
 # --- get_norm ----------------------------------------------------------------------
 
+
 def test_get_norm_exact_age_match():
     ex = ExerciseFactory()
     norm = NormFactory(exercise=ex, gender=Gender.MALE, age_min=14, age_max=14, valid_from=PAST)
@@ -64,6 +65,7 @@ def test_get_norm_ignores_inactive():
 
 # --- DarajaThreshold ---------------------------------------------------------------
 
+
 def test_daraja_thresholds_ordered_by_total_desc():
     DarajaThresholdFactory(level="III", total_min=30, total_max=36)
     DarajaThresholdFactory(level="I", total_min=48, total_max=50)
@@ -79,6 +81,7 @@ def test_daraja_level_is_unique():
 
 # --- check_physical_norms ----------------------------------------------------------
 # NOTE: the seed_physical idempotency test is pending BCKND-32 (command not built yet).
+
 
 def _battery_with(exercises, age_min=14, age_max=14, gender=Gender.MALE):
     cat = AgeCategoryFactory(age_min=age_min, age_max=age_max)

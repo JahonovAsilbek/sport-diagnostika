@@ -19,11 +19,12 @@ class Athlete(TimeStampedModel):
     birth_year = models.PositiveSmallIntegerField(db_index=True)
     gender = models.CharField(max_length=6, choices=Gender.choices)
 
-    region = models.ForeignKey(
-        "catalog.Region", on_delete=models.PROTECT, related_name="athletes"
-    )
+    region = models.ForeignKey("catalog.Region", on_delete=models.PROTECT, related_name="athletes")
     district = models.ForeignKey(
-        "catalog.District", on_delete=models.PROTECT, null=True, blank=True,
+        "catalog.District",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
         related_name="athletes",
     )
     organization = models.ForeignKey(
@@ -35,8 +36,12 @@ class Athlete(TimeStampedModel):
     # SET_NULL (not PROTECT): users are soft-deactivated, never deleted, but keep the
     # athlete if a coach account is ever removed. limit_choices_to guards the admin form.
     coach = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
-        limit_choices_to={"role": Role.COACH}, related_name="athletes",
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        limit_choices_to={"role": Role.COACH},
+        related_name="athletes",
     )
 
     razryad = models.CharField(max_length=50, blank=True)

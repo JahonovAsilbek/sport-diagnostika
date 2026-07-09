@@ -20,8 +20,13 @@ class AthleteFilterSet(filters.FilterSet):
     class Meta:
         model = Athlete
         fields = [
-            "region", "district", "organization", "sport_type",
-            "gender", "coach", "is_active",
+            "region",
+            "district",
+            "organization",
+            "sport_type",
+            "gender",
+            "coach",
+            "is_active",
         ]
 
     def filter_age_category(self, queryset, name, value):

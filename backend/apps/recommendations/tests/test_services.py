@@ -1,4 +1,5 @@
 """Rule matching (pure) + `generate_recommendations` (DB) — BCKND-56/57."""
+
 from types import SimpleNamespace
 
 import pytest
@@ -15,6 +16,7 @@ def _rule(comparator, threshold, exercise_id=None):
 
 
 # --- _rule_fires (pure, no DB) ------------------------------------------------------
+
 
 def test_total_rule_below_threshold_fires():
     assert _rule_fires(_rule("lt", 30), 28, {}) is True
@@ -43,6 +45,7 @@ def test_gte_and_gt_comparators():
 
 
 # --- generate_recommendations (DB) --------------------------------------------------
+
 
 @pytest.mark.django_db
 def test_total_rule_fires_and_snapshots_text():

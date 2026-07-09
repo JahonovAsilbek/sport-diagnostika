@@ -1,4 +1,5 @@
 """WSGI entry point — production settings by default."""
+
 import os
 
 from django.core.wsgi import get_wsgi_application

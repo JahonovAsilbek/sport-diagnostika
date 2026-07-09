@@ -19,8 +19,15 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
-            "id", "username", "full_name", "role", "phone", "email",
-            "is_active", "region", "organization",
+            "id",
+            "username",
+            "full_name",
+            "role",
+            "phone",
+            "email",
+            "is_active",
+            "region",
+            "organization",
         )
         read_only_fields = fields
 
@@ -52,8 +59,17 @@ class UserWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
-            "id", "username", "password", "first_name", "last_name",
-            "email", "phone", "role", "is_active", "region", "organization",
+            "id",
+            "username",
+            "password",
+            "first_name",
+            "last_name",
+            "email",
+            "phone",
+            "role",
+            "is_active",
+            "region",
+            "organization",
         )
 
     def validate_password(self, value):

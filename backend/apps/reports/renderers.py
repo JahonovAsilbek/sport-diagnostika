@@ -1,5 +1,6 @@
 """Format renderers — a `ReportDataset` → file bytes. WeasyPrint is imported lazily inside the
 PDF renderer only, so the module (and the Excel/Word paths) load without its native libs."""
+
 import io
 from html import escape
 

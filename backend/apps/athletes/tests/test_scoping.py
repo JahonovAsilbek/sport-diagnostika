@@ -3,6 +3,7 @@
 Who sees which athletes, out-of-scope 404s, and the per-role create restrictions in
 `_guard_scope`. Scope is enforced server-side, never trusting client filters.
 """
+
 import pytest
 from rest_framework.test import APIClient
 
@@ -25,14 +26,20 @@ def _client(user=None):
 
 def _payload(region, org, sport, **overrides):
     payload = {
-        "last_name": "T", "first_name": "A", "birth_year": 2010, "gender": "male",
-        "region": region.id, "organization": org.id, "sport_type": sport.id,
+        "last_name": "T",
+        "first_name": "A",
+        "birth_year": 2010,
+        "gender": "male",
+        "region": region.id,
+        "organization": org.id,
+        "sport_type": sport.id,
     }
     payload.update(overrides)
     return payload
 
 
 # --- list scoping ------------------------------------------------------------------
+
 
 def test_region_admin_sees_only_own_region():
     region_a, region_b = RegionFactory(), RegionFactory()
@@ -77,6 +84,7 @@ def test_ministry_and_super_admin_see_all():
 
 # --- out-of-scope detail / sub-route → 404 -----------------------------------------
 
+
 def test_coach_out_of_scope_detail_is_404():
     coach = UserFactory(role="coach", organization=OrganizationFactory())
     other = AthleteFactory()
@@ -99,6 +107,7 @@ def test_coach_out_of_scope_subroute_is_404():
 
 # --- create guards -----------------------------------------------------------------
 
+
 def test_coach_create_forces_coach_self():
     region = RegionFactory()
     org = OrganizationFactory(region=region)
@@ -117,9 +126,7 @@ def test_coach_create_foreign_org_is_403():
     coach = UserFactory(role="coach", organization=OrganizationFactory(region=region))
     foreign_org = OrganizationFactory(region=region)
     sport = SportTypeFactory()
-    resp = _client(coach).post(
-        ATHLETES, _payload(region, foreign_org, sport), format="json"
-    )
+    resp = _client(coach).post(ATHLETES, _payload(region, foreign_org, sport), format="json")
     assert resp.status_code == 403
 
 
@@ -128,9 +135,7 @@ def test_lab_operator_create_foreign_org_is_403():
     operator = UserFactory(role="lab_operator", organization=OrganizationFactory(region=region))
     foreign_org = OrganizationFactory(region=region)
     sport = SportTypeFactory()
-    resp = _client(operator).post(
-        ATHLETES, _payload(region, foreign_org, sport), format="json"
-    )
+    resp = _client(operator).post(ATHLETES, _payload(region, foreign_org, sport), format="json")
     assert resp.status_code == 403
 
 

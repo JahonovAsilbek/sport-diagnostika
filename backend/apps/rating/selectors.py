@@ -4,6 +4,7 @@ Ranking is computed, never stored. The partition is `(region, sport_type, age_ca
 gender)` — no block (physical is block-independent; `sport_type` stays a partition dim so
 "top athletes in a sport" is answerable). Only the latest Evaluation per athlete counts.
 """
+
 from django.db.models import Avg, Count, F, Q, Window
 from django.db.models.functions import Rank
 
@@ -17,8 +18,7 @@ def _latest_ids():
     """Ids of each athlete's most recent Evaluation (Postgres `DISTINCT ON`). Kept as a
     subquery so the outer window query has no `distinct()` (the two can't share a query)."""
     return (
-        Evaluation.objects
-        .order_by("athlete_id", "-session_date", "-id")
+        Evaluation.objects.order_by("athlete_id", "-session_date", "-id")
         .distinct("athlete_id")
         .values("id")
     )
@@ -34,7 +34,8 @@ def _scoped_latest(filters, user):
     for field, value in filters.items():
         qs = qs.filter(**{field: value})
     return scope_queryset(
-        qs, user,
+        qs,
+        user,
         region_field="region_id",
         organization_field="session__organization_id",
         coach_field="athlete__coach",
@@ -48,11 +49,13 @@ def ranked_athletes(filters, user):
     return (
         _scoped_latest(filters, user)
         .select_related("athlete")
-        .annotate(rank=Window(
-            expression=Rank(),
-            partition_by=_PARTITION,
-            order_by=F("ranking_score").desc(),
-        ))
+        .annotate(
+            rank=Window(
+                expression=Rank(),
+                partition_by=_PARTITION,
+                order_by=F("ranking_score").desc(),
+            )
+        )
         .order_by("rank", "-session_date", "athlete__last_name", "athlete__first_name")
     )
 

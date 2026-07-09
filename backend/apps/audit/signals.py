@@ -1,5 +1,6 @@
 """Audit signals — write an `AuditLog` row (synchronously, in the change's transaction) on
 create/update/delete of the key models. Wired per-sender in `AuditConfig.ready()`."""
+
 from django.contrib.auth import get_user_model
 from django.db.models.signals import post_delete, post_save, pre_save
 
@@ -55,9 +56,12 @@ def _on_post_delete(sender, instance, **kwargs):
 def _write(instance, action, changes):
     user, ip = current_actor()
     AuditLog.objects.create(
-        user=user, action=action,
-        entity_type=instance._meta.model_name, entity_id=str(instance.pk),
-        changes=changes, ip=ip,
+        user=user,
+        action=action,
+        entity_type=instance._meta.model_name,
+        entity_id=str(instance.pk),
+        changes=changes,
+        ip=ip,
     )
 
 

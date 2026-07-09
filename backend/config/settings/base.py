@@ -4,6 +4,7 @@ Secrets and environment-specific values are read from the environment via
 django-environ. `DATABASES`/`CACHES` (BCKND-3), DRF/JWT/OpenAPI (BCKND-7) and Celery
 (BCKND-6) are wired in their own tasks.
 """
+
 from datetime import timedelta
 from pathlib import Path
 

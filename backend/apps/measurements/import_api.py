@@ -24,7 +24,9 @@ class Conflict(APIException):
 
 
 class ImportBatchViewSet(
-    mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.ListModelMixin,
     viewsets.GenericViewSet,
 ):
     """Bulk Excel import (B11). A batch is a personal artifact — visible only to its uploader

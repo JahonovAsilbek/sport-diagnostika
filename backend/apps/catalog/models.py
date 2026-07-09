@@ -129,9 +129,7 @@ class TestBattery(TimeStampedModel):
 
 class BatteryItem(TimeStampedModel):
     battery = models.ForeignKey(TestBattery, on_delete=models.CASCADE, related_name="items")
-    exercise = models.ForeignKey(
-        Exercise, on_delete=models.PROTECT, related_name="battery_items"
-    )
+    exercise = models.ForeignKey(Exercise, on_delete=models.PROTECT, related_name="battery_items")
     order = models.PositiveSmallIntegerField()
 
     class Meta:

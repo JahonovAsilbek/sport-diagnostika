@@ -1,4 +1,5 @@
 """`battery_for` + `daraja_for` — the pure domain resolvers (BCKND-45)."""
+
 import pytest
 
 from apps.catalog.factories import (
@@ -15,6 +16,7 @@ pytestmark = pytest.mark.django_db
 
 
 # --- battery_for -------------------------------------------------------------------
+
 
 def test_battery_for_returns_exercises_in_order():
     cat = AgeCategoryFactory(age_min=14, age_max=14)
@@ -51,6 +53,7 @@ def test_battery_for_ignores_inactive_battery():
 
 
 # --- daraja_for --------------------------------------------------------------------
+
 
 def test_daraja_for_maps_every_level():
     seed_thresholds()

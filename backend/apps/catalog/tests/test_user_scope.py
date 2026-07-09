@@ -3,6 +3,7 @@
 Lives with the catalog tests because the scope FKs point at catalog models and use the
 catalog factories.
 """
+
 import pytest
 from rest_framework.test import APIClient
 

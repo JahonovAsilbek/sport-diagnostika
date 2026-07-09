@@ -1,4 +1,5 @@
 """Rating cache — hit, invalidation on Evaluation write, and per-scope key isolation (BCKND-51)."""
+
 from types import SimpleNamespace
 
 import pytest

@@ -1,5 +1,6 @@
 """Commit — create sessions/measurements/evaluations from valid rows; partial commit; re-commit
 guard (BCKND-60)."""
+
 import pytest
 from rest_framework.test import APIClient
 
@@ -31,8 +32,12 @@ def _upload_validated(client, cat, exercises, rows, capture):
     with capture(execute=True):
         resp = client.post(
             IMPORTS,
-            {"file": xlsx_upload(exercises, rows), "age_category": cat.id,
-             "gender": "male", "date": str(BATCH_DATE)},
+            {
+                "file": xlsx_upload(exercises, rows),
+                "age_category": cat.id,
+                "gender": "male",
+                "date": str(BATCH_DATE),
+            },
             format="multipart",
         )
     return resp.json()["id"]
@@ -43,8 +48,9 @@ def test_commit_creates_session_measurements_evaluation(django_capture_on_commit
     seed_norms(exercises)
     athlete = make_athlete()
     client = _client(UserFactory(role="super_admin"))
-    batch_id = _upload_validated(client, cat, exercises, [row_for(athlete, exercises)],
-                                 django_capture_on_commit_callbacks)
+    batch_id = _upload_validated(
+        client, cat, exercises, [row_for(athlete, exercises)], django_capture_on_commit_callbacks
+    )
     resp = client.post(f"{IMPORTS}{batch_id}/commit/")
     assert resp.status_code == 200
     assert resp.json()["status"] == "committed"
@@ -70,8 +76,13 @@ def test_recommit_is_409(django_capture_on_commit_callbacks):
     cat, exercises = make_battery()
     seed_norms(exercises)
     client = _client(UserFactory(role="super_admin"))
-    batch_id = _upload_validated(client, cat, exercises, [row_for(make_athlete(), exercises)],
-                                 django_capture_on_commit_callbacks)
+    batch_id = _upload_validated(
+        client,
+        cat,
+        exercises,
+        [row_for(make_athlete(), exercises)],
+        django_capture_on_commit_callbacks,
+    )
     assert client.post(f"{IMPORTS}{batch_id}/commit/").status_code == 200
     assert client.post(f"{IMPORTS}{batch_id}/commit/").status_code == 409  # already committed
 
@@ -80,8 +91,9 @@ def test_unmatched_only_batch_commits_nothing(django_capture_on_commit_callbacks
     cat, exercises = make_battery()
     seed_norms(exercises)
     client = _client(UserFactory(role="super_admin"))
-    batch_id = _upload_validated(client, cat, exercises, [unmatched_row(exercises)],
-                                 django_capture_on_commit_callbacks)
+    batch_id = _upload_validated(
+        client, cat, exercises, [unmatched_row(exercises)], django_capture_on_commit_callbacks
+    )
     resp = client.post(f"{IMPORTS}{batch_id}/commit/")
     assert resp.status_code == 200
     assert TestSession.objects.filter(source=TestSession.Source.EXCEL).count() == 0

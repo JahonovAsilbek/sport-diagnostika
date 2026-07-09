@@ -1,5 +1,6 @@
 """Test-session API — auth, create/snapshot, battery, measurements, finalize, and the
 draft-only editability rules (B6). Postgres test DB; run with --reuse-db."""
+
 from decimal import Decimal
 
 import pytest
@@ -48,8 +49,11 @@ def _battery_complete_session(**session_kwargs):
     session = TestSessionFactory(**session_kwargs)
     battery = TestBatteryFactory(age_category=session.age_category, gender=session.gender)
     value_types = [
-        Exercise.ValueType.SECONDS, Exercise.ValueType.MINSEC, Exercise.ValueType.COUNT,
-        Exercise.ValueType.CM_SIGNED, Exercise.ValueType.COUNT,
+        Exercise.ValueType.SECONDS,
+        Exercise.ValueType.MINSEC,
+        Exercise.ValueType.COUNT,
+        Exercise.ValueType.CM_SIGNED,
+        Exercise.ValueType.COUNT,
     ]
     exercises = [ExerciseFactory(value_type=vt) for vt in value_types]
     for order, exercise in enumerate(exercises, start=1):
@@ -58,10 +62,11 @@ def _battery_complete_session(**session_kwargs):
 
 
 def _measurements_body(exercises):
-    return {"measurements": [
-        {"exercise": ex.id, "raw_value": v}
-        for ex, v in zip(exercises, RAW_VALUES, strict=True)
-    ]}
+    return {
+        "measurements": [
+            {"exercise": ex.id, "raw_value": v} for ex, v in zip(exercises, RAW_VALUES, strict=True)
+        ]
+    }
 
 
 def _seed_norms(session, exercises):
@@ -70,9 +75,7 @@ def _seed_norms(session, exercises):
     II daraja instead of blocking on an unscored indicator (B7 wires scoring into finalize)."""
     age = session.date.year - session.athlete.birth_year
     for exercise in exercises:
-        norm = NormFactory(
-            exercise=exercise, gender=session.gender, age_min=age, age_max=age
-        )
+        norm = NormFactory(exercise=exercise, gender=session.gender, age_min=age, age_max=age)
         NormBandFactory(
             norm=norm, points=8, lower_bound=Decimal("-100"), upper_bound=Decimal("1000")
         )
@@ -82,6 +85,7 @@ def _seed_norms(session, exercises):
 
 
 # --- auth --------------------------------------------------------------------------
+
 
 def test_unauthenticated_list_is_401():
     assert _client().get(SESSIONS).status_code == 401
@@ -94,6 +98,7 @@ def test_unauthenticated_create_is_401():
 
 
 # --- create / snapshot -------------------------------------------------------------
+
 
 def test_super_admin_create_snapshots_dims():
     cat = AgeCategoryFactory(age_min=14, age_max=14)
@@ -129,6 +134,7 @@ def test_ministry_create_is_403():
 
 # --- battery action ----------------------------------------------------------------
 
+
 def test_battery_action_returns_five_ordered_items():
     session, exercises = _battery_complete_session()
     resp = _client(UserFactory(role="super_admin")).get(f"{SESSIONS}{session.id}/battery/")
@@ -146,6 +152,7 @@ def test_battery_action_without_battery_is_400():
 
 
 # --- measurements action -----------------------------------------------------------
+
 
 def test_measurements_action_stores_the_battery():
     session, exercises = _battery_complete_session()
@@ -170,13 +177,17 @@ def test_measurements_action_rejects_exercise_outside_battery():
 
 # --- finalize action ---------------------------------------------------------------
 
+
 def test_finalize_complete_battery_scores_and_finalizes():
     session, exercises = _battery_complete_session()
     _seed_norms(session, exercises)
     client = _client(UserFactory(role="super_admin"))
-    assert client.post(
-        f"{SESSIONS}{session.id}/measurements/", _measurements_body(exercises), format="json"
-    ).status_code == 200
+    assert (
+        client.post(
+            f"{SESSIONS}{session.id}/measurements/", _measurements_body(exercises), format="json"
+        ).status_code
+        == 200
+    )
     resp = client.post(f"{SESSIONS}{session.id}/finalize/")
     assert resp.status_code == 200
     body = resp.json()
@@ -192,13 +203,16 @@ def test_finalize_complete_battery_scores_and_finalizes():
 def test_finalize_with_missing_measurement_is_400():
     session, exercises = _battery_complete_session()
     client = _client(UserFactory(role="super_admin"))
-    partial = {"measurements": [
-        {"exercise": ex.id, "raw_value": v}
-        for ex, v in zip(exercises[:4], RAW_VALUES[:4], strict=True)
-    ]}
-    assert client.post(
-        f"{SESSIONS}{session.id}/measurements/", partial, format="json"
-    ).status_code == 200
+    partial = {
+        "measurements": [
+            {"exercise": ex.id, "raw_value": v}
+            for ex, v in zip(exercises[:4], RAW_VALUES[:4], strict=True)
+        ]
+    }
+    assert (
+        client.post(f"{SESSIONS}{session.id}/measurements/", partial, format="json").status_code
+        == 200
+    )
     resp = client.post(f"{SESSIONS}{session.id}/finalize/")
     assert resp.status_code == 400
     assert "missing" in resp.json()
@@ -209,9 +223,12 @@ def test_finalize_with_missing_norm_is_400_and_rolls_back_to_draft():
     # finalize + scoring share one transaction, so the 400 must leave the session in draft.
     session, exercises = _battery_complete_session()
     client = _client(UserFactory(role="super_admin"))
-    assert client.post(
-        f"{SESSIONS}{session.id}/measurements/", _measurements_body(exercises), format="json"
-    ).status_code == 200
+    assert (
+        client.post(
+            f"{SESSIONS}{session.id}/measurements/", _measurements_body(exercises), format="json"
+        ).status_code
+        == 200
+    )
     resp = client.post(f"{SESSIONS}{session.id}/finalize/")
     assert resp.status_code == 400
     assert "unscored" in resp.json()
@@ -221,6 +238,7 @@ def test_finalize_with_missing_norm_is_400_and_rolls_back_to_draft():
 
 
 # --- draft-only editability --------------------------------------------------------
+
 
 def test_patch_finalized_session_is_400():
     session = TestSessionFactory(status=TestSession.Status.FINALIZED)

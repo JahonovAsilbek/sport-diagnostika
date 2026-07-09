@@ -34,8 +34,16 @@ class ImportBatchSerializer(serializers.ModelSerializer):
     class Meta:
         model = ImportBatch
         fields = (
-            "id", "status", "age_category", "gender", "date",
-            "row_count", "error_count", "error", "rows", "created_at",
+            "id",
+            "status",
+            "age_category",
+            "gender",
+            "date",
+            "row_count",
+            "error_count",
+            "error",
+            "rows",
+            "created_at",
         )
 
 

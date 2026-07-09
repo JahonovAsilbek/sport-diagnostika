@@ -46,6 +46,7 @@ def _norm_payload(exercise, bands, **overrides):
 
 # --- write: super_admin only -------------------------------------------------------
 
+
 def test_super_admin_creates_norm_with_nested_bands():
     ex = ExerciseFactory()
     bands = [_band(10, "14.0", "14.3"), _band(8, "14.3", "14.6"), _band(6, "14.6", "14.9")]
@@ -104,6 +105,7 @@ def test_coach_cannot_write_norm_is_403():
 
 # --- read + filters ----------------------------------------------------------------
 
+
 def test_coach_can_read_norm_detail_with_nested_bands():
     norm = NormFactory()
     NormBandFactory(norm=norm, points=10, lower_bound=Decimal("0"), upper_bound=Decimal("10"))
@@ -118,15 +120,14 @@ def test_norms_filtered_by_exercise_and_gender():
     NormFactory(exercise=ex1, gender=Gender.MALE, age_min=14, age_max=14)
     NormFactory(exercise=ex1, gender=Gender.FEMALE, age_min=14, age_max=14)
     NormFactory(exercise=ex2, gender=Gender.MALE, age_min=14, age_max=14)
-    resp = _client(UserFactory(role="coach")).get(
-        NORMS, {"exercise": ex1.id, "gender": "male"}
-    )
+    resp = _client(UserFactory(role="coach")).get(NORMS, {"exercise": ex1.id, "gender": "male"})
     results = resp.json()["results"]
     assert len(results) == 1
     assert results[0]["exercise"]["id"] == ex1.id
 
 
 # --- daraja thresholds: read-only --------------------------------------------------
+
 
 def test_daraja_thresholds_read_only():
     DarajaThresholdFactory(level="I", total_min=48, total_max=50)

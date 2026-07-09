@@ -1,6 +1,7 @@
 """Shared rating fixtures (helpers, not a test module). Builds Evaluations placed in a chosen
 `(region, sport_type, age_category, gender)` partition with a given ranking_score, so ranking/
 cache tests can compose leaderboards without going through the whole finalize pipeline."""
+
 from datetime import date
 
 from apps.catalog.factories import AgeCategoryFactory, RegionFactory, SportTypeFactory

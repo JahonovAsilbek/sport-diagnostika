@@ -1,4 +1,5 @@
 """`resolve_points` — band containment + direction-agnostic clamp (BCKND-44, SCORING §3)."""
+
 from decimal import Decimal
 
 import pytest
@@ -18,8 +19,10 @@ def _norm(bands):
     norm = NormFactory()
     for points, lower, upper in bands:
         NormBandFactory(
-            norm=norm, points=points,
-            lower_bound=Decimal(lower), upper_bound=Decimal(upper),
+            norm=norm,
+            points=points,
+            lower_bound=Decimal(lower),
+            upper_bound=Decimal(upper),
         )
     return norm
 

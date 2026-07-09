@@ -33,6 +33,7 @@ def _client(user=None):
 
 # --- read: any authenticated user, no special role ---------------------------------
 
+
 def test_coach_can_read_reference_list():
     RegionFactory()
     resp = _client(UserFactory(role="coach")).get(REGIONS)
@@ -52,6 +53,7 @@ def test_unauthenticated_read_is_401():
 
 
 # --- write: super_admin only -------------------------------------------------------
+
 
 def test_super_admin_can_write():
     resp = _client(UserFactory(role="super_admin")).post(
@@ -76,6 +78,7 @@ def test_region_admin_write_is_403():
 
 
 # --- filters -----------------------------------------------------------------------
+
 
 def test_districts_filtered_by_region():
     r1, r2 = RegionFactory(), RegionFactory()

@@ -26,7 +26,8 @@ def generate_report(report_id):
         content = RENDERERS[report.format](build_dataset(report))
         report.file.save(
             f"report_{report.pk}.{_EXTENSIONS[report.format]}",
-            ContentFile(content), save=False,
+            ContentFile(content),
+            save=False,
         )
         report.status = Report.Status.DONE
         report.error = ""

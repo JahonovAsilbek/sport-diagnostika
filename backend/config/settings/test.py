@@ -1,4 +1,5 @@
 """Test settings — Postgres test DB, in-memory cache (no Redis), fast hashing."""
+
 from .dev import *  # noqa: F403
 
 # Tests must not hit Redis — use a local in-memory cache.

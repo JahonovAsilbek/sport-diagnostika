@@ -64,12 +64,14 @@ def evaluate_session(session):
         ranking_score=total,
         computed_at=timezone.now(),
     )
-    IndicatorScore.objects.bulk_create([
-        IndicatorScore(
-            evaluation=evaluation, exercise=exercise, raw_value=raw_value, points=points
-        )
-        for exercise, raw_value, points in scored
-    ])
+    IndicatorScore.objects.bulk_create(
+        [
+            IndicatorScore(
+                evaluation=evaluation, exercise=exercise, raw_value=raw_value, points=points
+            )
+            for exercise, raw_value, points in scored
+        ]
+    )
     # Hooks land with their blocks: recommendation generation (B10), rating-cache
     # invalidation for this partition (B8). Left as no-ops here.
     return evaluation

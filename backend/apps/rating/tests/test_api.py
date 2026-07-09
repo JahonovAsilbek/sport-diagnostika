@@ -1,4 +1,5 @@
 """Rating API — endpoint shapes, filters, pagination, and per-role scoping (BCKND-50)."""
+
 import pytest
 from rest_framework.test import APIClient
 

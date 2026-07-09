@@ -12,6 +12,7 @@ def _band(lower, upper):
 
 # Pure function — no DB needed (BCKND-33).
 
+
 def test_disjoint_bands_pass():
     assert_bands_no_overlap([_band("0", "10"), _band("10", "20"), _band("20", "30")])
 

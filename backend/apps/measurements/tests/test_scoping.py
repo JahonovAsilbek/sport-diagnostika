@@ -1,6 +1,7 @@
 """Test-session scope enforcement — get_queryset filtering, out-of-scope 404s, and the
 create scope guard (B6). A session is scoped by its snapshot region/organization and the
 athlete's coach; scope is server-side, never trusting client filters."""
+
 import pytest
 from rest_framework.test import APIClient
 
@@ -23,6 +24,7 @@ def _client(user=None):
 
 
 # --- list scoping ------------------------------------------------------------------
+
 
 def test_region_admin_sees_only_own_region():
     region_a, region_b = RegionFactory(), RegionFactory()
@@ -50,9 +52,7 @@ def test_coach_sees_only_own_athletes():
     region = RegionFactory()
     org = OrganizationFactory(region=region)
     coach = UserFactory(role="coach", organization=org)
-    mine = TestSessionFactory(
-        athlete=AthleteFactory(region=region, organization=org, coach=coach)
-    )
+    mine = TestSessionFactory(athlete=AthleteFactory(region=region, organization=org, coach=coach))
     TestSessionFactory(athlete=AthleteFactory(region=region, organization=org))
     data = _client(coach).get(SESSIONS).json()
     assert data["count"] == 1
@@ -69,13 +69,12 @@ def test_ministry_and_super_admin_see_all():
 
 # --- out-of-scope detail → 404 -----------------------------------------------------
 
+
 def test_coach_out_of_scope_detail_is_404():
     region = RegionFactory()
     org = OrganizationFactory(region=region)
     other = TestSessionFactory(
-        athlete=AthleteFactory(
-            region=region, organization=org, coach=UserFactory(role="coach")
-        )
+        athlete=AthleteFactory(region=region, organization=org, coach=UserFactory(role="coach"))
     )
     coach = UserFactory(role="coach", organization=org)
     assert _client(coach).get(f"{SESSIONS}{other.id}/").status_code == 404
@@ -90,15 +89,14 @@ def test_region_admin_out_of_scope_detail_is_404():
 
 # --- create scope guard ------------------------------------------------------------
 
+
 def test_coach_create_for_foreign_athlete_is_403():
     region = RegionFactory()
     org = OrganizationFactory(region=region)
     coach = UserFactory(role="coach", organization=org)
     other_coach = UserFactory(role="coach", organization=org)
     AgeCategoryFactory(age_min=14, age_max=14)
-    athlete = AthleteFactory(
-        coach=other_coach, organization=org, region=region, birth_year=2012
-    )
+    athlete = AthleteFactory(coach=other_coach, organization=org, region=region, birth_year=2012)
     body = {"athlete": athlete.id, "date": SESSION_DATE}
     assert _client(coach).post(SESSIONS, body, format="json").status_code == 403
 
@@ -108,8 +106,6 @@ def test_coach_create_for_own_athlete_is_201():
     org = OrganizationFactory(region=region)
     coach = UserFactory(role="coach", organization=org)
     AgeCategoryFactory(age_min=14, age_max=14)
-    athlete = AthleteFactory(
-        coach=coach, organization=org, region=region, birth_year=2012
-    )
+    athlete = AthleteFactory(coach=coach, organization=org, region=region, birth_year=2012)
     body = {"athlete": athlete.id, "date": SESSION_DATE}
     assert _client(coach).post(SESSIONS, body, format="json").status_code == 201

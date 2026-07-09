@@ -1,4 +1,5 @@
 """Dashboard aggregates (BCKND-66, API §12) — DB-side counts, all scoped to the requester."""
+
 from datetime import timedelta
 
 from django.db.models import Count
@@ -13,8 +14,10 @@ from apps.scoring.models import Evaluation
 
 RECENT_DAYS = 30
 _DARAJA_KEYS = [
-    Evaluation.Daraja.FIRST.value, Evaluation.Daraja.SECOND.value,
-    Evaluation.Daraja.THIRD.value, Evaluation.Daraja.NONE.value,
+    Evaluation.Daraja.FIRST.value,
+    Evaluation.Daraja.SECOND.value,
+    Evaluation.Daraja.THIRD.value,
+    Evaluation.Daraja.NONE.value,
 ]
 _ORG_TYPES = [Organization.Type.OTM.value, Organization.Type.OPSTTM.value]
 
@@ -30,18 +33,24 @@ def _latest_eval_ids():
 
 def overview(user):
     athletes = scope_queryset(
-        Athlete.objects.filter(is_active=True), user,
-        region_field="region_id", organization_field="organization_id", coach_field="coach",
+        Athlete.objects.filter(is_active=True),
+        user,
+        region_field="region_id",
+        organization_field="organization_id",
+        coach_field="coach",
     )
     evaluations = scope_queryset(
-        Evaluation.objects.filter(id__in=_latest_eval_ids()), user,
+        Evaluation.objects.filter(id__in=_latest_eval_ids()),
+        user,
         region_field="region_id",
         organization_field="session__organization_id",
         coach_field="athlete__coach",
     )
     sessions = scope_queryset(
-        TestSession.objects.all(), user,
-        region_field="region_id", organization_field="organization_id",
+        TestSession.objects.all(),
+        user,
+        region_field="region_id",
+        organization_field="organization_id",
         coach_field="athlete__coach",
     )
 
@@ -60,9 +69,7 @@ def overview(user):
     else:
         regions = athletes.values("region_id").distinct().count()
 
-    recent = sessions.filter(
-        date__gte=timezone.localdate() - timedelta(days=RECENT_DAYS)
-    ).count()
+    recent = sessions.filter(date__gte=timezone.localdate() - timedelta(days=RECENT_DAYS)).count()
 
     return {
         "athletes_total": athletes.count(),

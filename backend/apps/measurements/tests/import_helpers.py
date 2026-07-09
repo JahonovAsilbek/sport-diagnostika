@@ -1,5 +1,6 @@
 """Shared fixtures for the Excel import tests (B11) — build batteries, matching athletes,
 permissive norms (so commit can score), and in-memory `.xlsx` uploads."""
+
 import io
 from datetime import date
 from decimal import Decimal
@@ -70,8 +71,11 @@ def row_for(athlete, exercises, value="10"):
 def unmatched_row(exercises, value="10"):
     """A well-formed row whose athlete doesn't exist → a validation error row."""
     row = {
-        "last_name": "Nomavjud", "first_name": "Nomavjud", "middle_name": "",
-        "birth_year": 2012, "gender": "male",
+        "last_name": "Nomavjud",
+        "first_name": "Nomavjud",
+        "middle_name": "",
+        "birth_year": 2012,
+        "gender": "male",
     }
     for exercise in exercises:
         row[exercise.name] = value

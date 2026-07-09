@@ -3,6 +3,7 @@ middleware binds the request here (in a `ContextVar` — coroutine-safe, reset p
 the signal reads the user LAZILY: this API authenticates with JWT via DRF, which resolves
 `request.user` in the view (after `AuthenticationMiddleware`), so an eager read would see
 AnonymousUser. Off-request (Celery / management commands) the actor is `(None, None)`."""
+
 from contextvars import ContextVar
 
 from django.conf import settings

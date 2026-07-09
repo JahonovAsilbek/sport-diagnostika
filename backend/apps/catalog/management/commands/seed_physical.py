@@ -96,7 +96,8 @@ class Command(BaseCommand):
                 )
                 for points, lower, upper in built:
                     _, created = NormBand.objects.update_or_create(
-                        norm=norm, points=points,
+                        norm=norm,
+                        points=points,
                         defaults={"lower_bound": lower, "upper_bound": upper},
                     )
                     bands += created

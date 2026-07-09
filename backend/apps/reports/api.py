@@ -18,7 +18,9 @@ class Conflict(APIException):
 
 
 class ReportViewSet(
-    mixins.CreateModelMixin, mixins.ListModelMixin, mixins.RetrieveModelMixin,
+    mixins.CreateModelMixin,
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
     viewsets.GenericViewSet,
 ):
     """Async report requests. Any authenticated user may request one (reports are read-
@@ -52,6 +54,7 @@ class ReportViewSet(
         if report.status != Report.Status.DONE:
             raise Conflict()
         return FileResponse(
-            report.file.open("rb"), as_attachment=True,
+            report.file.open("rb"),
+            as_attachment=True,
             filename=report.file.name.rsplit("/", 1)[-1],
         )

@@ -1,4 +1,5 @@
 """Reports — request/202, param scoping, async generation, download 409/file, failure (B12)."""
+
 import io
 
 import pytest
@@ -45,6 +46,7 @@ def _require_weasyprint():
 
 # --- request -----------------------------------------------------------------------
 
+
 def test_unauthenticated_is_401():
     assert _client().post(REPORTS).status_code == 401
 
@@ -68,6 +70,7 @@ def test_ministry_may_request_a_report():
 
 
 # --- generation + download ---------------------------------------------------------
+
 
 def test_excel_athlete_report_generates_and_downloads(django_capture_on_commit_callbacks):
     athlete = _athlete_with_eval()
@@ -149,11 +152,13 @@ def test_download_before_done_is_409():
 
 # --- scoping -----------------------------------------------------------------------
 
+
 def test_region_admin_cannot_request_another_region():
     region_a, region_b = RegionFactory(), RegionFactory()
     admin = UserFactory(role="region_admin", region=region_a)
     resp = _client(admin).post(
-        REPORTS, {"type": "region", "format": "excel", "params": {"region": region_b.id}},
+        REPORTS,
+        {"type": "region", "format": "excel", "params": {"region": region_b.id}},
         format="json",
     )
     assert resp.status_code == 403
@@ -165,7 +170,8 @@ def test_athlete_out_of_scope_is_403():
     coach = UserFactory(role="coach", organization=org)
     other = _athlete_with_eval(coach=UserFactory(role="coach"), organization=org, region=region)
     resp = _client(coach).post(
-        REPORTS, {"type": "athlete", "format": "excel", "params": {"athlete": other.id}},
+        REPORTS,
+        {"type": "athlete", "format": "excel", "params": {"athlete": other.id}},
         format="json",
     )
     assert resp.status_code == 403
@@ -178,7 +184,8 @@ def test_report_visible_only_to_requester(django_capture_on_commit_callbacks):
     coach_b = UserFactory(role="coach", organization=org)
     athlete = _athlete_with_eval(coach=coach_a, organization=org, region=region)
     resp = _client(coach_a).post(
-        REPORTS, {"type": "athlete", "format": "excel", "params": {"athlete": athlete.id}},
+        REPORTS,
+        {"type": "athlete", "format": "excel", "params": {"athlete": athlete.id}},
         format="json",
     )
     report_id = resp.json()["id"]
@@ -188,11 +195,13 @@ def test_report_visible_only_to_requester(django_capture_on_commit_callbacks):
 
 # --- failure -----------------------------------------------------------------------
 
+
 def test_failed_generation_sets_status_failed(monkeypatch):
     athlete = _athlete_with_eval()
     report = Report.objects.create(
         requested_by=UserFactory(role="super_admin"),
-        type=Report.Type.ATHLETE, format=Report.Format.EXCEL,
+        type=Report.Type.ATHLETE,
+        format=Report.Format.EXCEL,
         params={"athlete": athlete.id},
     )
     monkeypatch.setattr(

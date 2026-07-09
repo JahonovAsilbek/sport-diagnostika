@@ -1,4 +1,5 @@
 """Battery resolution — the ordered 5 exercises for an (age_category, gender) group."""
+
 from apps.catalog.models import TestBattery
 
 
@@ -11,9 +12,7 @@ def battery_for(age_category, gender):
     gender)` resolver; `measurements.selectors.resolve_battery` is its session-bound sibling.
     """
     battery = (
-        TestBattery.objects.filter(
-            age_category=age_category, gender=gender, is_active=True
-        )
+        TestBattery.objects.filter(age_category=age_category, gender=gender, is_active=True)
         .prefetch_related("items__exercise")
         .first()
     )

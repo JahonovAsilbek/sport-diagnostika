@@ -16,8 +16,6 @@ class AthleteFactory(factory.django.DjangoModelFactory):
     region = factory.SubFactory(RegionFactory)
     # Keep the organization in the athlete's region by default (a realistic, consistent
     # row); tests that need a mismatch pass region/organization explicitly.
-    organization = factory.SubFactory(
-        OrganizationFactory, region=factory.SelfAttribute("..region")
-    )
+    organization = factory.SubFactory(OrganizationFactory, region=factory.SelfAttribute("..region"))
     sport_type = factory.SubFactory(SportTypeFactory)
     is_active = True

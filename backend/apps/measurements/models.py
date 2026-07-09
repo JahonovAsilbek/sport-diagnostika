@@ -38,9 +38,7 @@ class TestSession(TimeStampedModel):
     organization = models.ForeignKey(
         "catalog.Organization", on_delete=models.PROTECT, related_name="+"
     )
-    sport_type = models.ForeignKey(
-        "catalog.SportType", on_delete=models.PROTECT, related_name="+"
-    )
+    sport_type = models.ForeignKey("catalog.SportType", on_delete=models.PROTECT, related_name="+")
 
     # Nullable placeholders for future morpho work (BMI is deferred) — not on the athlete.
     height_cm = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
@@ -61,12 +59,8 @@ class Measurement(TimeStampedModel):
     """One raw result for one battery exercise. minsec is stored as seconds, signed
     flexibility as signed cm (the value_type parse happens at entry — services.py)."""
 
-    session = models.ForeignKey(
-        TestSession, on_delete=models.CASCADE, related_name="measurements"
-    )
-    exercise = models.ForeignKey(
-        "catalog.Exercise", on_delete=models.PROTECT, related_name="+"
-    )
+    session = models.ForeignKey(TestSession, on_delete=models.CASCADE, related_name="measurements")
+    exercise = models.ForeignKey("catalog.Exercise", on_delete=models.PROTECT, related_name="+")
     raw_value = models.DecimalField(max_digits=8, decimal_places=2)
 
     class Meta:
@@ -133,7 +127,10 @@ class ImportRow(TimeStampedModel):
         "athletes.Athlete", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
     )
     created_session = models.ForeignKey(
-        TestSession, on_delete=models.SET_NULL, null=True, blank=True,
+        TestSession,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name="created_by_row",
     )
 

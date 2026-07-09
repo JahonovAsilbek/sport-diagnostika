@@ -1,4 +1,5 @@
 """Recommendation generation via the Evaluation signal + the rule CRUD / athlete endpoints."""
+
 import pytest
 from rest_framework.test import APIClient
 
@@ -27,6 +28,7 @@ def _recs_url(athlete_id):
 
 # --- generation via the Evaluation post_save → on_commit signal ---------------------
 
+
 def test_new_evaluation_generates_recommendations(django_capture_on_commit_callbacks):
     RecommendationRuleFactory(comparator="lt", threshold=30, template_text="Ko'proq mashq.")
     with django_capture_on_commit_callbacks(execute=True):
@@ -43,6 +45,7 @@ def test_no_matching_rule_generates_nothing(django_capture_on_commit_callbacks):
 
 
 # --- athlete recommendations sub-route ----------------------------------------------
+
 
 def test_athlete_recommendations_lists_latest_eval_recs():
     athlete = AthleteFactory()
@@ -63,6 +66,7 @@ def test_athlete_without_evaluation_returns_empty_list():
 
 
 # --- rule CRUD, gated to super_admin ------------------------------------------------
+
 
 def test_super_admin_full_rule_crud():
     client = _client(UserFactory(role="super_admin"))
@@ -90,6 +94,7 @@ def test_unauthenticated_rule_access_is_401():
 
 
 # --- threshold validation -----------------------------------------------------------
+
 
 def test_exercise_rule_threshold_over_10_is_400():
     exercise = ExerciseFactory()

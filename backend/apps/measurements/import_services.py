@@ -2,6 +2,7 @@
 manual-entry services (`parse_raw_value`/`open_session`/`save_measurements`/`finalize_session`)
 and `evaluate_session` — scoring is imperative (there is no finalize signal), so commit calls it
 explicitly, exactly like the finalize API action."""
+
 from django.conf import settings
 from django.db import transaction
 from openpyxl import Workbook, load_workbook
@@ -98,10 +99,12 @@ def read_rows(file_obj, exercises):
         if len(rows) >= settings.MAX_IMPORT_ROWS:
             workbook.close()
             raise FileImportError(f"Qatorlar soni {settings.MAX_IMPORT_ROWS} dan oshib ketdi.")
-        rows.append((
-            row_number,
-            {col: sanitize_cell(val) for col, val in zip(expected, row, strict=False)},
-        ))
+        rows.append(
+            (
+                row_number,
+                {col: sanitize_cell(val) for col, val in zip(expected, row, strict=False)},
+            )
+        )
     workbook.close()
     return rows
 
@@ -110,8 +113,11 @@ def _match_athlete(row_dict, user):
     """Athletes matching the row's natural key within the uploader's scope (up to 2, to detect
     ambiguity). Match-only — imports never create athletes (they're registered via B5)."""
     scoped = scope_queryset(
-        Athlete.objects.filter(is_active=True), user,
-        region_field="region_id", organization_field="organization_id", coach_field="coach",
+        Athlete.objects.filter(is_active=True),
+        user,
+        region_field="region_id",
+        organization_field="organization_id",
+        coach_field="coach",
     )
     query = scoped.filter(
         last_name__iexact=_text(row_dict.get("last_name")),
@@ -189,7 +195,9 @@ def commit_batch(batch):
         try:
             with transaction.atomic():
                 session = open_session(
-                    athlete=row.athlete, entered_by=batch.uploaded_by, date=batch.date,
+                    athlete=row.athlete,
+                    entered_by=batch.uploaded_by,
+                    date=batch.date,
                     source=TestSession.Source.EXCEL,
                 )
                 save_measurements(

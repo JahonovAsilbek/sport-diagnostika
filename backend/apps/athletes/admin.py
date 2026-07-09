@@ -6,8 +6,14 @@ from apps.athletes.models import Athlete
 @admin.register(Athlete)
 class AthleteAdmin(admin.ModelAdmin):
     list_display = (
-        "full_name", "birth_year", "gender", "region", "organization",
-        "sport_type", "coach", "is_active",
+        "full_name",
+        "birth_year",
+        "gender",
+        "region",
+        "organization",
+        "sport_type",
+        "coach",
+        "is_active",
     )
     list_filter = ("gender", "is_active", "region", "sport_type", "organization")
     search_fields = ("last_name", "first_name", "middle_name")

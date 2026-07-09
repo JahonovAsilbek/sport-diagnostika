@@ -1,4 +1,5 @@
 """`evaluate_session` — the orchestration + the SCORING.md §9 worked example (BCKND-46/48)."""
+
 from decimal import Decimal
 
 import pytest
@@ -53,8 +54,11 @@ def test_value_worse_than_worst_band_scores_zero():
     seed_thresholds()
     session, battery = make_session()
     wire_exercise(
-        session, battery, 1,
-        [(10, "14.0", "14.3"), (8, "14.3", "14.6"), (6, "14.6", "14.9")], "20",
+        session,
+        battery,
+        1,
+        [(10, "14.0", "14.3"), (8, "14.3", "14.6"), (6, "14.6", "14.9")],
+        "20",
     )  # 20 s — slower than the worst band → 0
     evaluation = evaluate_session(session)
     assert evaluation.physical_total == 0
@@ -88,9 +92,13 @@ def test_undefined_battery_raises():
     cat = AgeCategoryFactory(age_min=14, age_max=14)
     athlete = AthleteFactory(birth_year=2012)
     session = TestSessionFactory(
-        athlete=athlete, age_category=cat, gender="male",
-        region=athlete.region, organization=athlete.organization,
-        sport_type=athlete.sport_type, date=SESSION_DATE,
+        athlete=athlete,
+        age_category=cat,
+        gender="male",
+        region=athlete.region,
+        organization=athlete.organization,
+        sport_type=athlete.sport_type,
+        date=SESSION_DATE,
     )
     with pytest.raises(ValidationError):
         evaluate_session(session)

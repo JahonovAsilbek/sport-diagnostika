@@ -58,7 +58,12 @@ def parse_raw_value(value_type, raw):
 
 
 def open_session(
-    *, athlete, entered_by, date=None, height_cm=None, weight_kg=None,
+    *,
+    athlete,
+    entered_by,
+    date=None,
+    height_cm=None,
+    weight_kg=None,
     source=TestSession.Source.MANUAL,
 ):
     """Create a draft `TestSession`, snapshotting the athlete's ranking dims at `date`.
@@ -138,9 +143,7 @@ def finalize_session(session):
     if missing is None:
         raise ValidationError("Bu guruh uchun test batareyasi aniqlanmagan.")
     if missing:
-        raise ValidationError(
-            {"missing": missing, "detail": "Barcha 5 mashq kiritilishi shart."}
-        )
+        raise ValidationError({"missing": missing, "detail": "Barcha 5 mashq kiritilishi shart."})
     session.status = TestSession.Status.FINALIZED
     session.save(update_fields=["status", "updated_at"])
     return session

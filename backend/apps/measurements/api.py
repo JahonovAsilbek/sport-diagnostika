@@ -53,8 +53,10 @@ class TestSessionViewSet(ScopedQuerysetMixin, viewsets.ModelViewSet):
     def _assert_athlete_in_scope(self, athlete):
         """A scoped creator may only open a session for an athlete in their own scope."""
         allowed = scope_queryset(
-            Athlete.objects.all(), self.request.user,
-            region_field="region_id", organization_field="organization_id",
+            Athlete.objects.all(),
+            self.request.user,
+            region_field="region_id",
+            organization_field="organization_id",
             coach_field="coach",
         )
         if not allowed.filter(pk=athlete.pk).exists():

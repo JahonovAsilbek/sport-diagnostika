@@ -22,11 +22,23 @@ class AthleteSerializer(serializers.ModelSerializer):
         model = Athlete
         fields = (
             "id",
-            "last_name", "first_name", "middle_name", "full_name",
-            "birth_year", "gender",
-            "region", "district", "organization", "sport_type",
-            "coach", "razryad", "training_experience", "main_competitions",
-            "block", "age_category", "is_active",
+            "last_name",
+            "first_name",
+            "middle_name",
+            "full_name",
+            "birth_year",
+            "gender",
+            "region",
+            "district",
+            "organization",
+            "sport_type",
+            "coach",
+            "razryad",
+            "training_experience",
+            "main_competitions",
+            "block",
+            "age_category",
+            "is_active",
             "created_at",
         )
         read_only_fields = ("created_at",)

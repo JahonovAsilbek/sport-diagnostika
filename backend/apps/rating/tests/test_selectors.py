@@ -1,4 +1,5 @@
 """Ranking selectors — order, ties, latest-per-athlete, top-N, region aggregation (BCKND-49)."""
+
 from datetime import date
 
 import pytest

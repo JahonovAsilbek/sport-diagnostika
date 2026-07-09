@@ -34,10 +34,16 @@ def validate_import_batch(batch_id):
         status, errors, athlete = validate_row(row_dict, batch, batch.uploaded_by, exercises)
         if status == ImportRow.Status.ERROR:
             error_count += 1
-        import_rows.append(ImportRow(
-            batch=batch, row_number=row_number, raw_data=row_dict,
-            status=status, errors=errors, athlete=athlete,
-        ))
+        import_rows.append(
+            ImportRow(
+                batch=batch,
+                row_number=row_number,
+                raw_data=row_dict,
+                status=status,
+                errors=errors,
+                athlete=athlete,
+            )
+        )
     ImportRow.objects.bulk_create(import_rows)
 
     batch.row_count = len(import_rows)

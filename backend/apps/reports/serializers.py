@@ -24,5 +24,12 @@ class ReportSerializer(serializers.ModelSerializer):
     class Meta:
         model = Report
         fields = (
-            "id", "type", "format", "params", "status", "error", "created_at", "completed_at",
+            "id",
+            "type",
+            "format",
+            "params",
+            "status",
+            "error",
+            "created_at",
+            "completed_at",
         )

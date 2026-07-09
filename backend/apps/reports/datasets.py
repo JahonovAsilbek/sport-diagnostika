@@ -1,6 +1,7 @@
 """Report datasets — turn a Report request into a generic (title, columns, rows) table, reusing
 the rating/scoring selectors. Each builder scopes to the requester, so a report never leaks
 out-of-scope data (the same scope is also asserted at request time for a clean 403)."""
+
 from dataclasses import dataclass
 
 from rest_framework.exceptions import PermissionDenied, ValidationError
@@ -26,8 +27,11 @@ def _scoped_athlete(user, athlete_id):
         raise ValidationError({"params": "athlete majburiy."})
     athlete = (
         scope_queryset(
-            Athlete.objects.all(), user,
-            region_field="region_id", organization_field="organization_id", coach_field="coach",
+            Athlete.objects.all(),
+            user,
+            region_field="region_id",
+            organization_field="organization_id",
+            coach_field="coach",
         )
         .filter(pk=athlete_id)
         .first()
@@ -39,8 +43,10 @@ def _scoped_athlete(user, athlete_id):
 
 def _filters(params):
     mapping = {
-        "region": "region_id", "sport_type": "sport_type_id",
-        "age_category": "age_category_id", "gender": "gender",
+        "region": "region_id",
+        "sport_type": "sport_type_id",
+        "age_category": "age_category_id",
+        "gender": "gender",
     }
     return {field: params[key] for key, field in mapping.items() if params.get(key) is not None}
 
@@ -70,8 +76,12 @@ def _athlete_dataset(params, user):
 def _ranking_dataset(params, user, title):
     columns = ["#", "Sportchi", "Ball", "Daraja"]
     rows = [
-        [evaluation.rank, evaluation.athlete.full_name,
-         evaluation.ranking_score, evaluation.get_daraja_display()]
+        [
+            evaluation.rank,
+            evaluation.athlete.full_name,
+            evaluation.ranking_score,
+            evaluation.get_daraja_display(),
+        ]
         for evaluation in ranked_athletes(_filters(params), user)
     ]
     return ReportDataset(title, "", columns, rows)
@@ -80,8 +90,12 @@ def _ranking_dataset(params, user, title):
 def _republic_dataset(params, user):
     columns = ["#", "Viloyat", "I daraja soni", "O'rtacha ball"]
     rows = [
-        [row["rank"], row["region__name"], row["daraja_i_count"],
-         round(float(row["avg_score"] or 0), 1)]
+        [
+            row["rank"],
+            row["region__name"],
+            row["daraja_i_count"],
+            round(float(row["avg_score"] or 0), 1),
+        ]
         for row in region_rating(_filters(params), user)
     ]
     return ReportDataset("Respublika reytingi", "", columns, rows)

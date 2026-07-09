@@ -33,9 +33,7 @@ class Evaluation(TimeStampedModel):
     )
     gender = models.CharField(max_length=6, choices=Gender.choices)
     region = models.ForeignKey("catalog.Region", on_delete=models.PROTECT, related_name="+")
-    sport_type = models.ForeignKey(
-        "catalog.SportType", on_delete=models.PROTECT, related_name="+"
-    )
+    sport_type = models.ForeignKey("catalog.SportType", on_delete=models.PROTECT, related_name="+")
     session_date = models.DateField()
 
     physical_total = models.PositiveSmallIntegerField()  # 0–50
@@ -60,12 +58,8 @@ class Evaluation(TimeStampedModel):
 class IndicatorScore(TimeStampedModel):
     """One exercise's contribution to an Evaluation: the raw value and the points it earned."""
 
-    evaluation = models.ForeignKey(
-        Evaluation, on_delete=models.CASCADE, related_name="indicators"
-    )
-    exercise = models.ForeignKey(
-        "catalog.Exercise", on_delete=models.PROTECT, related_name="+"
-    )
+    evaluation = models.ForeignKey(Evaluation, on_delete=models.CASCADE, related_name="indicators")
+    exercise = models.ForeignKey("catalog.Exercise", on_delete=models.PROTECT, related_name="+")
     raw_value = models.DecimalField(max_digits=8, decimal_places=2)
     points = models.PositiveSmallIntegerField()
 

@@ -21,9 +21,20 @@ class EvaluationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Evaluation
         fields = (
-            "evaluation_id", "session", "athlete", "session_date", "age_category",
-            "gender", "region", "sport_type", "physical_total", "ranking_score",
-            "daraja", "color", "computed_at", "indicators",
+            "evaluation_id",
+            "session",
+            "athlete",
+            "session_date",
+            "age_category",
+            "gender",
+            "region",
+            "sport_type",
+            "physical_total",
+            "ranking_score",
+            "daraja",
+            "color",
+            "computed_at",
+            "indicators",
         )
 
 

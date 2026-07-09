@@ -1,4 +1,5 @@
 """Audit — diff capture, sensitive-field exclusion, actor+IP via the middleware, super_admin API."""
+
 import pytest
 from rest_framework.test import APIClient
 
@@ -22,6 +23,7 @@ def _client(user=None):
 
 
 # --- diff capture (ORM under a bound actor) ----------------------------------------
+
 
 def test_create_logs_a_snapshot():
     actor = UserFactory(role="super_admin")
@@ -82,12 +84,16 @@ def test_off_request_write_has_no_actor():
 
 # --- actor + IP via the real middleware (the JWT lazy-user path) --------------------
 
+
 def test_api_mutation_records_actor_and_forwarded_ip(settings):
     settings.AUDIT_TRUST_X_FORWARDED_FOR = True
     actor = UserFactory(role="super_admin")
     region = RegionFactory()
     payload = {
-        "last_name": "Test", "first_name": "A", "birth_year": 2012, "gender": "male",
+        "last_name": "Test",
+        "first_name": "A",
+        "birth_year": 2012,
+        "gender": "male",
         "region": region.id,
         "organization": OrganizationFactory(region=region).id,
         "sport_type": SportTypeFactory().id,
@@ -103,6 +109,7 @@ def test_api_mutation_records_actor_and_forwarded_ip(settings):
 
 
 # --- read API ----------------------------------------------------------------------
+
 
 def test_audit_endpoint_is_super_admin_only():
     for role in ("coach", "region_admin", "lab_operator", "ministry"):

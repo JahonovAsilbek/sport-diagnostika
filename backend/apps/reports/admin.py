@@ -10,7 +10,14 @@ class ReportAdmin(admin.ModelAdmin):
     list_display = ("id", "requested_by", "type", "format", "status", "created_at", "completed_at")
     list_filter = ("status", "type", "format")
     readonly_fields = (
-        "requested_by", "type", "format", "params", "status", "file", "error", "completed_at",
+        "requested_by",
+        "type",
+        "format",
+        "params",
+        "status",
+        "file",
+        "error",
+        "completed_at",
     )
 
     def has_add_permission(self, request):

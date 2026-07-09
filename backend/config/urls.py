@@ -3,6 +3,7 @@
 App routes are added under `api/v1/` as blocks land (auth in B2, catalog in B3, …).
 The health endpoint is added in BCKND-8.
 """
+
 from django.contrib import admin
 from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView

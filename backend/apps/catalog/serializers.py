@@ -94,8 +94,14 @@ class NormSerializer(serializers.ModelSerializer):
     class Meta:
         model = Norm
         fields = (
-            "id", "exercise", "age_min", "age_max", "gender",
-            "valid_from", "is_active", "bands",
+            "id",
+            "exercise",
+            "age_min",
+            "age_max",
+            "gender",
+            "valid_from",
+            "is_active",
+            "bands",
         )
 
     def to_representation(self, instance):

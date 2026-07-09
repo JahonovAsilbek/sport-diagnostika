@@ -8,4 +8,3 @@ class AuditConfig(AppConfig):
         from apps.audit.signals import connect
 
         connect()
-

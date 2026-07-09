@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 """Django management entry point (defaults to the dev settings)."""
+
 import os
 import sys
 

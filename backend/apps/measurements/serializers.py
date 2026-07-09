@@ -21,13 +21,32 @@ class TestSessionSerializer(serializers.ModelSerializer):
     class Meta:
         model = TestSession
         fields = (
-            "id", "athlete", "date", "entered_by", "source", "status",
-            "age_category", "gender", "region", "organization", "sport_type",
-            "height_cm", "weight_kg", "measurements", "created_at",
+            "id",
+            "athlete",
+            "date",
+            "entered_by",
+            "source",
+            "status",
+            "age_category",
+            "gender",
+            "region",
+            "organization",
+            "sport_type",
+            "height_cm",
+            "weight_kg",
+            "measurements",
+            "created_at",
         )
         read_only_fields = (
-            "entered_by", "source", "status", "age_category", "gender",
-            "region", "organization", "sport_type", "created_at",
+            "entered_by",
+            "source",
+            "status",
+            "age_category",
+            "gender",
+            "region",
+            "organization",
+            "sport_type",
+            "created_at",
         )
 
     def create(self, validated_data):

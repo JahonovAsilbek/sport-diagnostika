@@ -1,5 +1,6 @@
 """Scoring HTTP surface — the recompute endpoint auth/behavior and the populated athlete
 evaluation sub-routes (BCKND-46/47/48). Postgres test DB; Celery runs eagerly in tests."""
+
 import pytest
 from rest_framework.test import APIClient
 
@@ -29,6 +30,7 @@ def _athlete_url(athlete_id, suffix):
 
 # --- recompute auth ----------------------------------------------------------------
 
+
 def test_recompute_unauthenticated_is_401():
     assert _client().post(RECOMPUTE).status_code == 401
 
@@ -54,6 +56,7 @@ def test_recompute_ignores_unknown_filter_field():
 
 # --- recompute behavior (eager) ----------------------------------------------------
 
+
 def test_recompute_refreshes_a_stale_evaluation():
     session = section9_session()
     session.status = TestSession.Status.FINALIZED
@@ -69,6 +72,7 @@ def test_recompute_refreshes_a_stale_evaluation():
 
 
 # --- athlete sub-routes ------------------------------------------------------------
+
 
 def test_athlete_evaluations_lists_snapshots():
     evaluation = EvaluationFactory()

@@ -1,4 +1,5 @@
 """Athlete registry API — permissions, serializer contract, CRUD, sub-routes (BCKND-37)."""
+
 from datetime import date
 
 import pytest
@@ -34,13 +35,19 @@ def _create_payload():
     org = OrganizationFactory(region=region)
     sport = SportTypeFactory()
     payload = {
-        "last_name": "T", "first_name": "A", "birth_year": 2010, "gender": "male",
-        "region": region.id, "organization": org.id, "sport_type": sport.id,
+        "last_name": "T",
+        "first_name": "A",
+        "birth_year": 2010,
+        "gender": "male",
+        "region": region.id,
+        "organization": org.id,
+        "sport_type": sport.id,
     }
     return payload, org
 
 
 # --- auth --------------------------------------------------------------------------
+
 
 def test_unauthenticated_list_is_401():
     assert _client().get(ATHLETES).status_code == 401
@@ -52,6 +59,7 @@ def test_unauthenticated_create_is_401():
 
 
 # --- read --------------------------------------------------------------------------
+
 
 def test_super_admin_list_returns_created_athletes():
     AthleteFactory()
@@ -83,6 +91,7 @@ def test_retrieve_age_category_null_when_out_of_range():
 
 
 # --- write -------------------------------------------------------------------------
+
 
 def test_super_admin_create_is_201():
     payload, org = _create_payload()
@@ -126,6 +135,7 @@ def test_super_admin_delete_is_soft():
 
 
 # --- sub-route stubs ---------------------------------------------------------------
+
 
 def test_subroutes_return_stub_bodies():
     athlete = AthleteFactory()

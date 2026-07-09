@@ -3,6 +3,7 @@
 Its presence puts backend/ on sys.path so `config` and `apps` import cleanly, and it
 holds shared fixtures.
 """
+
 import pytest
 
 from apps.accounts.factories import UserFactory

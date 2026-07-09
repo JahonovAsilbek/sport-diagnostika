@@ -1,6 +1,7 @@
 """Shared scoring fixtures (helpers, not a test module — the `_`-free name is fine because
 it holds no `test_` functions). Builds scorable sessions incl. the exact SCORING.md §9
 worked example so several test modules reproduce it identically."""
+
 from datetime import date
 from decimal import Decimal
 
@@ -55,8 +56,10 @@ def wire_exercise(session, battery, order, bands, raw):
     norm = NormFactory(exercise=exercise, gender=session.gender, age_min=age, age_max=age)
     for points, lower, upper in bands:
         NormBandFactory(
-            norm=norm, points=points,
-            lower_bound=Decimal(lower), upper_bound=Decimal(upper),
+            norm=norm,
+            points=points,
+            lower_bound=Decimal(lower),
+            upper_bound=Decimal(upper),
         )
     MeasurementFactory(session=session, exercise=exercise, raw_value=Decimal(raw))
     return exercise

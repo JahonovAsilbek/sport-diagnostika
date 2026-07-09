@@ -1,4 +1,5 @@
 """Comparison endpoint — 2–3 athletes side by side, leader, scoping, count validation (B9)."""
+
 import pytest
 from rest_framework.test import APIClient
 
@@ -24,7 +25,10 @@ def _evaluate(athlete, total, *, points=(10, 8), daraja="I", color="green"):
     """Give an athlete a latest Evaluation with `total` and some indicator points."""
     evaluation = EvaluationFactory(
         session=TestSessionFactory(athlete=athlete),
-        physical_total=total, ranking_score=total, daraja=daraja, color=color,
+        physical_total=total,
+        ranking_score=total,
+        daraja=daraja,
+        color=color,
     )
     for value in points:
         IndicatorScoreFactory(evaluation=evaluation, points=value)
@@ -37,11 +41,13 @@ def _ids(*athletes):
 
 # --- auth ---------------------------------------------------------------------------
 
+
 def test_unauthenticated_is_401():
     assert _client().get(URL).status_code == 401
 
 
 # --- happy paths --------------------------------------------------------------------
+
 
 def test_two_athletes_side_by_side_with_leader():
     a1, a2 = AthleteFactory(), AthleteFactory()
@@ -87,6 +93,7 @@ def test_leader_is_null_when_nobody_has_an_evaluation():
 
 # --- count validation ---------------------------------------------------------------
 
+
 def test_one_athlete_is_400():
     a1 = AthleteFactory()
     assert _client(UserFactory(role="super_admin")).get(URL, _ids(a1)).status_code == 400
@@ -103,6 +110,7 @@ def test_non_integer_ids_is_400():
 
 
 # --- scoping ------------------------------------------------------------------------
+
 
 def test_out_of_scope_athlete_is_403():
     region = RegionFactory()

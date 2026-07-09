@@ -1,4 +1,5 @@
 """Stats overview — scoping (region_admin isolation), by_daraja / by_organization_type, cache."""
+
 import pytest
 from rest_framework.test import APIClient
 

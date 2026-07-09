@@ -6,6 +6,7 @@ responses unreachable — rankings never go stale (the TTL is only a backstop). 
 per-partition invalidation, but a correct superset of it. All cache access is best-effort:
 a Redis outage must never break a write (the counter bump) or a read (falls back to compute).
 """
+
 from django.core.cache import cache
 
 from apps.common.permissions import COACH, LAB_OPERATOR, MINISTRY, REGION_ADMIN, SUPER_ADMIN

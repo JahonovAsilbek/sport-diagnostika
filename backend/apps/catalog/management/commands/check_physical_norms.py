@@ -15,9 +15,9 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         on_date = timezone.localdate()
         gaps = []
-        items = BatteryItem.objects.select_related(
-            "battery__age_category", "exercise"
-        ).order_by("battery__age_category__ordinal", "battery__gender", "order")
+        items = BatteryItem.objects.select_related("battery__age_category", "exercise").order_by(
+            "battery__age_category__ordinal", "battery__gender", "order"
+        )
         for item in items:
             battery = item.battery
             category = battery.age_category

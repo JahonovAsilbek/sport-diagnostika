@@ -7,5 +7,12 @@ class AuditLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = AuditLog
         fields = (
-            "id", "user", "action", "entity_type", "entity_id", "changes", "ip", "created_at",
+            "id",
+            "user",
+            "action",
+            "entity_type",
+            "entity_id",
+            "changes",
+            "ip",
+            "created_at",
         )
