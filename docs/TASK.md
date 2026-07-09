@@ -1051,6 +1051,8 @@ and dev docs.
 
 # DVPS-10 — Makefile + dev scripts
 
+> ✅ **Done** (2026-07-09) — repo-root `Makefile` (self-documenting `make help`): `up`/`down`/`logs`/`ps`/`build`/`migrate`/`makemigrations`/`shell`/`seed`/`createsuperuser`/`psql` via `docker compose exec web` (+ `psql` via the db container's own `$POSTGRES_USER`/`$POSTGRES_DB`); `test`/`lint`/`format` via the local venv (dev tools aren't in the runtime image). `seed` = `seed_catalog` → `seed_exercises` → `seed_physical` (idempotent). `scripts/bootstrap.sh`: `.env` from template → build → `up --wait` (web's entrypoint migrates) → seed → `seed_admin`, all idempotent + re-runnable. Verified: `make help`/`ps`/`lint` run, compose targets dry-run well-formed, **`make test` → 294 passed**, `sh -n` clean. (Full `make bootstrap` is construction-verified — a real run builds the WeasyPrint image, deferred.)
+
 `Makefile` targets wrapping `docker compose`: `up`, `down`, `logs`, `migrate`,
 `makemigrations`, `shell`, `test`, `lint`, `format`, `seed`, `createsuperuser`,
 `psql`. A `bootstrap` script: copy `.env.example`→`.env`, build, up, migrate, seed.
@@ -1059,6 +1061,8 @@ Edge case: targets run from the repo root; `seed` must be idempotent (re-runnabl
 Document targets in the README.
 
 # DVPS-11 — Dev docs + .env workflow
+
+> ✅ **Done** (2026-07-09) — repo-root `README.md`: repo layout, prerequisites (Docker/colima on macOS; Python 3.12 for the non-container tooling), first-run (`make bootstrap`), the command table, the venv setup for `test`/`lint`/`format`, the settings split (base/dev/test/prod), and the `.env` workflow. `.env` is git-ignored (BCKND-1, confirmed); `.env.example` is the committed template — refreshed with `DJANGO_SUPERUSER_PASSWORD` (used by `seed_admin`), every key documented. Dev deps already declared in `backend/requirements-dev.txt`. **D2 local dev env complete.**
 
 README / dev docs: prerequisites (Docker; Python 3.12 for non-container tooling),
 first-run steps, how to run tests/lint/format, how dev vs prod settings differ. The
