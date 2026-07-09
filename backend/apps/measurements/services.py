@@ -57,8 +57,12 @@ def parse_raw_value(value_type, raw):
     return value.quantize(_CENTS)
 
 
-def open_session(*, athlete, entered_by, date=None, height_cm=None, weight_kg=None):
-    """Create a draft `TestSession`, snapshotting the athlete's ranking dims at `date`."""
+def open_session(
+    *, athlete, entered_by, date=None, height_cm=None, weight_kg=None,
+    source=TestSession.Source.MANUAL,
+):
+    """Create a draft `TestSession`, snapshotting the athlete's ranking dims at `date`.
+    `source` marks how it was entered (manual vs the Excel import pipeline, B11)."""
     date = date or timezone.localdate()
     try:
         age_category = age_category_for(athlete.birth_year, date)
@@ -70,6 +74,7 @@ def open_session(*, athlete, entered_by, date=None, height_cm=None, weight_kg=No
         athlete=athlete,
         entered_by=entered_by,
         date=date,
+        source=source,
         age_category=age_category,
         gender=athlete.gender,
         region=athlete.region,

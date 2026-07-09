@@ -125,6 +125,11 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
+# Excel import caps (B11). DATA_UPLOAD_MAX_MEMORY_SIZE does NOT cap uploaded files, so the
+# import upload serializer/task enforce these explicitly.
+MAX_IMPORT_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
+MAX_IMPORT_ROWS = 2000
+
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},

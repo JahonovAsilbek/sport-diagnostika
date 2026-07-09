@@ -10,11 +10,11 @@ metadata:
 The static landing (lite at root, premium under `premium/`) is evolving into a
 full **Python web platform** built from `SPORT.docx` (TTZ). Architecture agreed
 2026-06-16; **pivoted to physical-readiness-first 2026-07-07**. Backend implemented
-through **B10 Recommendations** (accounts · catalog + seeded norms/batteries · athletes ·
-measurements · scoring · rating · comparison · recommendations = rule-based recs generated on
-finalize) against the running colima Postgres/Redis stack; per-task progress lives in
-`docs/TASK.md`. **B11 (Excel import/export) is next** — bulk upload pipeline for physical
-measurements (staging → validation → commit) + template; needs a shared media volume (DVPS-8).
+through **B11 Excel import/export** (accounts · catalog + seeded norms/batteries · athletes ·
+measurements [+ Excel import] · scoring · rating · comparison · recommendations = bulk upload →
+validate → commit) against the running colima Postgres/Redis stack; per-task progress lives in
+`docs/TASK.md`. **B12 (reports) is next** — async PDF/Word/Excel report generation with
+status/download (WeasyPrint system libs DVPS-9 + the shared media volume).
 
 **Stack (decided):** Django 5 + DRF · Vue 3 + Vite + Pinia SPA · PostgreSQL 16 ·
 Celery + Redis (fon + cache) · JWT auth · Docker Compose on own VPS · Nginx +
@@ -121,6 +121,22 @@ bug must never 500 a committed finalize. `_rule_fires` is pure; an exercise abse
 battery never fires (not treated as 0). Rule CRUD (`/recommendation-rules/`) is **super_admin-only**
 (all methods — internal config); coaches read the generated *text* via `/athletes/{id}/
 recommendations/`. Signal-generation tests need `django_capture_on_commit_callbacks`.
+
+**Excel import (`apps/measurements`, B11).** Lives in measurements (commit creates measurements;
+a separate app would circular-dep). `ImportBatch`/`ImportRow`; provenance one-way via
+`ImportRow.created_session` (no `import_batch` FK on TestSession). Flow: `GET /imports/template/`
+(openpyxl, columns = ident + the group's 5 battery exercises) → `POST /imports/` (multipart) →
+`validate_import_batch` Celery task (enqueued via `on_commit`) → `POST /imports/{id}/commit/`.
+**Athletes are MATCH-ONLY** (never created) by natural key `last_name+first_name+birth_year+gender`
+within uploader scope. **Commit calls `evaluate_session` EXPLICITLY** after `finalize_session` —
+there is **no finalize→scoring signal** (scoring is imperative in the finalize action); relying on
+a signal would leave imports unscored. Per-row savepoints → partial commit; re-commit → `409`.
+Validation reconciles the batch group vs the athlete's recomputed TOIFA. **Security**: `.xlsx`-only
++ `MAX_IMPORT_FILE_SIZE`(5MB, serializer) + `MAX_IMPORT_ROWS`(2000, task); openpyxl parsed
+`read_only,data_only` (no formula engine → no RCE); `sanitize_cell` prefixes `'` on text cells
+starting `= + - @` (the re-export/CSV-injection vector, not server exec). `ImportBatch` scoping is
+custom (uploaded_by=self; super_admin/ministry all), NOT the region/org mixin. Import tests set a
+tmp `MEDIA_ROOT` (conftest) and build `.xlsx` in-memory with openpyxl.
 
 Full docs (all English): `docs/ARCHITECTURE.md`, `docs/DATA_MODEL.md`, `docs/API.md`,
 `docs/SCORING.md`, `docs/DEFERRED.md`, `docs/ROADMAP.md`, `docs/TASK.md`. Docs are

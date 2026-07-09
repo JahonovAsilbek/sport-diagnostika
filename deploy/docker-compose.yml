@@ -56,6 +56,7 @@ services:
     environment: *backend-env
     volumes:
       - ../backend:/app
+      - media:/app/media  # shared with worker — uploaded imports (B11) + reports (B12)
     ports:
       - "8000:8000"
     depends_on: *db-redis-healthy
@@ -72,6 +73,9 @@ services:
     command: ["celery", "-A", "config", "worker", "-l", "info"]
     env_file: ../backend/.env
     environment: *backend-env
+    # Same media volume as web — the worker parses uploaded imports and writes reports.
+    volumes:
+      - media:/app/media
     depends_on: *db-redis-healthy
     networks: [sport]
 
@@ -94,6 +98,7 @@ services:
 
 volumes:
   pgdata:
+  media:
 
 networks:
   sport:

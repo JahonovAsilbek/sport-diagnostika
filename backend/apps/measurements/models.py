@@ -79,3 +79,66 @@ class Measurement(TimeStampedModel):
 
     def __str__(self):
         return f"{self.exercise} = {self.raw_value}"
+
+
+class ImportBatch(TimeStampedModel):
+    """A bulk Excel upload of physical results for one (age_category, gender) group. Staged:
+    validated per row in the worker, then committed into sessions/measurements/evaluations."""
+
+    class Status(models.TextChoices):
+        UPLOADED = "uploaded", "Yuklandi"
+        VALIDATING = "validating", "Tekshirilmoqda"
+        VALIDATED = "validated", "Tekshirildi"  # may carry error rows
+        FAILED = "failed", "Xato"  # file-level (unreadable/wrong header/over cap)
+        COMMITTED = "committed", "Saqlandi"
+
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="import_batches"
+    )
+    file = models.FileField(upload_to="imports/")
+    age_category = models.ForeignKey(
+        "catalog.AgeCategory", on_delete=models.PROTECT, related_name="+"
+    )
+    gender = models.CharField(max_length=6, choices=Gender.choices)
+    date = models.DateField(default=timezone.localdate)
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.UPLOADED)
+    row_count = models.PositiveIntegerField(default=0)
+    error_count = models.PositiveIntegerField(default=0)
+    error = models.TextField(blank=True, default="")  # file-level failure reason (status=failed)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+        verbose_name = "import batch"
+        verbose_name_plural = "import batches"
+
+    def __str__(self):
+        return f"Import #{self.pk} ({self.get_status_display()})"
+
+
+class ImportRow(TimeStampedModel):
+    """One parsed row of an `ImportBatch`, validated independently (a bad row never aborts
+    the batch). `raw_data` is the sanitized cell map; `created_session` is set at commit."""
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Kutilmoqda"
+        VALID = "valid", "Yaroqli"
+        ERROR = "error", "Xato"
+
+    batch = models.ForeignKey(ImportBatch, on_delete=models.CASCADE, related_name="rows")
+    row_number = models.PositiveIntegerField()
+    raw_data = models.JSONField(default=dict)
+    status = models.CharField(max_length=8, choices=Status.choices, default=Status.PENDING)
+    errors = models.JSONField(default=list)
+    athlete = models.ForeignKey(
+        "athletes.Athlete", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    created_session = models.ForeignKey(
+        TestSession, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="created_by_row",
+    )
+
+    class Meta:
+        ordering = ["batch", "row_number"]
+
+    def __str__(self):
+        return f"Row {self.row_number} ({self.status})"

@@ -899,6 +899,8 @@ commit) + template. Needs a shared media volume (DVPS-8).
 
 # BCKND-58 — ImportBatch + ImportRow models + template download
 
+> ✅ **Done** (2026-07-09) — in `apps/measurements` (commit creates measurements; a separate app would circular-dep). `ImportBatch` (uploaded_by, file, age_category+gender template group, date, status uploaded/validating/validated/failed/committed, row_count/error_count, `error` for file-level reason) + `ImportRow` (batch, row_number, raw_data JSON, status pending/valid/error, errors JSON, `athlete` matched, `created_session` set at commit). **Provenance is one-way** (`ImportRow.created_session`) — no `import_batch` FK on TestSession. `GET /imports/template/?age_category=&gender=` → openpyxl `.xlsx` (columns = identifying fields + the group's 5 battery exercises via `battery_for`; 400 if no battery). Admin registered.
+
 `ImportBatch` (`uploaded_by`, `file`, `status`, `row_count`, `error_count`,
 `created_at`). `ImportRow` (`batch` FK, `row_number`, `raw_data` json, `status`,
 `errors` json). `GET /imports/template/?age_category=&gender=` → an Excel template
@@ -908,6 +910,8 @@ exercises for the requested age×gender. The uploaded file is stored in MEDIA (n
 DVPS-8 media volume).
 
 # BCKND-59 — Import upload + async validation (Celery)
+
+> ✅ **Done** (2026-07-09) — `POST /imports/` (multipart) → `ImportBatch(uploaded)` + `validate_import_batch` Celery task via `transaction.on_commit` (no worker race). Task (`tasks.py`): openpyxl `read_only,data_only` parse, header check, per-row `validate_row` (athlete **match-only** by natural key within uploader scope [0→not-found, >1→ambiguous]; age_category+gender reconciliation vs the group, catching `AgeOutOfRange`; all-5-present; `parse_raw_value` per value_type) → `ImportRow` valid/error; per-row errors don't fail the batch (only file-level → `failed`). **Idempotent** (clears prior rows on retry). **Security**: `.xlsx`-only + 5 MB cap (serializer) + 2000-row cap (task); openpyxl has no formula engine (no RCE) — `sanitize_cell` neutralizes text cells starting `= + - @` for the re-export vector; every cell re-validated server-side.
 
 `POST /imports/` (multipart) → `ImportBatch` (status `uploaded`) + launch a Celery
 task to parse + validate rows into `ImportRow` (`validated`/`error`).
@@ -921,6 +925,8 @@ client-supplied values.
 
 # BCKND-60 — Import commit
 
+> ✅ **Done** (2026-07-09) — `POST /imports/{id}/commit/` → `commit_batch`: per valid row (own savepoint → **partial commit**) `open_session(source=excel)` → `save_measurements` → `finalize_session` → **`evaluate_session`** (there is **no** finalize signal — scoring is imperative, so commit calls it explicitly like the finalize action) → set `created_session`; skips error/already-committed rows. **Match-only** (user decision) — no athletes created; unmatched rows stay errors. Re-commit guard: `409 Conflict` if `status != validated`. `open_session` gained a `source=` kwarg.
+
 `POST /imports/{id}/commit/` → create athletes/sessions/measurements from the
 `validated` rows (skip `error` rows) in a transaction; status `committed`. Shares
 the same validation/finalize rules as manual entry (the 5-exercise battery).
@@ -928,6 +934,8 @@ Edge case: only validated rows commit; partial commit is allowed (error rows ski
 + reported). Guard against re-commit (don't double-insert).
 
 # DVPS-8 — Media volume in compose — needed by B11/B12
+
+> ✅ **Done** (2026-07-09) — named `media` volume declared and mounted `media:/app/media` (= `MEDIA_ROOT`) on **both** `web` and `worker` so uploaded imports (B11) + reports (B12) persist and are shared (`MEDIA_ROOT`/`MEDIA_URL` were already set). `beat` doesn't need it. `docker compose config` valid.
 
 Add a named `media` volume mounted at MEDIA_ROOT on BOTH the `web` and `worker`
 services (the worker writes/reads files, the web serves downloads). Ensures uploaded
@@ -937,6 +945,8 @@ also need Nginx `client_max_body_size` (handled in D3). Persist across container
 recreation.
 
 # BCKND-61 — Import tests
+
+> ✅ **Done** (2026-07-09) — **20 tests** across `test_import_template`/`test_import_upload`/`test_import_commit` + an `import_helpers.py` (in-memory `.xlsx` builder, battery/norm/athlete setup) + a `conftest.py` (tmp `MEDIA_ROOT`). Template header = ident + 5 battery names / 400 no battery / 401; upload → validation (matching row, mixed valid+error, **age×gender mismatch → error**), `.xlsx`-only + oversize reject, `sanitize_cell` formula-injection (parametrized), idempotent re-validate, uploader-only scoping (list + 404); commit creates session+measurements+**evaluation**, skips error rows, re-commit → 409, unmatched-only commits nothing. openpyxl-under-eager + `django_capture_on_commit_callbacks`. Full suite **269 passed**, ruff clean, `makemigrations --check` clean, `docker compose config` valid. **B11 Excel import/export complete → B12 (reports) next.**
 
 pytest: template generation (per age×gender battery), upload → validation (valid + error
 rows), commit (skips errors), permissions/scoping.
