@@ -34,6 +34,10 @@ COPY --chown=app:app backend/ ./
 # Entrypoint lives outside /app so the dev bind-mount of ../backend:/app doesn't hide it.
 COPY deploy/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
+# STATIC_ROOT + MEDIA_ROOT are absent from the image (.dockerignore'd) — pre-create them
+# owned by `app` so a first-init named volume inherits that ownership. Without this the
+# volume mounts root-owned and `collectstatic`/uploads fail for the non-root user.
+RUN mkdir -p /app/staticfiles /app/media && chown app:app /app/staticfiles /app/media
 USER app
 EXPOSE 8000
 # Prod default; the dev compose overrides this with runserver (DVPS-4).

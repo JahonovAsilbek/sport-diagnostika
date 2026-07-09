@@ -1080,6 +1080,15 @@ compose profile.
 
 # DVPS-12 — Nginx reverse proxy config
 
+> ✅ **Done** (2026-07-09) — `deploy/nginx.conf`: `upstream web:8000`; `/api/` + `/admin/`
+> proxied with `X-Forwarded-Proto $scheme` and **`X-Forwarded-For $remote_addr`** (overwrite,
+> not `$proxy_add_...` — apps/audit reads the FIRST hop, so append would let a client spoof
+> the audit IP); `/static/` (alias, `gzip_static`) + `/media/` (read-only, `nosniff`);
+> `try_files $uri $uri/ /index.html` SPA fallback; `client_max_body_size 8m` (B11 5 MB +
+> headroom); gzip; security headers with `proxy_hide_header` on the proxied locations so
+> Django's copies don't duplicate. Verified: `nginx -t` (with a `web` host alias — `-t`
+> resolves upstreams, so `--no-deps` alone fails on DNS, not syntax).
+
 `deploy/nginx.conf`: serve the Vue SPA build (history-mode fallback), proxy `/api/`
 and `/admin/` to gunicorn (`web`), serve `/static/` and `/media/`, gzip,
 `client_max_body_size` for Excel imports (B11), security headers, and forward
@@ -1089,6 +1098,23 @@ Edge case: SPA history fallback (`try_files $uri /index.html`);
 `X-Forwarded-*` for `SECURE_PROXY_SSL_HEADER` (BCKND-2) and audit IP (BCKND-65).
 
 # DVPS-13 — Nginx service + prod compose override
+
+> ✅ **Done** (2026-07-09) — `deploy/docker-compose.prod.yml` overlay (`-f base -f prod`):
+> `web` → gunicorn (3 workers), `DJANGO_SETTINGS_MODULE=config.settings.prod`,
+> `COLLECTSTATIC=1`, `SECURE_SSL_REDIRECT=False` (HTTP-only until D5); `volumes: !override`
+> drops the `../backend:/app` source mount (an additive override can't remove it — Compose
+> 5.x supports the tag) and adds the `static` volume; `ports: !reset []`. `worker`/`beat`
+> get prod settings too. `nginx` service (`nginx:1.27-alpine`, `depends_on web healthy`,
+> `:80`, static/media/SPA mounts read-only). **`deploy/Dockerfile`**: `mkdir -p /app/{staticfiles,media}
+> && chown app:app` before `USER app` — else the first-init named volume is root-owned and
+> `collectstatic` fails for the non-root user. `prod.py`: HTTPS hardening gated behind
+> `env.bool("SECURE_SSL_REDIRECT", default=True)` (redirect/cookies/HSTS follow it) so the
+> pre-TLS profile doesn't 301-loop; `CSRF_TRUSTED_ORIGINS` env-added. `entrypoint.sh` already
+> ran `collectstatic` on `COLLECTSTATIC=1` (unchanged). Makefile `prod-*` targets + README
+> section. Verified: merged `compose config` (no source mount, gunicorn, no ports, prod
+> settings on web/worker/beat, `static` volume), `nginx -t`, prod-settings import both flag
+> paths, ruff clean, 294 passed, `makemigrations --check` clean. Full image build + live
+> curl deferred (offered, ~mins — like D2). **D3 nginx + static complete → D4 (CI) next.**
 
 Add an `nginx` service and a `docker-compose.prod.yml` override: gunicorn `web`
 command (not runserver), nginx serving SPA + static/media volumes, no source

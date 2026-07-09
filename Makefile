@@ -2,12 +2,15 @@
 # The stack + app commands go through docker compose; test/lint/format use the local
 # venv (dev tooling isn't in the runtime image — see backend/requirements-dev.txt).
 COMPOSE := docker compose -f deploy/docker-compose.yml
+# Prod overlay: gunicorn + nginx, no source mount (deploy/docker-compose.prod.yml).
+PROD    := docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.prod.yml
 MANAGE  := $(COMPOSE) exec -T web python manage.py
 VENV    := backend/.venv/bin
 
 .DEFAULT_GOAL := help
 .PHONY: help bootstrap build up down logs ps migrate makemigrations shell \
-        seed createsuperuser psql test lint format
+        seed createsuperuser psql test lint format \
+        prod-build prod-up prod-down prod-logs
 
 help: ## List targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -60,3 +63,15 @@ lint: ## Ruff lint
 format: ## Ruff format + autofix
 	$(VENV)/ruff format backend
 	$(VENV)/ruff check --fix backend
+
+prod-build: ## Build images for the prod profile (gunicorn + nginx)
+	$(PROD) build
+
+prod-up: ## Start the prod profile — nginx on :80, gunicorn web (HTTP-only until D5/TLS)
+	$(PROD) up -d
+
+prod-down: ## Stop the prod profile
+	$(PROD) down
+
+prod-logs: ## Tail prod logs — `make prod-logs s=nginx` to filter a service
+	$(PROD) logs -f $(s)

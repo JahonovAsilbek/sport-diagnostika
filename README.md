@@ -76,6 +76,28 @@ Settings are split under `backend/config/settings/`: `base.py` (shared) → `dev
 committed template; keep it current, with a sane sample for every key (Django secret,
 Postgres + Redis URLs, CORS origin, the `super_admin` bootstrap password).
 
+## Production profile
+
+`deploy/docker-compose.prod.yml` overlays the base stack with the production topology:
+**nginx** on `:80` reverse-proxying a **gunicorn** `web` (no source bind-mount — the baked
+image is shipped), serving the Vue SPA build and `/static/` + `/media/` from volumes.
+
+```bash
+make prod-build && make prod-up      # or: docker compose -f deploy/docker-compose.yml \
+                                     #        -f deploy/docker-compose.prod.yml up -d --build
+make prod-logs s=nginx
+make prod-down
+```
+
+Notes:
+- **HTTP-only for now** — TLS (Let's Encrypt) lands in D5. The overlay sets
+  `SECURE_SSL_REDIRECT=False` so the pre-TLS stack doesn't 301-loop; `config.settings.prod`
+  re-enables HTTPS hardening by default once certs exist.
+- `ALLOWED_HOSTS` in the prod `.env` **must** keep `127.0.0.1` (the container healthcheck
+  sends `Host: 127.0.0.1`; `DEBUG=False` rejects unlisted hosts) alongside the real domain.
+- The SPA isn't built yet (F-blocks), so `/` returns 404 until `frontend/dist` exists — the
+  API (`/api/`), admin (`/admin/`), `/static/`, and `/media/` all work meanwhile.
+
 ## Marketing landing
 
 The static landing site is separate from the platform (no backend, no build): the lite
