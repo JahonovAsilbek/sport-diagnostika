@@ -1131,6 +1131,20 @@ Goal: automated lint + test + build on every push/PR.
 
 # DVPS-14 — CI pipeline (lint + test + build)
 
+> ✅ **Done** (2026-07-09) — `.github/workflows/ci.yml`, on push→main + all PRs.
+> **`test`** job (Python 3.12, pip cached via `setup-python cache: pip`): `postgres:16` +
+> `redis:7-alpine` service containers (health-gated, mirroring the compose stack) → `ruff
+> check .` → `ruff format --check .` → `pytest -q`, run from `backend/` with
+> `DATABASE_URL`/`REDIS_URL`/`SECRET_KEY` env (`REDIS_URL` needed at settings import even
+> though tests use locmem). **`build`** job (parallel): `docker/build-push-action` on
+> `deploy/Dockerfile` (context = repo root, no push) with `type=gha` layer cache to keep the
+> WeasyPrint image fast on re-runs. `concurrency` cancels superseded runs; any lint/test/build
+> failure fails the pipeline (default). **Prereq:** `ruff format --check` required a one-time
+> `ruff format` of the backend (82 files, committed separately as `style:` — behaviour
+> unchanged). Verified locally: `ruff check`/`ruff format --check` clean, 294 passed, workflow
+> passes `actionlint` (exit 0), `docker build -f deploy/Dockerfile .` succeeds.
+> **D4 CI pipeline complete → D5 (production deploy) next.**
+
 CI workflow (GitHub Actions): on push/PR run `ruff check`, `ruff format --check`,
 `pytest` (with Postgres + Redis service containers), and a `docker build` check.
 Cache pip.

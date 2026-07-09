@@ -1,0 +1,91 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Cancel an in-progress run when a new commit lands on the same ref.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Lint + test
+    runs-on: ubuntu-latest
+    # Mirror the compose stack (deploy/docker-compose.yml). Unit tests use a locmem cache
+    # (config.settings.test), but base settings read REDIS_URL at import, so it must exist;
+    # redis is here for any integration test that needs a live broker.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: sport
+          POSTGRES_USER: sport
+          POSTGRES_PASSWORD: sport
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U sport -d sport"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      DJANGO_SETTINGS_MODULE: config.settings.test
+      SECRET_KEY: ci-insecure-key-not-for-prod
+      DATABASE_URL: postgres://sport:sport@localhost:5432/sport
+      REDIS_URL: redis://localhost:6379/0
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            backend/requirements.txt
+            backend/requirements-dev.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Ruff lint
+        run: ruff check .
+
+      - name: Ruff format check
+        run: ruff format --check .
+
+      - name: Pytest
+        run: pytest -q
+
+  build:
+    name: Docker build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      # Build the runtime image (context = repo root, matching the compose build). GHA layer
+      # cache keeps the WeasyPrint apt + pip layers warm across runs. No push — this is a check.
+      - name: Build backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/Dockerfile
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

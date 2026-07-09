@@ -41,7 +41,13 @@ data are per-machine (not committed):
    (all idempotent). `seed_physical` (norms + batteries) arrives with B4.
 6. Run tests: `backend/.venv/bin/pytest backend -q`.
 
+**CI (D4, `.github/workflows/ci.yml`)** runs on push→main + all PRs: `ruff check` **+
+`ruff format --check`** + `pytest` (postgres:16/redis:7 services) and a `docker build`.
+So **`ruff format` is now enforced** — run `make format` (or `ruff format backend`) before
+committing or CI fails. Tests set `REDIS_URL` even though they use locmem, because base
+settings read it at import time.
+
 **Why:** the repo is developed on two Macs; this records the toolchain so the other
 machine doesn't re-decide (e.g. re-pick a container runtime). The Bash shell is **zsh** —
 `$var` does not word-split, so don't build commands in a shell variable.
-See [[project_architecture]] and [[project_physical_readiness]].
+See [[project_architecture]], [[project_physical_readiness]] and [[project_deploy_prod]].
