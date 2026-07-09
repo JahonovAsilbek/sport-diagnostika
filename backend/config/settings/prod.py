@@ -29,3 +29,9 @@ X_FRAME_OPTIONS = "DENY"
 # Admin POST (and any future same-origin session flow) over the public host. Include the
 # scheme, e.g. https://sport-diagnostika.uz. Empty in dev / the D3 HTTP profile.
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
+
+# The internal container healthcheck hits gunicorn directly over http (no proxy → no
+# X-Forwarded-Proto), so with SECURE_SSL_REDIRECT on it would be 301'd to https://127.0.0.1
+# (nothing listening) and the redirect-following probe would fail. Exempt just that path.
+# SecurityMiddleware strips the leading slash and uses re.search, so anchor with ^…$.
+SECURE_REDIRECT_EXEMPT = [r"^api/v1/health/$"]

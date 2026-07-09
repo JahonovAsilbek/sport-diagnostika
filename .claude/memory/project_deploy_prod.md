@@ -1,6 +1,6 @@
 ---
 name: project_deploy_prod
-description: Prod topology (nginx + gunicorn) gotchas — root-owned volumes, compose !override, XFF, HTTP-only pre-TLS
+description: Prod + TLS topology (nginx + gunicorn + certbot) gotchas — root-owned volumes, compose !override, XFF, cert bootstrap, one-shot migrate
 metadata:
   type: project
 ---
@@ -41,7 +41,40 @@ Non-obvious facts (bit us / verified in D3):
 - **SPA `/` → 404 until the F-blocks** populate `frontend/dist` (bind-mounted read-only into
   nginx). API/admin/static/media work meanwhile.
 
-**D5 forward-flag:** the container healthcheck hits gunicorn directly (`127.0.0.1:8000`), so it
-never sends `X-Forwarded-Proto: https` — with TLS, do the http→https redirect in an nginx `:80`
-block and keep Django's `SECURE_SSL_REDIRECT` off (or exempt `/api/v1/health/`), else the
-healthcheck 301-loops even with certs.
+**TLS (D5, DVPS-15/16)** — a 3rd overlay `docker-compose.tls.yml` on top of base+prod
+(`-f base -f prod -f tls`), **certbot + webroot** (keeps the hand-written nginx; not
+acme-companion). `deploy/nginx.tls.conf` + `scripts/{init-letsencrypt,deploy}.sh` +
+`docs/DEPLOY.md`. Verified facts:
+
+- **Healthcheck vs SSL redirect.** The container healthcheck hits gunicorn directly (no
+  `X-Forwarded-Proto`), so with `SECURE_SSL_REDIRECT=True` it 301-loops. Fix:
+  `SECURE_REDIRECT_EXEMPT=[r"^api/v1/health/$"]` in prod.py (SecurityMiddleware lstrips "/" +
+  `re.search`). nginx does the real http→https redirect at `:80`; the tls overlay flips web
+  `SECURE_SSL_REDIRECT=True` (HSTS/secure cookies back on).
+
+- **Publish NOTHING but nginx on the VPS.** The base compose maps `5432`/`6379` for host-venv
+  dev; `prod.yml` `!reset []`s `db.ports` + `redis.ports` or the datastores are internet-exposed.
+
+- **HSTS must be set at nginx**, not only Django — Django only emits it on `/api`+`/admin`; the
+  nginx-served SPA/`/static`/`/media` need it for preload. `add_header … Strict-Transport-Security`
+  at the `:443` server + `proxy_hide_header Strict-Transport-Security` on proxied locations (a
+  location with its own `add_header`, e.g. `/media/`, must re-assert it — nginx doesn't inherit).
+
+- **One-shot migrate.** `entrypoint.sh` gates migrate behind `MIGRATE_ON_START` (default "1");
+  prod web sets "0"; `deploy.sh` runs `run --rm -e MIGRATE_ON_START=0 -e COLLECTSTATIC=0 web …
+  migrate` (COLLECTSTATIC=0 too — the entrypoint runs collectstatic regardless of the migrate gate).
+
+- **Cert bootstrap chicken-egg.** nginx won't boot without the cert it references, but certbot
+  needs nginx serving the ACME webroot. `init-letsencrypt.sh` writes a dummy self-signed cert →
+  nginx up → certbot `certonly --webroot` (STAGING=1 first). The certbot service's *entrypoint* is
+  a renew loop, and `docker compose run` overrides *command* not entrypoint → one-shots MUST pass
+  `--entrypoint`.
+
+- **Worker sizing.** `deploy/gunicorn.conf.py` (mounted, `gunicorn -c`) = `(2*cores)+1`,
+  `WEB_CONCURRENCY` override. Dropping `--workers` and relying on a bare `WEB_CONCURRENCY` would
+  silently fall to 1 worker if unset.
+
+- **Verify TLS config by BOOTING nginx**, not just `nginx -t` — `-t` misses `listen [::]:443`
+  IPv6-bind failures + accepts the cert-missing case differently. Use a throwaway self-signed cert
+  under `$HOME` (colima only shares `$HOME`, **not** `/private/tmp` scratchpad) + `--add-host
+  web:127.0.0.1`, then `docker run -d …` and assert the container stays `Up`.

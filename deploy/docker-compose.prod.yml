@@ -1,24 +1,35 @@
 # deploy/docker-compose.prod.yml — production overlay: gunicorn + nginx, no source mount.
 # Usage: docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.prod.yml up -d
-# (or `make prod-up`). HTTP-only until D5 adds TLS. Needs Docker Compose >= 2.24 for the
-# `!override` / `!reset` merge tags (this repo runs 5.x).
+# (or `make prod-up`). HTTP-only on its own; add docker-compose.tls.yml (D5) for HTTPS.
+# Needs Docker Compose >= 2.24 for the `!override` / `!reset` merge tags (this repo runs 5.x).
 
 services:
+  # The datastores talk to the app over the `sport` network by name — never publish them on
+  # the host. The base compose maps 5432/6379 for host-venv dev; drop that in prod so a VPS
+  # doesn't expose Postgres/Redis to the internet.
+  db:
+    ports: !reset []
+
+  redis:
+    ports: !reset []
+
   web:
-    # Runserver (base) → gunicorn. `--access-logfile -` sends access logs to stdout.
-    command: ["gunicorn", "config.wsgi", "--bind", "0.0.0.0:8000",
-              "--workers", "3", "--access-logfile", "-"]
+    # Runserver (base) → gunicorn, worker count sized to cores by deploy/gunicorn.conf.py
+    # (override with WEB_CONCURRENCY). `--access-logfile -` sends access logs to stdout.
+    command: ["gunicorn", "config.wsgi", "-c", "/gunicorn.conf.py",
+              "--bind", "0.0.0.0:8000", "--access-logfile", "-"]
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.prod
       COLLECTSTATIC: "1"  # entrypoint runs collectstatic into the shared `static` volume
-      # D3 is HTTP-only (TLS lands in D5). Keep the HTTPS-only hardening off so the internal
-      # healthcheck and admin login work over http; prod.py re-enables it by default in D5.
+      # HTTP-only on the prod overlay alone (no TLS listener); the tls.yml overlay flips this
+      # to "True". Keeping it off here avoids a 301-loop for the internal healthcheck.
       SECURE_SSL_REDIRECT: "False"
     # Replace the base list wholesale — drops the ../backend:/app source mount (prod ships
-    # the baked image). Keeps media + adds the collectstatic target volume.
+    # the baked image). Keeps media, adds the collectstatic target + the gunicorn config.
     volumes: !override
       - media:/app/media
       - static:/app/staticfiles
+      - ./gunicorn.conf.py:/gunicorn.conf.py:ro
     ports: !reset []  # only nginx is published to the host
 
   # Celery services run the same image; without this they'd start under dev settings.

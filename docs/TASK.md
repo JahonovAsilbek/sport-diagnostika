@@ -1161,6 +1161,19 @@ Goal: deploy to the VPS with gunicorn, managed secrets, and TLS.
 
 # DVPS-15 — VPS provisioning + deploy
 
+> ✅ **Done** (2026-07-09) — `scripts/deploy.sh` (git pull → build → **one-shot migrate** in a
+> throwaway container `run --rm -e MIGRATE_ON_START=0 -e COLLECTSTATIC=0 web … migrate` → `up -d`
+> → prune) + `docs/DEPLOY.md` runbook (VPS provisioning, ufw 22/80/443, DNS, server `.env`
+> chmod 600, seed, verify, ops, troubleshooting). `deploy/entrypoint.sh` gains a
+> `MIGRATE_ON_START` gate (default "1" → dev/D3 self-migrate; prod web set to "0" so replicas
+> can't race the schema). Worker sizing: `deploy/gunicorn.conf.py` (mounted, `gunicorn -c`) sizes
+> to `(2*cores)+1`, `WEB_CONCURRENCY` override — dropping the hardcoded `--workers 3` alone would
+> silently fall to 1 worker. **Security fix found:** the base compose published Postgres/Redis on
+> the host; `prod.yml` now `!reset []`s `db.ports` + `redis.ports` (VPS would else expose the
+> datastores). Secrets only in server `backend/.env` (git-ignored + `.dockerignore`d). Verified:
+> 3-file `compose config` (datastore ports gone, `gunicorn -c /gunicorn.conf.py`, no `--workers`),
+> entrypoint gate logic, `gunicorn.conf.py` cores-sizing + override, `sh -n`/shellcheck clean.
+
 Provision the VPS (Docker + compose), deploy via the prod compose, manage
 env/secrets on the server (not in the image/repo), size gunicorn workers, run a
 one-shot `migrate` job before `web` starts, `collectstatic`. A deploy script/runbook.
@@ -1169,6 +1182,25 @@ runs as a dedicated one-shot job (avoid concurrent migrations across replicas);
 gunicorn worker count tuned to cores.
 
 # DVPS-16 — TLS (Let's Encrypt)
+
+> ✅ **Done** (2026-07-09) — **certbot + webroot** (preserves the D3 hand-written nginx, not
+> acme-companion). `deploy/nginx.tls.conf`: `:80` serves `/.well-known/acme-challenge/` (webroot)
+> + 301→https for everything else; `:443 ssl` + `http2 on` (nginx 1.27 directive) apex server with
+> the D3 app locations, TLS1.2/1.3 Mozilla-intermediate ciphers, no OCSP (LE retired it 2025), and
+> **HSTS set at the nginx server level** (Django only covers `/api`+`/admin`; the SPA/static/media
+> roots need it for preload) with `proxy_hide_header Strict-Transport-Security` on proxied
+> locations; a `www→apex` 301 server. `deploy/docker-compose.tls.yml` (3rd overlay `-f base -f prod
+> -f tls`): web `SECURE_SSL_REDIRECT=True` + `MIGRATE_ON_START=0`; nginx `!override` swaps to
+> `nginx.tls.conf` + mounts `letsencrypt`/`certbot_www`, appends `:443`, 6h `nginx -s reload` loop;
+> `certbot` service renew loop (12h). `scripts/init-letsencrypt.sh`: dummy self-signed cert → nginx
+> up → certbot `certonly --webroot` (**STAGING=1 default** → 0), all one-shots via
+> `run --rm --entrypoint …` (the service's entrypoint is the renew loop; `run` overrides command
+> not entrypoint) → reload. `prod.py`: `SECURE_REDIRECT_EXEMPT=[r"^api/v1/health/$"]` so the
+> internal healthcheck (no X-Forwarded-Proto) isn't 301-looped. Verified locally: `nginx -t` **and
+> a real boot** (Up — proves `listen [::]:443` binds + `http2 on;`), redirect-exempt `Client` test
+> (health 200, `/api/v1/` 301→https), `check --deploy` **zero security.* warnings**, ruff/format
+> clean, 294 passed. Cert issuance + live handshake are runbook steps (no VPS/domain yet; SPA
+> pending F-blocks → `/` 404). **D5 production deploy complete → D6 (backup & restore) next.**
 
 TLS termination at Nginx via Let's Encrypt (certbot / acme companion) with
 auto-renewal and an HTTP→HTTPS redirect (matches prod `SECURE_SSL_REDIRECT`). Domain

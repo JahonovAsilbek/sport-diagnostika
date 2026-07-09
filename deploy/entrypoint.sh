@@ -23,7 +23,12 @@ else:
     sys.exit("entrypoint: database not reachable")
 PY
 
-python manage.py migrate --noinput
+# Apply migrations on start unless disabled. Dev/D2/D3 leave this "1" (web self-migrates);
+# prod (D5) sets MIGRATE_ON_START=0 and runs a dedicated one-shot `migrate` (scripts/deploy.sh)
+# so concurrent replicas can't race the schema.
+if [ "${MIGRATE_ON_START:-1}" != "0" ]; then
+    python manage.py migrate --noinput
+fi
 
 if [ "${COLLECTSTATIC:-}" = "1" ]; then
     python manage.py collectstatic --noinput
