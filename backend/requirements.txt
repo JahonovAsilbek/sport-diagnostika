@@ -15,3 +15,5 @@ whitenoise~=6.9.0
 django-cors-headers~=4.7.0
 django-filter~=25.1
 openpyxl~=3.1.5
+python-docx~=1.2.0
+weasyprint~=66.0  # PDF rendering; needs native libs (pango/cairo) — see deploy/Dockerfile (DVPS-9)

@@ -963,6 +963,8 @@ status/download. Needs WeasyPrint system libs (DVPS-9) and the shared media volu
 
 # BCKND-62 — Report model + request API
 
+> ✅ **Done** (2026-07-09) — new `apps/reports`: `Report` (requested_by, type athlete|region|sport|republic, format pdf|word|excel, params JSON, status pending|processing|done|failed, file, error, completed_at) + read-only admin. `ReportViewSet`: `POST /reports/` → **202** + pending, **any authenticated** (matrix: Reports ✓ for all roles incl. ministry; read-generating), params **scoped server-side** (`assert_params_in_scope` → 403 for another region / out-of-scope athlete); `GET /reports/` + `/reports/{id}/` (own reports; super_admin/ministry all); `GET /reports/{id}/download/` → `FileResponse` when done, **409** otherwise. Enqueues `generate_report` via `on_commit`.
+
 `Report` (`type` athlete|region|sport|republic, `format` pdf|word|excel,
 `params` json, `requested_by`, `status` pending|processing|done|failed, `file`,
 `created_at`, `completed_at`). `POST /reports/` → `202` + id; `GET /reports/`,
@@ -973,6 +975,8 @@ content is physical (physical_total, daraja, per-exercise points, rankings).
 
 # BCKND-63 — Report generators (Excel/Word/PDF) + Celery task
 
+> ✅ **Done** (2026-07-09) — **generic dataset + renderers** (not 4×3): `datasets.build_dataset` → a `ReportDataset(title, subtitle, columns, rows)` per type (athlete → latest Evaluation per-exercise table; region/sport → `ranked_athletes`; republic → `region_rating`), each **scoped to the requester**. `renderers.py`: `render_excel` (openpyxl), `render_word` (python-docx), `build_report_html` (pure, escaped) + `render_pdf` (**lazy** `import weasyprint` — Docker-only libs). `tasks.generate_report`: processing → build → render → `file.save(ContentFile)` → done; **any exception → failed + error + completed_at** (never left pending). Saved to the shared media volume (DVPS-8).
+
 Celery task `generate_report(report_id)`: build the dataset (rating/scoring/athlete
 selectors — physical), render to the chosen format — openpyxl (Excel), python-docx (Word),
 WeasyPrint (PDF) — save to MEDIA, set status.
@@ -981,6 +985,8 @@ saved to the shared media volume (DVPS-8). On failure set `status=failed` + erro
 never leave a report `pending` forever (timeout).
 
 # DVPS-9 — WeasyPrint system libraries in backend image — needed by B12
+
+> ✅ **Done** (2026-07-09) — Dockerfile **final stage** `apt-get install --no-install-recommends` `libpango-1.0-0 libpangocairo-1.0-0 libpangoft2-1.0-0 libgdk-pixbuf-2.0-0 libcairo2 libffi8` + `fonts-dejavu` (Latin+Cyrillic Uzbek glyphs); apt lists cleaned. `requirements.txt` += `weasyprint~=66.0`, `python-docx~=1.2.0` (openpyxl already present). Package names verified to resolve in `python:3.12-slim` (bookworm). WeasyPrint is **lazy-imported** so the app + Excel/Word work locally without the libs; PDF render is Docker-only (the local PDF test skips on ImportError/OSError). Image rebuild deferred to CI/deploy (heavy).
 
 Add WeasyPrint's native deps to the backend Dockerfile (apt): libcairo2,
 libpango-1.0-0, libpangocairo-1.0-0, libgdk-pixbuf-2.0-0, libffi, plus a font
@@ -991,6 +997,8 @@ lists. Without them WeasyPrint imports but fails at render. A font package is
 required for non-Latin / Uzbek glyphs in PDFs.
 
 # BCKND-64 — Report tests
+
+> ✅ **Done** (2026-07-09) — **12 tests** (`test_reports.py`, tmp `MEDIA_ROOT` conftest): request→202+pending, ministry may request, excel athlete report generates + downloads (A1 = athlete name), word generates, region report lists the ranking, PDF **skipped when weasyprint/libs absent** (Docker-only), download-before-done → 409, region_admin→other region 403, athlete-out-of-scope 403, requester-only visibility (list 0 + detail 404), failed generation (monkeypatched build) → status=failed + error + completed_at. Full suite **280 passed, 1 skipped**, ruff clean, `makemigrations --check` clean, `docker compose config` valid. **B12 reports complete → B13 (audit & stats) next.**
 
 pytest: request → `202`, status transitions, download when `done`, each format
 generates, scoping on `params`.

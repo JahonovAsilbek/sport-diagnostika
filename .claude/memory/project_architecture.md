@@ -10,11 +10,11 @@ metadata:
 The static landing (lite at root, premium under `premium/`) is evolving into a
 full **Python web platform** built from `SPORT.docx` (TTZ). Architecture agreed
 2026-06-16; **pivoted to physical-readiness-first 2026-07-07**. Backend implemented
-through **B11 Excel import/export** (accounts · catalog + seeded norms/batteries · athletes ·
-measurements [+ Excel import] · scoring · rating · comparison · recommendations = bulk upload →
-validate → commit) against the running colima Postgres/Redis stack; per-task progress lives in
-`docs/TASK.md`. **B12 (reports) is next** — async PDF/Word/Excel report generation with
-status/download (WeasyPrint system libs DVPS-9 + the shared media volume).
+through **B12 Reports** (accounts · catalog + seeded norms/batteries · athletes · measurements
+[+ Excel import] · scoring · rating · comparison · recommendations · reports = async PDF/Word/Excel
+generation) against the running colima Postgres/Redis stack; per-task progress lives in
+`docs/TASK.md`. **B13 (audit & stats) is next** — an AuditLog of mutations (signals) + a
+role-scoped dashboard/stats endpoint.
 
 **Stack (decided):** Django 5 + DRF · Vue 3 + Vite + Pinia SPA · PostgreSQL 16 ·
 Celery + Redis (fon + cache) · JWT auth · Docker Compose on own VPS · Nginx +
@@ -137,6 +137,19 @@ Validation reconciles the batch group vs the athlete's recomputed TOIFA. **Secur
 starting `= + - @` (the re-export/CSV-injection vector, not server exec). `ImportBatch` scoping is
 custom (uploaded_by=self; super_admin/ministry all), NOT the region/org mixin. Import tests set a
 tmp `MEDIA_ROOT` (conftest) and build `.xlsx` in-memory with openpyxl.
+
+**Reports (`apps/reports`, B12).** Async `POST /reports/` → `generate_report` Celery task (via
+`on_commit`) → poll status → `GET /reports/{id}/download/` (`FileResponse` when done, else **409**).
+**Generic dataset + renderers**, not 4 types × 3 formats: `datasets.build_dataset` → a
+`ReportDataset(title, subtitle, columns, rows)` (athlete → latest Evaluation; region/sport →
+`ranked_athletes`; republic → `region_rating`), scoped to `report.requested_by`; `renderers.py`
+maps format → `render_excel`/`render_word`/`render_pdf`. **`POST /reports/` is `IsAuthenticated`
+(all roles incl. ministry — reports are read-generating), NOT DataEntryOrReadOnly**; params scoped
+server-side (`assert_params_in_scope` → 403). Task sets `status=failed`+error on ANY exception
+(never left pending). **WeasyPrint (PDF) is lazy-imported** inside `render_pdf` (native pango/cairo
+libs are Docker-only, DVPS-9 Dockerfile apt); locally the module + Excel/Word work, and PDF tests
+**skip on `(ImportError, OSError)`** (`importorskip` alone misses the libless-OSError case). Report
+scoping is custom (requested_by=self; super_admin/ministry all). Report tests use a tmp `MEDIA_ROOT`.
 
 Full docs (all English): `docs/ARCHITECTURE.md`, `docs/DATA_MODEL.md`, `docs/API.md`,
 `docs/SCORING.md`, `docs/DEFERRED.md`, `docs/ROADMAP.md`, `docs/TASK.md`. Docs are

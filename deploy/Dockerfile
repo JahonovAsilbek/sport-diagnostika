@@ -18,6 +18,14 @@ FROM python:3.12-slim
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PATH="/venv/bin:$PATH"
+# WeasyPrint native deps (DVPS-9) — pango/cairo/gdk-pixbuf + fonts for Uzbek (Latin+Cyrillic)
+# glyphs in PDFs. Only in the final stage; apt lists cleaned to keep the image small. Without
+# these WeasyPrint imports but fails at render.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libpango-1.0-0 libpangocairo-1.0-0 libpangoft2-1.0-0 \
+        libgdk-pixbuf-2.0-0 libcairo2 libffi8 \
+        fonts-dejavu \
+    && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 # Run as a non-root user (security).
 RUN groupadd --system app && useradd --system --gid app --no-create-home app
