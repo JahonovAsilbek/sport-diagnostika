@@ -9,6 +9,8 @@ ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=[])
 
 # TLS is terminated at nginx; trust the forwarded-proto header.
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+# Behind Nginx, X-Forwarded-For carries the real client IP for the audit log.
+AUDIT_TRUST_X_FORWARDED_FOR = True
 SECURE_SSL_REDIRECT = True
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True

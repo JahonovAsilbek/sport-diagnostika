@@ -1014,6 +1014,8 @@ Goal: an audit log of mutations and the role-scoped dashboard/stats endpoint.
 
 # BCKND-65 — AuditLog model + signals
 
+> ✅ **Done** (2026-07-09) — new `apps/audit`: append-only `AuditLog` (user SET_NULL, action, entity_type, entity_id, `changes` JSONField(DjangoJSONEncoder), ip, indexed created_at + composite indexes). **CRUX**: this API is JWT/DRF, so `request.user` is Anonymous at middleware time (DRF resolves it in the view) → `AuditContextMiddleware` binds the **request** (+ IP eagerly) in a `contextvars.ContextVar`, and `current_actor()` reads the user **lazily at signal-fire time**. Per-sender `pre_save`/`post_save`/`post_delete` on **Athlete, TestSession, User, Norm** (not Measurement/Evaluation — volume/derived); diff by `field.attname` (FK→`_id`), `password`/`last_login` never SELECTed; written synchronously in-transaction. IP from XFF gated behind `AUDIT_TRUST_X_FORWARDED_FOR` (prod-only). No recursion (AuditLog not audited; never `sender=None`).
+
 `AuditLog` (`user`, `action`, `entity_type`, `entity_id`, `changes` json,
 `created_at`, `ip`). Capture create/update/delete on key models (athletes,
 measurements, evaluations, users, norms) via signals or a mixin.
@@ -1022,12 +1024,16 @@ mutations only, never reads. Don't recursively log AuditLog itself.
 
 # BCKND-66 — Dashboard / stats endpoint
 
+> ✅ **Done** (2026-07-09) — new `apps/stats` (no model): `GET /stats/overview/` → API §12 shape `{athletes_total, by_organization_type{OTM,OPSTTM}, by_daraja{I,II,III,none}, regions, recent_sessions}`, all **scoped** via `scope_queryset` (athletes region/org/coach; evaluations region/session__org/athlete__coach; sessions region/org/athlete__coach). `by_daraja` over latest-per-athlete (DISTINCT ON); `regions` = all for super_admin/ministry else distinct-in-scope; `recent_sessions` = last 30 days. `cache.get_or_set` keyed by a per-user **scope_token** (avoids cross-scope leakage), 60s TTL, best-effort.
+
 `GET /stats/overview/` → role-scoped counts (`athletes_total`, `by_daraja`
 (I/II/III/none), `by_region`, `by_sport`, `recent_sessions`) per API.md §12.
 Edge case: numbers are limited to the user's scope (region/org). Use DB-side
 aggregate queries and cache the result.
 
 # BCKND-67 — Audit & stats tests
+
+> ✅ **Done** (2026-07-09) — **14 tests**. Audit: create-snapshot + update-diff (changed-only) + off-request→user=None + `set_actor` unit path; **password/last_login never logged, is_staff IS**; not-self-audited; **actor+IP via the real middleware** (JWT force_authenticate + `HTTP_X_FORWARDED_FOR` under the trust flag — validates the lazy-user crux fix); `/audit/` super_admin-only + entity_type filter. Stats: region_admin scope isolation + `regions` distinct-in-scope; super_admin sees all regions; by_organization_type OTM/OPSTTM split; by_daraja latest-per-athlete incl. none; recent_sessions (cache cleared per test). Full suite **294 passed, 1 skipped**, ruff clean, `makemigrations --check` clean. **B13 audit & stats complete — backend B-blocks (B1–B13) done.**
 
 pytest: audit entries on create/update/delete, IP capture, stats scoping +
 correctness (by_daraja).

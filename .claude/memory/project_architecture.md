@@ -10,11 +10,11 @@ metadata:
 The static landing (lite at root, premium under `premium/`) is evolving into a
 full **Python web platform** built from `SPORT.docx` (TTZ). Architecture agreed
 2026-06-16; **pivoted to physical-readiness-first 2026-07-07**. Backend implemented
-through **B12 Reports** (accounts · catalog + seeded norms/batteries · athletes · measurements
-[+ Excel import] · scoring · rating · comparison · recommendations · reports = async PDF/Word/Excel
-generation) against the running colima Postgres/Redis stack; per-task progress lives in
-`docs/TASK.md`. **B13 (audit & stats) is next** — an AuditLog of mutations (signals) + a
-role-scoped dashboard/stats endpoint.
+through **B13 Audit & Stats** — the **backend B-blocks (B1–B13) are complete**: accounts · catalog
++ seeded norms/batteries · athletes · measurements [+ Excel import] · scoring · rating · comparison ·
+recommendations · reports · audit · stats — against the running colima Postgres/Redis stack; per-task
+progress lives in `docs/TASK.md`. **Next up: D2 (local dev env — Makefile/bootstrap/seed, DVPS-10/11)**
+and the frontend F-blocks + any BCKND gap-review additions (BCKND-68/69/70).
 
 **Stack (decided):** Django 5 + DRF · Vue 3 + Vite + Pinia SPA · PostgreSQL 16 ·
 Celery + Redis (fon + cache) · JWT auth · Docker Compose on own VPS · Nginx +
@@ -150,6 +150,20 @@ server-side (`assert_params_in_scope` → 403). Task sets `status=failed`+error 
 libs are Docker-only, DVPS-9 Dockerfile apt); locally the module + Excel/Word work, and PDF tests
 **skip on `(ImportError, OSError)`** (`importorskip` alone misses the libless-OSError case). Report
 scoping is custom (requested_by=self; super_admin/ministry all). Report tests use a tmp `MEDIA_ROOT`.
+
+**Audit + Stats (`apps/audit`, `apps/stats`, B13).** Audit: append-only `AuditLog`, written by per-sender
+`pre_save`/`post_save`/`post_delete` signals on **Athlete, TestSession, User, Norm** (NOT Measurement =
+volume, NOT Evaluation = derived/recompute-anonymous). **CRUX gotcha**: the API is JWT/DRF, so
+`request.user` is `AnonymousUser` at middleware time (DRF resolves it in the view) — the middleware binds
+the **request** in a `contextvars.ContextVar`, and `current_actor()` reads the user **lazily at
+signal-fire time**. Diff by `field.attname` (FK→`_id`; JSON-safe via `changes=JSONField(encoder=
+DjangoJSONEncoder)`); `password`/`last_login` never even SELECTed; written synchronously in the change's
+transaction; no recursion (AuditLog not audited, never `sender=None`). IP from XFF only when
+`AUDIT_TRUST_X_FORWARDED_FOR` (prod). `GET /audit/` super_admin-only. Testing signals: drive via
+`APIClient` (force_authenticate sets `wsgi_request.user`) or the `set_actor` context helper. Stats:
+`GET /stats/overview/` scoped aggregates (API §12 shape), `by_daraja` over latest-per-athlete, cached by a
+per-user `scope_token` (local copy) — stats tests `cache.clear()` per test (autouse conftest) or
+scope-keyed results leak between tests.
 
 Full docs (all English): `docs/ARCHITECTURE.md`, `docs/DATA_MODEL.md`, `docs/API.md`,
 `docs/SCORING.md`, `docs/DEFERRED.md`, `docs/ROADMAP.md`, `docs/TASK.md`. Docs are

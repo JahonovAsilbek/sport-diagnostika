@@ -48,6 +48,8 @@ LOCAL_APPS = [
     "apps.comparison",
     "apps.recommendations",
     "apps.reports",
+    "apps.audit",
+    "apps.stats",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -62,7 +64,12 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "apps.audit.middleware.AuditContextMiddleware",  # binds the request for the audit signals
 ]
+
+# Trust X-Forwarded-For for the audit IP only behind a known proxy (prod/Nginx). Off by
+# default — without a proxy the header is client-spoofable.
+AUDIT_TRUST_X_FORWARDED_FOR = False
 
 ROOT_URLCONF = "config.urls"
 

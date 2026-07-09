@@ -21,6 +21,8 @@ api_v1 = [
     path("", include("apps.comparison.urls")),
     path("", include("apps.recommendations.urls")),
     path("", include("apps.reports.urls")),
+    path("", include("apps.audit.urls")),
+    path("", include("apps.stats.urls")),
 ]
 
 urlpatterns = [
