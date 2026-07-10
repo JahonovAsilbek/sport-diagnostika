@@ -1452,6 +1452,12 @@ Goal: athlete list, card, and create/edit form.
 
 # FRNTND-10 — Athlete list + filters
 
+> ✅ **Done** (2026-07-10) — `views/athletes/AthletesView.vue`: PrimeVue DataTable in **lazy**
+> mode (server pagination — `page`/`ordering` query params), filter bar (Region/Sport/Gender/
+> AgeCategory pickers + **debounced** name search, all → API.md §5 query params, scope enforced
+> server-side), sortable columns, loading/empty states, row → card. Names resolved via the cached
+> catalog store. `api/athletes.ts` (strips null filters) + `types/athlete.ts`.
+
 A paginated athlete table with filters
 (region/district/org/sport/gender/age/coach/search); the server enforces
 scope. Row → athlete card.
@@ -1460,6 +1466,11 @@ client-side; debounce search; loading/empty states.
 
 # FRNTND-11 — Athlete card page
 
+> ✅ **Done** (2026-07-10) — `views/athletes/AthleteCardView.vue`: tabbed detail — personal data
+> (FKs resolved to names), the **derived TOIFA age category + block** as badges, and a comparison
+> link. `birth_year` (no BMI, per spec). The Sessiyalar / Baholash / Tavsiyalar tabs show no-data
+> states now and are wired when their APIs land (F5 sessions, F6 evaluation, F9 recommendations).
+
 Athlete detail: personal data, derived TOIFA age category + block, session history,
 latest evaluation summary (physical_total + daraja + color), recommendations, and a
 link to comparison. Tabbed.
@@ -1467,6 +1478,14 @@ Edge case: handle athletes with no evaluation yet (no-data states); show the der
 TOIFA + block; BMI is deferred (not shown).
 
 # FRNTND-12 — Athlete create/edit form
+
+> ✅ **Done** (2026-07-10) — `views/athletes/AthleteFormView.vue` (routes `/athletes/new` +
+> `/athletes/:id/edit`, **gated to DATA_ENTRY_ROLES** via `utils/permissions.ts` — matches backend
+> `DATA_ENTRY_ROLES`; ministry can't reach it). All reference pickers incl. **region→district
+> cascade** + org + sport + `CoachSelect` (scoped `/users?role=coach`). Client validation (required
+> fields) mirrors the server; district∈region enforced by the cascade; the coach-role rule +
+> scope are enforced server-side and surfaced via `toMessage`. No weight-category (deferred).
+> **F4 athletes UI complete → F5 (measurements UI) next.**
 
 Form with reference pickers (region→district cascade, org, sport, coach),
 validation, role-gated writes.

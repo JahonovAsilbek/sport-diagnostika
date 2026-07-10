@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import AppLayout from '@/layouts/AppLayout.vue'
 import { useAuthStore } from '@/stores/auth'
 import type { Role } from '@/types/auth'
+import { DATA_ENTRY_ROLES } from '@/utils/permissions'
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -26,7 +27,28 @@ const router = createRouter({
       meta: { requiresAuth: true },
       children: [
         { path: '', name: 'home', component: () => import('@/views/HomeView.vue') },
-        { path: 'athletes', name: 'athletes', component: placeholder, meta: { title: 'Sportchilar' } },
+        {
+          path: 'athletes',
+          name: 'athletes',
+          component: () => import('@/views/athletes/AthletesView.vue'),
+        },
+        {
+          path: 'athletes/new',
+          name: 'athlete-new',
+          component: () => import('@/views/athletes/AthleteFormView.vue'),
+          meta: { title: 'Yangi sportchi', roles: DATA_ENTRY_ROLES },
+        },
+        {
+          path: 'athletes/:id',
+          name: 'athlete-card',
+          component: () => import('@/views/athletes/AthleteCardView.vue'),
+        },
+        {
+          path: 'athletes/:id/edit',
+          name: 'athlete-edit',
+          component: () => import('@/views/athletes/AthleteFormView.vue'),
+          meta: { title: 'Sportchini tahrirlash', roles: DATA_ENTRY_ROLES },
+        },
         {
           path: 'measurements',
           name: 'measurements',
