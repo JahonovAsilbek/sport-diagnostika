@@ -1,10 +1,35 @@
-from rest_framework import status
+from rest_framework import status, viewsets
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.common.permissions import IsSuperAdmin
-from apps.scoring.serializers import RecomputeFilterSerializer
+from apps.common.scoping import ScopedQuerysetMixin
+from apps.scoring.models import Evaluation
+from apps.scoring.serializers import EvaluationSerializer, RecomputeFilterSerializer
 from apps.scoring.tasks import recompute_evaluations
+
+
+class EvaluationViewSet(ScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet):
+    """`GET /evaluations/` — read-only, region/org/coach-scoped scoring snapshots (API.md §6).
+
+    Filter by ``athlete``/``session`` (+ the snapshot dims); order by ``session_date`` (newest
+    first by default). Drives the F6 result view + history and the athlete card's evaluation
+    summary. The snapshot region/sport_type live on the row (no athlete join for those); org and
+    coach scope resolve through ``session``/``athlete``.
+    """
+
+    queryset = Evaluation.objects.select_related(
+        "athlete", "session", "region", "sport_type", "age_category"
+    ).prefetch_related("indicators")
+    serializer_class = EvaluationSerializer
+    permission_classes = [IsAuthenticated]
+    filterset_fields = ["athlete", "session", "gender", "region", "sport_type", "age_category"]
+    ordering_fields = ["session_date", "physical_total"]
+    ordering = ["-session_date", "-id"]
+    scope_region_field = "region_id"
+    scope_organization_field = "session__organization_id"
+    scope_coach_field = "athlete__coach"
 
 
 class RecomputeView(APIView):
