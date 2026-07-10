@@ -8,3 +8,6 @@
 
 # Machine-local Claude settings (per-machine, not synced)
 .claude/settings.local.json
+
+# Backup artifacts (scripts/backup.sh) — DB dumps + media tarballs, never committed
+/backups/

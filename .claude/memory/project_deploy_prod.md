@@ -78,3 +78,17 @@ acme-companion). `deploy/nginx.tls.conf` + `scripts/{init-letsencrypt,deploy}.sh
   IPv6-bind failures + accepts the cert-missing case differently. Use a throwaway self-signed cert
   under `$HOME` (colima only shares `$HOME`, **not** `/private/tmp` scratchpad) + `--add-host
   web:127.0.0.1`, then `docker run -d …` and assert the container stays `Up`.
+
+**Backup & restore (D6, DVPS-17)** — `scripts/{backup,restore}.sh` + `docs/BACKUP.md`, scheduled by
+host cron (not Celery Beat).
+
+- **`pg_dump` must run in the db container**, not the worker image — pg_dump's version must be ≥
+  the server (16), and Debian's default client is 15 (refuses a v16 server). `compose exec -T db
+  pg_dump -Fc` uses the right binary for free; that's why backups are host-cron scripts, not a
+  worker-side Celery task.
+- **Restore drill = restore into a throwaway DB, never the live one.** `restore.sh` takes
+  `RESTORE_DB=<scratch>` + `FORCE=1`; `compose cp` streams the dump into the container (works even
+  from the unshared scratchpad — it's an API stream, not a bind mount) → `pg_restore --clean
+  --if-exists --no-owner`. Verify table/row counts match, then `dropdb` the scratch.
+- Media = the `sport-diagnostika_media` named volume, tarred via a throwaway `alpine`. `backups/`
+  is git-ignored; off-server via `BACKUP_RSYNC_TARGET` rsync.

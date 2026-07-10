@@ -1217,6 +1217,21 @@ Goal: automated, tested database + media backups.
 
 # DVPS-17 — Backup & restore
 
+> ✅ **Done** (2026-07-10) — **host cron + scripts** (chosen over Celery Beat: `pg_dump` runs in
+> the db container so it matches the server v16 — a worker-side task would need postgresql-client-16
+> in the image). `scripts/backup.sh`: `pg_dump -Fc` (custom format) via `compose exec -T db` +
+> media volume tarred via a throwaway alpine, both streamed to host stdout; retention
+> (`BACKUP_RETENTION_DAYS`, default 14, `find -mtime`); optional off-server `rsync` if
+> `BACKUP_RSYNC_TARGET` set. `scripts/restore.sh <db-dump> [media-tgz]`: guarded (confirm / `FORCE=1`),
+> `compose cp` the dump into the container → `pg_restore --clean --if-exists --no-owner`; `RESTORE_DB`
+> overrides the target DB for the drill. `docs/BACKUP.md` runbook (cron line, off-server, restore,
+> **restore drill**). `backups/` git-ignored. **Restore actually tested** locally: backed up the dev
+> DB (62 migrations, 40 tables), restored into a throwaway `sport_restore_test` via the real script,
+> verified 62 migrations / 40 tables, dropped the scratch DB — the live DB was never touched.
+> Verified: `sh -n` + shellcheck clean (SC2016 on the in-container `sh -c` blocks disabled with
+> intent), ruff/pytest unchanged (no Python touched). **D6 backup & restore complete → D7
+> (monitoring & logging) next.**
+
 Automated PostgreSQL backups (`pg_dump` on a schedule via host cron or Celery Beat),
 media backups, a retention policy, an off-server copy, and a documented + tested
 restore procedure.
