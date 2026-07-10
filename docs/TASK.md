@@ -1502,6 +1502,13 @@ Goal: the physical battery entry form, finalize, and the Excel import UI.
 
 # FRNTND-13 — Session + battery entry
 
+> ✅ **Done** (2026-07-10) — `MeasurementsView.vue` (hub: recent sessions + new-session dialog
+> with `AthleteAutocomplete` + date) → `SessionView.vue`. The entry form is **data-driven from
+> `GET /sessions/{id}/battery/`** (BCKND-40) — one input per battery exercise, placeholder +
+> **client validation per `value_type`** (`utils/rawValue.ts`: mm:ss / seconds / count / signed cm)
+> + height/weight; save draft via `POST …/measurements/` + PATCH session. If the battery is
+> undefined → "admin must configure" message. Raw values are strings (backend parses).
+
 Create a session (date; optional height/weight placeholders) and enter raw values via a
 form **generated from the athlete's `TestBattery`** — the 5 age×gender-specific exercises,
 each rendered per its `value_type` (mm:ss for times, signed cm for flexibility, integer
@@ -1512,6 +1519,14 @@ the group's battery is undefined, show an "admin must configure" message.
 
 # FRNTND-14 — Finalize + result display
 
+> ✅ **Done** (2026-07-10) — "Yakunlash" → `POST …/finalize/` (persists the draft first). On
+> success shows the server-computed evaluation inline: `physical_total` (0–50), `DarajaBadge`
+> (daraja I/II/III/none + color), and the per-exercise `points` (10/8/6) table — **no client
+> scoring**. The missing-exercises `400` surfaces via `toMessage` (the backend names them).
+> Finalized → read-only. NOTE: a *reloaded* finalized session can't re-display its evaluation —
+> there is **no GET evaluations endpoint** (scoring exposes only `/evaluations/recompute/`); it
+> points to the Results section (F6), which is **blocked** on that missing backend endpoint.
+
 Finalize action (server validates the 5 required exercises); on success show the computed
 evaluation — `physical_total` (0–50), `daraja` (I/II/III/none), `color`, and per-exercise
 `points` (10/8/6). Handle the missing-exercises `400`.
@@ -1519,6 +1534,14 @@ Edge case: show which battery exercises are missing on `400`; finalized → read
 the daraja color indicator immediately; scoring is server-computed (no client scoring).
 
 # FRNTND-15 — Excel import UI
+
+> ✅ **Done** (2026-07-10) — `ImportView.vue`: **template download** per group
+> (`GET /imports/template/?age_category&gender` → blob), **upload** (`POST /imports/` multipart:
+> file + age_category + gender + date), then **polls `GET /imports/{id}/`** every 1.5s while
+> `validating` → shows `row_count`/`error_count` + a per-row errors table; `validated` → **commit**
+> button (`POST …/commit/`, partial commit allowed); `failed` → the file-level error; `committed`
+> → success. `api/imports.ts`. Route gated to `DATA_ENTRY_ROLES`. **F5 measurements UI complete →
+> F6 (results UI) — BLOCKED on a missing GET-evaluations backend endpoint (see FRNTND-14 note).**
 
 Template download (per age×gender battery), upload, per-row validation progress/errors,
 commit of valid rows; polls `/imports/{id}`.

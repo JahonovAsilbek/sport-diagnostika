@@ -52,8 +52,18 @@ const router = createRouter({
         {
           path: 'measurements',
           name: 'measurements',
-          component: placeholder,
-          meta: { title: 'Oʻlchovlar' },
+          component: () => import('@/views/measurements/MeasurementsView.vue'),
+        },
+        {
+          path: 'measurements/import',
+          name: 'measurements-import',
+          component: () => import('@/views/measurements/ImportView.vue'),
+          meta: { title: 'Excel import', roles: DATA_ENTRY_ROLES },
+        },
+        {
+          path: 'measurements/session/:id',
+          name: 'session',
+          component: () => import('@/views/measurements/SessionView.vue'),
         },
         { path: 'rating', name: 'rating', component: placeholder, meta: { title: 'Reyting' } },
         {
