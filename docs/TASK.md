@@ -1654,6 +1654,15 @@ Goal: recommendations display and the report request/download flow.
 
 # FRNTND-21 — Recommendations view
 
+> ✅ **Done** (2026-07-10) — `views/recommendations/RecommendationsView.vue`: a tab for **sportchi
+> tavsiyalari** (an `AthleteAutocomplete` → the existing `RecommendationsPanel`, which reads the
+> latest evaluation's generated recs from `GET /recommendations/?athlete=`) and a super_admin-only
+> **Qoidalar** tab (`components/recommendations/RulesManager.vue`) — full CRUD on
+> `/recommendation-rules/` (target = exercise 0–10 or physical_total 0–50, comparator, threshold,
+> template, is_active) with a Dialog form + confirm-delete; thresholds stay DATA (SCORING §8) and
+> the form caps them to mirror the backend validation. Fixed `api/recommendations.ts`: the
+> serialized `exercise` is the NAME string, not an id. Verified: eslint + vue-tsc + build clean.
+
 Show generated recommendations on the athlete/evaluation; (admin) manage
 recommendation rules (conditions on points/total).
 Edge case: recommendations come from the latest evaluation; rules management gated to

@@ -78,8 +78,7 @@ const router = createRouter({
         {
           path: 'recommendations',
           name: 'recommendations',
-          component: placeholder,
-          meta: { title: 'Tavsiyalar' },
+          component: () => import('@/views/recommendations/RecommendationsView.vue'),
         },
         { path: 'reports', name: 'reports', component: placeholder, meta: { title: 'Hisobotlar' } },
         {
