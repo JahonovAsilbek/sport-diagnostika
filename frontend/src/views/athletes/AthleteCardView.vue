@@ -83,7 +83,7 @@ onMounted(async () => {
           icon="pi pi-arrow-right-arrow-left"
           severity="secondary"
           outlined
-          @click="router.push('/comparison')"
+          @click="router.push(`/comparison?athletes=${athlete.id}`)"
         />
         <Button
           v-if="canWrite(auth.role)"

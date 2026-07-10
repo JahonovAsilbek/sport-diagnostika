@@ -1629,6 +1629,17 @@ Goal: the side-by-side comparison view.
 
 # FRNTND-20 — Comparison view
 
+> ✅ **Done** (2026-07-10) — `views/comparison/ComparisonView.vue` + `api/comparison.ts`
+> (`GET /comparison/?athletes=1,2,3`). An `AthleteAutocomplete` adds 2–3 chips (dedupe, max 3);
+> **Taqqoslash** calls the endpoint. Result = per-athlete cards (physical_total /50 + `DarajaBadge`,
+> the **leader** card ringed + a "Yetakchi" crown tag) over a matrix table: rows = the ordered
+> **union of exercise NAMES** (batteries differ by age×gender), per-exercise **winner** cell
+> highlighted (highest points; ties highlight all), a "Umumiy ball" footer with the leader
+> highlighted. No-evaluation athletes render "—". Selection reflects to `?athletes=` for shareable
+> links; the athlete card's "Taqqoslash" pre-seeds `?athletes=<id>`. Scope is server-side (403 on
+> out-of-scope, no leak). Verified: eslint + vue-tsc + build clean.
+> **F8 comparison UI complete → F9 (recommendation & report UI) next.**
+
 Pick 2–3 athletes and show them side-by-side: physical_total, daraja,
 exercise-by-exercise points, with the leader highlighted.
 Edge case: 2–3 only; highlight the leader (highest physical_total) and the per-exercise

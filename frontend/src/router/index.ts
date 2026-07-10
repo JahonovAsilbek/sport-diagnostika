@@ -73,8 +73,7 @@ const router = createRouter({
         {
           path: 'comparison',
           name: 'comparison',
-          component: placeholder,
-          meta: { title: 'Taqqoslash' },
+          component: () => import('@/views/comparison/ComparisonView.vue'),
         },
         {
           path: 'recommendations',
