@@ -65,7 +65,11 @@ const router = createRouter({
           name: 'session',
           component: () => import('@/views/measurements/SessionView.vue'),
         },
-        { path: 'rating', name: 'rating', component: placeholder, meta: { title: 'Reyting' } },
+        {
+          path: 'rating',
+          name: 'rating',
+          component: () => import('@/views/rating/RatingView.vue'),
+        },
         {
           path: 'comparison',
           name: 'comparison',

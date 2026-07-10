@@ -1592,12 +1592,28 @@ Goal: the rating table, the headline "Top Athletes" feature, and region ranking.
 
 # FRNTND-18 — Rating table + Top Athletes
 
+> ✅ **Done** (2026-07-10) — `views/rating/RatingView.vue`: a shared filter bar
+> (region/sport/age/gender — no block) driving three tabs. **Top sportchilar** is the
+> headline feature (`components/rating/TopAthletes.vue`) — a gold/silver/bronze podium list
+> from `GET /rating/top/` (limit 10), each row clickable to the athlete card. **Toʻliq
+> reyting** = a lazy-paginated ranked table from `GET /rating/athletes/` (rank/F.I.O/ball/
+> daraja via `DarajaBadge`). `api/rating.ts` wraps the three endpoints; scope is enforced
+> server-side (BCKND-49), the client only passes filters. Tabs refetch only when stale for
+> the current filters (a `loaded` flag). Verified: eslint + vue-tsc + build clean.
+
 Rating views: filters (sport/region/age/gender — no block), a ranked table
 (rank/score/**daraja**/color), with "Top Athletes" prominent — the headline feature (TZ).
 Edge case: the "Top Athletes" filter set (sport+region+age+gender) is the headline
 feature; daraja color indicators; scoped by role.
 
 # FRNTND-19 — Region ranking view
+
+> ✅ **Done** (2026-07-10) — the **Viloyatlar** tab in `RatingView.vue`: a region table
+> (rank / viloyat / I-daraja count / average `ranking_score`) from `GET /rating/regions/`.
+> Tab visibility gated to `super_admin`/`ministry`/`region_admin` (`canSeeRegions`) — a
+> region_admin sees only their own region since the backend scopes the rows; coaches/operators
+> don't get the tab. Verified: eslint + vue-tsc + build clean.
+> **F7 rating UI complete → F8 (comparison UI) next.**
 
 A region-ranking table (high-daraja count per region, average physical_total) for
 ministry/super_admin.
