@@ -1364,12 +1364,22 @@ Goal: login, route guards, and the role-aware app shell.
 
 # FRNTND-5 — Login page
 
+> ✅ **Done** (2026-07-10) — `LoginView.vue`: username/password with inline required-field
+> validation, submit disabled while pending (`loading`), server errors shown in Uzbek via Toast
+> (`toMessage`), **"remember me"** (localStorage vs sessionStorage via `tokens.ts` startSession),
+> and redirect to `?redirect=` after login. Card visual matching the landing.
+
 Login view (username/password, validation, error display, "remember me") wired to
 the auth store. Visual language consistent with the existing landing.
 Edge case: show server errors (invalid credentials) in Uzbek; disable submit while
 pending; redirect to the intended route after login.
 
 # FRNTND-6 — Route guards + role-based routing
+
+> ✅ **Done** (2026-07-10) — `router.beforeEach`: unauth on a `requiresAuth` route → login with
+> `?redirect=` (destination preserved); an authed user hitting `/login` → home; a route with
+> `meta.roles` and the wrong role → `/403` (`ForbiddenView`). `meta.requiresAuth` on the `/` parent
+> is inherited by children. User management (`/users`) is gated to `super_admin`/`region_admin`.
 
 Router guards: require auth for app routes (redirect to login otherwise); role-based
 route access (e.g. user management only for super_admin/region_admin); per-role
@@ -1378,6 +1388,13 @@ Edge case: guard runs before each navigation; an unauthorized role → 403 view;
 preserve the intended destination through login.
 
 # FRNTND-7 — App shell (navbar/sidebar) + role-based menu
+
+> ✅ **Done** (2026-07-10) — `layouts/AppLayout.vue` = the authenticated shell: sticky top navbar
+> (brand, scope chip = org/region, user dropdown via PrimeVue Menu with role label + logout),
+> sidebar with a **role-filtered menu** (`config/navigation.ts` → `visibleNav(role)`), active-link
+> highlighting (exact for home, prefix for sections). Responsive: sidebar collapses to a PrimeVue
+> Drawer under 768px (hamburger). App routes render as its children; section routes are placeholders
+> until their F-block. **F2 auth & layout complete → F3 (catalog UI) next.**
 
 App layout: top navbar, sidebar with a role-filtered menu, user dropdown
 (profile/logout), and the user's region/org context. Responsive (collapsible on

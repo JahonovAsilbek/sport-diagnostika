@@ -4,7 +4,7 @@ import axios, {
   type InternalAxiosRequestConfig,
 } from 'axios'
 
-import { clearTokens, getAccess, getRefresh, setTokens } from './tokens'
+import { clearTokens, getAccess, getRefresh, saveTokens } from './tokens'
 
 // Same-origin base — Vite proxies /api to the backend in dev, nginx does in prod.
 export const api = axios.create({ baseURL: '/api/v1' })
@@ -34,7 +34,7 @@ async function refreshAccess(): Promise<string> {
   const { data } = await bare.post<{ access: string; refresh?: string }>('/auth/refresh/', {
     refresh,
   })
-  setTokens(data.access, data.refresh)
+  saveTokens(data.access, data.refresh)
   return data.access
 }
 
