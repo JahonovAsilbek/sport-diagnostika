@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
-import Message from 'primevue/message'
+import Column from 'primevue/column'
+import DataTable from 'primevue/datatable'
 import Tab from 'primevue/tab'
 import TabList from 'primevue/tablist'
 import TabPanel from 'primevue/tabpanel'
@@ -14,12 +15,16 @@ import { useRoute, useRouter } from 'vue-router'
 import { getAthlete } from '@/api/athletes'
 import { getOrganizations } from '@/api/catalog'
 import { toMessage } from '@/api/client'
+import { listSessions } from '@/api/measurements'
 import { getCoaches } from '@/api/users'
+import EvaluationPanel from '@/components/EvaluationPanel.vue'
 import PageHeader from '@/components/PageHeader.vue'
+import RecommendationsPanel from '@/components/RecommendationsPanel.vue'
 import { GENDER_LABELS } from '@/constants/labels'
 import { useAuthStore } from '@/stores/auth'
 import { useCatalogStore } from '@/stores/catalog'
 import type { Athlete } from '@/types/athlete'
+import type { TestSession } from '@/types/measurement'
 import { canWrite } from '@/utils/permissions'
 
 const route = useRoute()
@@ -34,6 +39,7 @@ const loading = ref(true)
 const districtName = ref('—')
 const orgName = ref('—')
 const coachName = ref('—')
+const sessions = ref<TestSession[]>([])
 
 const regionName = (rid: number | null) =>
   rid ? (catalog.regions.find((r) => r.id === rid)?.name ?? '—') : '—'
@@ -59,6 +65,7 @@ onMounted(async () => {
       const c = coaches.find((u) => u.id === a.coach)
       coachName.value = c ? c.full_name || c.username : '—'
     }
+    sessions.value = (await listSessions({ athlete: id })).results
   } catch (e) {
     toast.add({ severity: 'error', summary: 'Xatolik', detail: toMessage(e), life: 4000 })
   } finally {
@@ -125,13 +132,31 @@ onMounted(async () => {
           </dl>
         </TabPanel>
         <TabPanel value="sessions">
-          <Message severity="info" variant="simple">Test sessiyalari F5 blokida ulanadi.</Message>
+          <DataTable
+            :value="sessions"
+            data-key="id"
+            paginator
+            :rows="8"
+            row-hover
+            @row-click="router.push(`/measurements/session/${$event.data.id}`)"
+          >
+            <template #empty>Test sessiyasi yoʻq.</template>
+            <Column field="date" header="Sana" sortable />
+            <Column header="Holat">
+              <template #body="{ data }">
+                <Tag
+                  :value="data.status === 'draft' ? 'Qoralama' : 'Yakunlangan'"
+                  :severity="data.status === 'draft' ? 'warn' : 'success'"
+                />
+              </template>
+            </Column>
+          </DataTable>
         </TabPanel>
         <TabPanel value="evaluation">
-          <Message severity="info" variant="simple">Baholash natijasi F6 blokida ulanadi.</Message>
+          <EvaluationPanel :athlete-id="athlete.id" />
         </TabPanel>
         <TabPanel value="recs">
-          <Message severity="info" variant="simple">Tavsiyalar F9 blokida ulanadi.</Message>
+          <RecommendationsPanel :athlete-id="athlete.id" />
         </TabPanel>
       </TabPanels>
     </Tabs>

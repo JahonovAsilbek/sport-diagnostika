@@ -11,6 +11,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { toMessage } from '@/api/client'
+import { listEvaluations } from '@/api/evaluations'
 import {
   finalizeSession,
   getBattery,
@@ -20,7 +21,6 @@ import {
 } from '@/api/measurements'
 import DarajaBadge from '@/components/DarajaBadge.vue'
 import PageHeader from '@/components/PageHeader.vue'
-import type { DarajaLevel } from '@/constants/labels'
 import { useCatalogStore } from '@/stores/catalog'
 import type { Exercise, TestBattery } from '@/types/catalog'
 import type { Evaluation, TestSession } from '@/types/measurement'
@@ -68,6 +68,10 @@ onMounted(async () => {
       battery.value = await getBattery(id)
     } catch (e) {
       batteryError.value = toMessage(e)
+    }
+    // A finalized session already has its evaluation — load it so a reload shows the result.
+    if (s.status === 'finalized') {
+      evaluation.value = (await listEvaluations({ session: id })).results[0] ?? null
     }
   } catch (e) {
     toast.add({ severity: 'error', summary: 'Xatolik', detail: toMessage(e), life: 4000 })
@@ -151,7 +155,7 @@ async function finalize() {
       <div class="result__score">
         <span class="result__total">{{ evaluation.physical_total }}</span>
         <span class="result__max">/ 50</span>
-        <DarajaBadge :level="(evaluation.daraja as DarajaLevel | null)" />
+        <DarajaBadge :level="evaluation.daraja" />
       </div>
       <DataTable :value="evaluation.indicators" data-key="exercise" class="result__table">
         <Column header="Mashq">
@@ -192,8 +196,8 @@ async function finalize() {
 
     <!-- Finalized (reloaded — the evaluation lives in the Results section, F6) -->
     <template v-else-if="!isDraft">
-      <Message severity="success" variant="simple">
-        Sessiya yakunlangan. Natijani Natijalar boʻlimida koʻrishingiz mumkin (F6).
+      <Message severity="info" variant="simple">
+        Sessiya yakunlangan. Baholash natijasi topilmadi.
       </Message>
       <DataTable :value="session.measurements" data-key="exercise" class="result__table">
         <Column header="Mashq">

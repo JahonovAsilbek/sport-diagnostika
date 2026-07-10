@@ -42,9 +42,9 @@ export interface Evaluation {
   region: number | null
   sport_type: number | null
   physical_total: number
-  ranking_score: string
-  daraja: DarajaLevel | null
-  color: string | null
+  ranking_score: number
+  daraja: DarajaLevel | 'none'
+  color: 'green' | 'yellow' | 'red'
   computed_at: string
   indicators: IndicatorScore[]
 }

@@ -1557,6 +1557,13 @@ Goal: the physical evaluation result view and history/trend.
 
 # FRNTND-16 — Evaluation result view
 
+> ✅ **Done** (2026-07-10) — **Unblocked by adding `GET /evaluations/`** (scoped read viewset +
+> tests, commit `562e9dd`). `components/EvaluationPanel.vue`: the latest evaluation's
+> `physical_total` (/50), `DarajaBadge` (I/II/III/**none**=Nishonsiz, color-coded), and the
+> per-exercise raw→`points` (10/8/6) table — server-computed, no client scoring. Wired into the
+> athlete card's Baholash tab; the finalized SessionView now re-fetches its evaluation on reload
+> (`?session=`). BMI deferred.
+
 Detailed evaluation: the 5 per-exercise scores (raw value → 10/8/6 points),
 `physical_total`, `daraja` + `color`, and recommendations. Uzbek daraja labels;
 color-coded.
@@ -1564,6 +1571,12 @@ Edge case: render the 5 battery exercises with their raw values and points; show
 the daraja badge and color; BMI / other categories are deferred (not shown).
 
 # FRNTND-17 — Evaluation history + trend
+
+> ✅ **Done** (2026-07-10) — same `EvaluationPanel.vue`: a **trend line chart** (PrimeVue Chart /
+> chart.js) of `physical_total` over `session_date` (shown only for 2+ points; y-axis 0–50) + a
+> paginated history table (date / ball / DarajaBadge). Fetches `GET /evaluations/?athlete=&ordering=-session_date`.
+> The athlete card also gained a Sessiyalar tab (session list → session view). **F6 results UI
+> complete → F7 (rating UI) next.**
 
 An athlete's evaluations over time (table + a simple trend chart of `ranking_score`
 (= physical_total), and the daraja per date).
