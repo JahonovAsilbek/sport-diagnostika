@@ -1696,12 +1696,30 @@ Goal: the role-scoped dashboard with stats and charts.
 
 # FRNTND-23 — Dashboard / home
 
+> ✅ **Done** (2026-07-10) — upgraded `views/HomeView.vue` into the dashboard, fed by
+> `GET /stats/overview/` (`api/stats.ts`). A role-framed subtitle (ministry → Respublika, coach →
+> own athletes) over a KPI grid (`components/dashboard/StatCard.vue`): faol sportchilar, I-daraja
+> soni, soʻnggi-30-kun sessiyalari, viloyatlar + an OTM/OPSTTM caption. Recent activity = the
+> scoped `recent_sessions` count; quick-link cards to the main sections. All numbers are scoped
+> server-side. Verified: eslint + vue-tsc + build clean.
+
 A role-scoped dashboard: key counts (athletes, by daraja), recent activity,
 quick links; fed by `/stats/overview`.
 Edge case: role-scoped numbers; different emphasis per role (ministry → national,
 coach → own athletes).
 
 # FRNTND-24 — Charts + polish
+
+> ✅ **Done** (2026-07-10) — `components/dashboard/DarajaDonut.vue` (doughnut of the by-daraja
+> distribution, fixed I/II/III/none colours) and `RegionBars.vue` (horizontal bar of per-region
+> I-daraja counts from `/rating/regions/`, mounted only for super_admin/ministry). Both **degrade
+> to an empty-state Message** with no data. The dashboard has explicit loading / error (with a
+> "Qayta urinish" retry) / empty states; KPI, chart and quick-link grids use `auto-fit minmax`
+> for mobile responsiveness (TZ #15). Uzbek enum labels come from the existing `constants/labels.ts`
+> maps (full multi-locale vue-i18n is the separate FRNTND-25). Verified: eslint + vue-tsc + build
+> clean.
+> **F10 dashboard UI complete → FRNTND track (F1–F10) done. Remaining: gap-review additions
+> (FRNTND-25/26, BCKND-68/69/70, DVPS-20).**
 
 Charts (daraja distribution, by region), responsive polish, and consistent
 loading/empty/error states + Uzbek i18n across the app.
