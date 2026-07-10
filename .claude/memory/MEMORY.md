@@ -8,4 +8,5 @@
 - [Open questions](project_open_questions.md) — REMIND client re TZ #13 training-load, PII, report branding + NEW physical items (TOIFA 4/5 split, clamp, birth_date, Maxsus talab tier, DarajaThreshold)
 - [Dev toolchain](project_dev_toolchain.md) — Python 3.12 + colima Docker runtime; Postgres/Redis via deploy/docker-compose.yml, host venv connects on localhost; shell is zsh
 - [Prod topology](project_deploy_prod.md) — nginx+gunicorn prod overlay (D3): root-owned-volume chown, compose !override to drop source mount, XFF overwrite, HTTP-only-until-D5 SSL gate
+- [Frontend](project_frontend.md) — Vue 3 + TS + PrimeVue 4 (@primeuix/themes); auth tokens/interceptor/no-cycle pattern; verify = lint+type-check+build from frontend/
 - [Doc language](feedback_doc_language.md) — Internal docs in English (full English domain terms, TVI→BMI); Uzbek only for product/UI

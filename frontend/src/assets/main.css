@@ -1,0 +1,45 @@
+:root {
+  --sd-content-max: 1200px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family:
+    'Inter',
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  color: var(--p-text-color);
+  background: var(--p-content-background, #f8f9fa);
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+a {
+  color: var(--p-primary-color);
+  text-decoration: none;
+}
+
+/* Simple utility for centered, width-capped page content. */
+.sd-container {
+  width: 100%;
+  max-width: var(--sd-content-max);
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
+}

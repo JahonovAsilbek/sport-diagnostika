@@ -1298,6 +1298,12 @@ and the UI kit.
 
 # FRNTND-1 — Vite + Vue 3 project scaffold
 
+> ✅ **Done** (2026-07-10) — `frontend/` scaffolded: Vite 6 + Vue 3.5 (`<script setup>`) +
+> **TypeScript** (confirmed) + Vue Router + Pinia + ESLint 9 (flat config) + Prettier. Folders
+> views/components/stores/api/router/composables/constants/types/assets. Vite dev proxy `/api` →
+> `http://localhost:8000` (override with `VITE_API_TARGET`). Verified: `eslint` + `vue-tsc --noEmit`
+> + `vite build` all clean (247 modules, code-split).
+
 Create `frontend/` with Vite + Vue 3 (`<script setup>`), Vue Router, Pinia, ESLint +
 Prettier. Folder structure: `views`, `components`, `stores`, `api`, `router`,
 `composables`, `assets`. Vite dev proxy `/api` → backend.
@@ -1307,6 +1313,13 @@ avoids CORS locally.
 
 # FRNTND-2 — API client (axios) + interceptors
 
+> ✅ **Done** (2026-07-10) — `src/api/client.ts`: axios `baseURL=/api/v1`; request interceptor
+> attaches the access token; response interceptor refreshes on 401 with a **single-flight lock**
+> (concurrent 401s await one refresh) via a bare axios instance (no recursion) then retries; on
+> refresh failure clears tokens + redirects to /login. `toMessage()` maps errors to Uzbek (API.md
+> §1: `detail` / DRF field errors / status fallback). Tokens live in `src/api/tokens.ts`
+> (localStorage) — one source both the interceptor and the store read, so no import cycle.
+
 An axios instance (`baseURL=/api/v1`): request interceptor attaches the access
 token; response interceptor on `401` refreshes the token and retries, and on refresh
 failure logs out. Centralized error mapping to Uzbek messages (API.md §1 format).
@@ -1315,6 +1328,12 @@ failure clear auth + redirect to login.
 
 # FRNTND-3 — Auth store (Pinia)
 
+> ✅ **Done** (2026-07-10) — `src/stores/auth.ts` (Pinia setup store): `login` (POST /auth/login →
+> the backend returns tokens **+ the user profile in one response**, so no extra /me), `logout`
+> (best-effort refresh blacklist + clear), `restore` (validate the stored session via /me on app
+> load; the interceptor transparently refreshes an expired access token), getters
+> `isAuthenticated`/`role`. Session restored before mount in `main.ts` so guards see auth on first paint.
+
 `auth` store: `login` (POST `/auth/login` → store tokens + user), `logout`
 (blacklist refresh + clear), `me`, token persistence (localStorage), `isAuthenticated`
 and `role` getters. Restore the session on app load via `/me`.
@@ -1322,6 +1341,13 @@ Edge case: expose `role` for guards/menu; restore + validate session on reload;
 accept the localStorage tradeoff for tokens.
 
 # FRNTND-4 — UI kit + base layout primitives
+
+> ✅ **Done** (2026-07-10) — **PrimeVue 4** (confirmed) with the Aura preset via `@primeuix/themes`
+> (NOT the deprecated `@primevue/themes`) + primeicons + ToastService; dark-mode selector `.dark`.
+> `src/constants/labels.ts` = the English-enum → Uzbek-label map (roles; daraja I/II/III + Tag
+> severities green/amber/red); base primitives `DarajaBadge`, `PageHeader`; responsive base CSS
+> using PrimeVue design tokens. Uzbek-facing per CLAUDE.md §4.
+> **F1 frontend foundation complete → F2 (auth & layout) next.**
 
 Configure a UI library (PrimeVue or Naive UI), base components (button, table, form
 inputs, modal, toast), theme, and the **English-enum → Uzbek-label** map (daraja,
