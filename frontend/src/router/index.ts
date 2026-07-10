@@ -47,7 +47,17 @@ const router = createRouter({
           meta: { title: 'Tavsiyalar' },
         },
         { path: 'reports', name: 'reports', component: placeholder, meta: { title: 'Hisobotlar' } },
-        { path: 'catalog', name: 'catalog', component: placeholder, meta: { title: 'Katalog' } },
+        {
+          path: 'catalog',
+          name: 'catalog',
+          component: () => import('@/views/catalog/CatalogView.vue'),
+        },
+        {
+          path: 'catalog/norms',
+          name: 'catalog-norms',
+          component: () => import('@/views/catalog/NormsView.vue'),
+          meta: { title: 'Normalar', roles: ['super_admin'] },
+        },
         {
           path: 'users',
           name: 'users',

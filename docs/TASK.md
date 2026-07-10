@@ -1411,6 +1411,15 @@ Goal: reference-data views + reusable pickers, plus norm management for super_ad
 
 # FRNTND-8 — Catalog browse views + reusable pickers
 
+> ✅ **Done** (2026-07-10) — `stores/catalog.ts` caches the small global lists (regions, sport
+> types, age categories, exercises) once per session via `ensureLoaded()`; districts fetched +
+> memoized per region (cascade). `api/catalog.ts` + `types/catalog.ts`. Reusable pickers in
+> `components/pickers/`: `RegionSelect`, `DistrictSelect` (cascade on region), `OrganizationSelect`
+> (fetched by region), `SportSelect`, `AgeCategorySelect`, `GenderSelect`, `ExerciseSelect` — all
+> `defineModel` + PrimeVue Select, reused by F4 forms / F7 filters. `CatalogView.vue` = tabbed
+> browse (Tabs + DataTable) of the reference data with Uzbek enum labels (extended `labels.ts`:
+> gender, org type, value_type, direction). Verified: eslint + vue-tsc + build clean.
+
 Read views for reference data (regions, sport types, TOIFA age categories, exercises,
 batteries) and reusable select components (region/district cascade, sport picker, etc.)
 used across forms and filters. Cache catalog in a Pinia store.
@@ -1418,6 +1427,15 @@ Edge case: catalog rarely changes → cache it; the reusable pickers are shared 
 athlete forms (F4) and rating filters (F7).
 
 # FRNTND-9 — Norms & catalog management (super_admin)
+
+> ✅ **Done** (2026-07-10) — `views/catalog/NormsView.vue` (route `/catalog/norms`, **super_admin**
+> gated + linked from the catalog view for that role): norm list (DataTable, filter by
+> exercise/gender), create/edit Dialog with the **band editor** (fixed 10/8/6-point rows,
+> lower/upper `[l, u)` inputs, null = ±∞) that enforces **non-overlapping bands client-side**
+> (`utils/normBands.ts` mirrors BCKND-26), and delete via ConfirmDialog. `DarajaThreshold` shown
+> **read-only** (the API is read-only — admin-edited; noted in the UI). `ConfirmationService` +
+> `<ConfirmDialog>` wired app-wide. Verified: eslint + vue-tsc + build clean.
+> **F3 catalog UI complete → F4 (athletes UI) next.**
 
 Admin UI the SPA owns: a Norm + bands editor (`NormBand` 10/8/6 rows) and the
 `DarajaThreshold` editor, plus any catalog CRUD not left to Django admin. Gated to
