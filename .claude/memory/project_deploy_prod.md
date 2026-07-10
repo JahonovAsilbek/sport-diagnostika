@@ -92,3 +92,21 @@ host cron (not Celery Beat).
   --if-exists --no-owner`. Verify table/row counts match, then `dropdb` the scratch.
 - Media = the `sport-diagnostika_media` named volume, tarred via a throwaway `alpine`. `backups/`
   is git-ignored; off-server via `BACKUP_RSYNC_TARGET` rsync.
+
+**Monitoring & logging (D7, DVPS-18/19)** — lightweight (no Prometheus). `apps/common/{logging,middleware,tasks}.py`
++ `docs/MONITORING.md`. Non-obvious:
+
+- **`CELERY_WORKER_HIJACK_ROOT_LOGGER = False`** (base) — else the worker replaces Django's
+  `LOGGING` dictConfig (and the request-id filter) at boot and double-logs.
+- **Sentry `send_default_pii=False` does NOT stop request-body capture** — sentry-sdk 2.x
+  defaults `max_request_body_size="medium"`, so a login POST body (password) is sent. Must set
+  **`max_request_body_size="never"`**. Sentry init in `prod.py`, opt-in via `SENTRY_DSN` (runs once
+  per web/worker/beat process); inert without a DSN.
+- **Request-id filter goes on the HANDLER, console handler on `root` only** — a filter on a logger
+  misses child-propagated records; a handler on both a named logger and `root` double-logs. JSON via
+  a stdlib `logging.Formatter` subclass (no `python-json-logger`). Inbound `X-Request-ID` is
+  sanitized (alnum/`._-`, cap 64) — CRLF/header-injection.
+- **No `restart:` policy shipped before D7** — every prod service now `restart: unless-stopped`
+  (single VPS, no orchestrator). **Beat has no healthcheck** (no control API, slim image lacks
+  ps/pgrep) — liveness = a `heartbeat` task pinging a dead-man switch (`HEALTHCHECK_PING_URL`).
+  Worker healthcheck = `celery -A config inspect ping`.

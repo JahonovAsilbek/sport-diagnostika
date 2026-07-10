@@ -1248,12 +1248,39 @@ Goal: uptime/health monitoring and centralized logging + error tracking.
 
 # DVPS-18 — Health checks + uptime monitoring
 
+> ✅ **Done** (2026-07-10) — health endpoint already returns 200/503 (BCKND-8, unchanged).
+> Added a **worker** container healthcheck (`celery -A config inspect ping --timeout 10`);
+> **beat** gets none (no control API + slim image has no ps) — its liveness is a `heartbeat`
+> Celery task (`apps/common/tasks.py`, scheduled every 5 min via `CELERY_BEAT_SCHEDULE`) pinging
+> a dead-man switch (`HEALTHCHECK_PING_URL`, opt-in). Bumped the web healthcheck interval 10s→30s
+> (each probe logs). **`restart: unless-stopped`** on all 6 prod services (a single VPS has no
+> orchestrator to reschedule a crash). `scripts/disk-alert.sh` (df threshold → opt-in Telegram,
+> else non-zero for cron-mail). `docs/MONITORING.md` runbook wires an external uptime monitor +
+> resource monitoring + alert routing. Verified: merged compose config (worker healthcheck,
+> restart×6, 30s interval), `sh -n`/shellcheck clean.
+
 Wire `/api/v1/health/` (BCKND-8) to an uptime monitor and container healthchecks
 (partly from D1). Alert on down. Basic resource monitoring (CPU/mem/disk).
 Edge case: the health endpoint returns `503` when db/cache are down (BCKND-8) so the
 monitor/LB reacts; route alerts (email/Telegram).
 
 # DVPS-19 — Centralized logging + error tracking
+
+> ✅ **Done** (2026-07-10) — structured Django `LOGGING` (base): one console handler on `root`
+> → stdout, plain in dev / **JSON in prod** (a ~12-line stdlib `JsonFormatter`, no new dep);
+> `django.db.backends`=WARNING so SQL/params never log. **Request-id correlation**:
+> `apps/common/middleware.py` `RequestIDMiddleware` (registered FIRST) sanitizes/generates an
+> `X-Request-ID`, echoes it, and stores it in a `ContextVar` (mirrors `apps/audit/context.py`); a
+> `RequestIDFilter` on the handler stamps every line; `task_prerun/postrun` signals reuse the same
+> id for worker logs. **`CELERY_WORKER_HIJACK_ROOT_LOGGER=False`** — else the worker replaces the
+> dictConfig at boot. **Sentry** (`sentry-sdk~=2.20`) init in prod.py, opt-in via `SENTRY_DSN`
+> (inert otherwise), Django+Celery integrations, `send_default_pii=False` **and
+> `max_request_body_size="never"`** (the latter is what actually stops login-body/password capture).
+> Docker **log rotation** via a `json-file` anchor (10 MB×5) on web/worker/beat. `.env.example` +
+> `docs/MONITORING.md`. Verified: `manage.py check` dev+prod, dictConfig valid, **301 passed** (+7
+> request-id/filter/JSON tests: generated/echoed/sanitized/truncated), Sentry init with a dummy DSN
+> doesn't raise, ruff/format clean. **D7 monitoring & logging complete — DVPS track split; F-blocks
+> (frontend) next.**
 
 Structured Django `LOGGING` config, log aggregation/rotation, and error tracking
 (e.g. Sentry) for both the backend and the Celery worker.

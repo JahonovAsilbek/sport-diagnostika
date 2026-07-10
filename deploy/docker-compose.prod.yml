@@ -7,11 +7,15 @@ services:
   # The datastores talk to the app over the `sport` network by name — never publish them on
   # the host. The base compose maps 5432/6379 for host-venv dev; drop that in prod so a VPS
   # doesn't expose Postgres/Redis to the internet.
+  # restart: a single-VPS deploy has no orchestrator to reschedule a crashed container, so
+  # every prod service restarts unless explicitly stopped (D7 — resilience for "monitoring").
   db:
     ports: !reset []
+    restart: unless-stopped
 
   redis:
     ports: !reset []
+    restart: unless-stopped
 
   web:
     # Runserver (base) → gunicorn, worker count sized to cores by deploy/gunicorn.conf.py
@@ -31,15 +35,18 @@ services:
       - static:/app/staticfiles
       - ./gunicorn.conf.py:/gunicorn.conf.py:ro
     ports: !reset []  # only nginx is published to the host
+    restart: unless-stopped
 
   # Celery services run the same image; without this they'd start under dev settings.
   worker:
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.prod
+    restart: unless-stopped
 
   beat:
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.prod
+    restart: unless-stopped
 
   nginx:
     image: nginx:1.27-alpine
@@ -54,6 +61,7 @@ services:
       - media:/usr/share/nginx/media:ro
       # Vite build output (produced by the F-blocks); `/` → 404 until it exists.
       - ../frontend/dist:/usr/share/nginx/html:ro
+    restart: unless-stopped
     networks: [sport]
 
 volumes:

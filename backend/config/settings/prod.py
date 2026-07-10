@@ -35,3 +35,25 @@ CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
 # (nothing listening) and the redirect-following probe would fail. Exempt just that path.
 # SecurityMiddleware strips the leading slash and uses re.search, so anchor with ^…$.
 SECURE_REDIRECT_EXEMPT = [r"^api/v1/health/$"]
+
+# Structured JSON logs in prod (LOG_LEVEL comes from the env via base, default INFO).
+LOGGING["handlers"]["console"]["formatter"] = "json"  # noqa: F405
+
+# --- Error tracking (Sentry, DVPS-19) — inert without a DSN; covers web + worker + beat ----
+# prod.py is imported once per process (web via gunicorn post-fork; worker/beat via
+# config_from_object → the settings import), so this initializes Sentry exactly once each.
+SENTRY_DSN = env("SENTRY_DSN", default="")
+if SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.celery import CeleryIntegration
+    from sentry_sdk.integrations.django import DjangoIntegration
+
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[DjangoIntegration(), CeleryIntegration(monitor_beat_tasks=True)],
+        environment=env("SENTRY_ENVIRONMENT", default="production"),
+        release=env("SENTRY_RELEASE", default="") or None,
+        traces_sample_rate=env.float("SENTRY_TRACES_SAMPLE_RATE", default=0.0),
+        send_default_pii=False,  # no cookies / client IP / user id
+        max_request_body_size="never",  # CRITICAL: never capture request bodies (passwords)
+    )

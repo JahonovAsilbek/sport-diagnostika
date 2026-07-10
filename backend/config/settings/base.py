@@ -56,6 +56,7 @@ LOCAL_APPS = [
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 MIDDLEWARE = [
+    "apps.common.middleware.RequestIDMiddleware",  # outermost — the request id covers everything
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
@@ -114,6 +115,16 @@ CELERY_BROKER_URL = env("CELERY_BROKER_URL", default=env("REDIS_URL"))
 CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", default=env("REDIS_URL"))
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TIMEZONE = "Asia/Tashkent"
+# Don't let the worker replace the root logger at boot — keep our LOGGING (+ request-id filter)
+# governing worker output (DVPS-19).
+CELERY_WORKER_HIJACK_ROOT_LOGGER = False
+
+# Beat liveness heartbeat (DVPS-18). DatabaseScheduler (DVPS-7) syncs this into the DB on start.
+# The task is a no-op unless HEALTHCHECK_PING_URL is set (opt-in dead-man switch).
+HEALTHCHECK_PING_URL = env("HEALTHCHECK_PING_URL", default="")
+CELERY_BEAT_SCHEDULE = {
+    "heartbeat": {"task": "apps.common.tasks.heartbeat", "schedule": 300.0},  # every 5 min
+}
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -148,6 +159,38 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # CORS — allowed origins from env (dev overrides with CORS_ALLOW_ALL_ORIGINS).
 CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[])
+
+# --- Logging (DVPS-19) --------------------------------------------------------------------
+# One console handler on root → stdout (Docker captures + rotates it via the json-file driver).
+# The request-id filter is on the HANDLER so every propagated record is stamped; named loggers
+# only set levels and propagate, so each line is emitted exactly once. prod.py flips the
+# formatter to JSON. Never log SQL/params (django.db.backends at WARNING) — no PII in logs.
+LOG_LEVEL = env("LOG_LEVEL", default="INFO")
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "filters": {"request_id": {"()": "apps.common.logging.RequestIDFilter"}},
+    "formatters": {
+        "plain": {"format": "%(asctime)s %(levelname)s [%(request_id)s] %(name)s: %(message)s"},
+        "json": {"()": "apps.common.logging.JsonFormatter"},
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "filters": ["request_id"],
+            "formatter": "plain",
+        },
+    },
+    "root": {"handlers": ["console"], "level": LOG_LEVEL},
+    "loggers": {
+        "django": {"level": LOG_LEVEL},
+        "django.request": {"level": "ERROR"},  # 5xx as ERROR; drop 4xx noise
+        "django.db.backends": {"level": "WARNING"},  # never log SQL / bound params
+        "django.security": {"level": "WARNING"},
+        "celery": {"level": LOG_LEVEL},
+        "apps": {"level": LOG_LEVEL},
+    },
+}
 
 # Django REST Framework
 REST_FRAMEWORK = {
