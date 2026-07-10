@@ -1670,6 +1670,18 @@ super_admin.
 
 # FRNTND-22 — Reports UI (request + download)
 
+> ✅ **Done** (2026-07-10) — `views/reports/ReportsView.vue` + `api/reports.ts`. A request form
+> (type Sportchi/Viloyat/Sport/Respublika + format PDF/Word/Excel): the **athlete** type shows an
+> `AthleteAutocomplete`, the ranking/republic types show optional region/sport/age/gender filters;
+> `POST /reports/` (202). A list table shows each report's status (Navbatda/Ishlanmoqda/Tayyor/Xato
+> Tag + spinner while active) and **polls `GET /reports/` every 2.5s while any report is
+> pending/processing**, stopping when none are (cleared on unmount). **Yuklab olish** is enabled
+> only when `done` → `GET /reports/{id}/download/` as a blob, filename from Content-Disposition,
+> anchor-click save; a 409-before-done never happens since the button is gated. Scope + visibility
+> are server-side (requester-only; super_admin/ministry see all). Verified: eslint + vue-tsc + build
+> clean.
+> **F9 recommendation & report UI complete → F10 (dashboard UI) next.**
+
 Request a report (type, format, params), see its status
 (pending/processing/done/failed), and download when ready; polls `/reports/{id}`.
 Edge case: async status polling; download enabled only when `done`; scope params to

@@ -80,7 +80,11 @@ const router = createRouter({
           name: 'recommendations',
           component: () => import('@/views/recommendations/RecommendationsView.vue'),
         },
-        { path: 'reports', name: 'reports', component: placeholder, meta: { title: 'Hisobotlar' } },
+        {
+          path: 'reports',
+          name: 'reports',
+          component: () => import('@/views/reports/ReportsView.vue'),
+        },
         {
           path: 'catalog',
           name: 'catalog',
