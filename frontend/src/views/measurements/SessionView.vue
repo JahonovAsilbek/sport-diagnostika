@@ -25,7 +25,7 @@ import PageHeader from '@/components/PageHeader.vue'
 import { useCatalogStore } from '@/stores/catalog'
 import type { Exercise, TestBattery } from '@/types/catalog'
 import type { Evaluation, TestSession } from '@/types/measurement'
-import { rawPlaceholder, validateRaw } from '@/utils/rawValue'
+import { formatRaw, rawPlaceholder, validateRaw } from '@/utils/rawValue'
 
 const route = useRoute()
 const toast = useToast()
@@ -65,7 +65,12 @@ onMounted(async () => {
     session.value = s
     height.value = s.height_cm ? Number(s.height_cm) : null
     weight.value = s.weight_kg ? Number(s.weight_kg) : null
-    for (const m of s.measurements) values[m.exercise] = m.raw_value
+    // Stored values come back as Decimals ("70.00"); show them in their entry form (per value_type,
+    // resolved from the loaded catalog pool) so the fields read cleanly and re-validate.
+    for (const m of s.measurements) {
+      const vt = catalog.exercises.find((e) => e.id === m.exercise)?.value_type
+      values[m.exercise] = vt ? formatRaw(vt, m.raw_value) : m.raw_value
+    }
     try {
       battery.value = await getBattery(id)
     } catch (e) {
