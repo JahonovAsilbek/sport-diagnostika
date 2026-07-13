@@ -43,7 +43,7 @@ const form = reactive({
   sport_type: null as number | null,
   coach: null as number | null,
   razryad: '',
-  training_experience: null as number | null,
+  training_experience: '',
   main_competitions: '',
   is_active: true,
 })
@@ -64,7 +64,7 @@ onMounted(async () => {
       sport_type: a.sport_type,
       coach: a.coach,
       razryad: a.razryad ?? '',
-      training_experience: a.training_experience,
+      training_experience: a.training_experience ?? '',
       main_competitions: a.main_competitions ?? '',
       is_active: a.is_active,
     })
@@ -80,6 +80,7 @@ function validate(): boolean {
   if (form.birth_year === null) e.push(t('athletes.form.validation.birthYear'))
   if (!form.gender) e.push(t('athletes.form.validation.gender'))
   if (!form.region) e.push(t('athletes.form.validation.region'))
+  if (!form.organization) e.push(t('athletes.form.validation.organization'))
   if (!form.sport_type) e.push(t('athletes.form.validation.sport'))
   errors.value = e
   return e.length === 0
@@ -90,7 +91,7 @@ async function save() {
   const payload: AthleteWrite = {
     last_name: form.last_name.trim(),
     first_name: form.first_name.trim(),
-    middle_name: form.middle_name.trim() || null,
+    middle_name: form.middle_name.trim(),
     birth_year: form.birth_year,
     gender: form.gender,
     region: form.region,
@@ -98,9 +99,9 @@ async function save() {
     organization: form.organization,
     sport_type: form.sport_type,
     coach: form.coach,
-    razryad: form.razryad.trim() || null,
-    training_experience: form.training_experience,
-    main_competitions: form.main_competitions.trim() || null,
+    razryad: form.razryad.trim(),
+    training_experience: form.training_experience.trim(),
+    main_competitions: form.main_competitions.trim(),
     is_active: form.is_active,
   }
   saving.value = true
@@ -162,7 +163,7 @@ async function save() {
         <DistrictSelect v-model="form.district" :region="form.region" />
       </div>
       <div class="field">
-        <label>{{ $t('common.fields.organization') }}</label>
+        <label>{{ $t('common.fields.organization') }} *</label>
         <OrganizationSelect v-model="form.organization" :region="form.region" />
       </div>
       <div class="field">
@@ -175,7 +176,7 @@ async function save() {
       </div>
       <div class="field">
         <label>{{ $t('athletes.form.trainingExperience') }}</label>
-        <InputNumber v-model="form.training_experience" :min="0" :max="80" fluid />
+        <InputText v-model="form.training_experience" fluid />
       </div>
       <div class="field field--wide">
         <label>{{ $t('athletes.mainCompetitions') }}</label>

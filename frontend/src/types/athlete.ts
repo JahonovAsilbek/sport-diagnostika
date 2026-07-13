@@ -13,9 +13,9 @@ export interface Athlete {
   organization: number | null
   sport_type: number | null
   coach: number | null
-  razryad: string | null
-  training_experience: number | null
-  main_competitions: string | null
+  razryad: string
+  training_experience: string
+  main_competitions: string
   block: string | null // OTM / OPSTTM classification (derived)
   age_category: AgeCategory | null // derived TOIFA at today's date; null if out of range
   is_active: boolean
@@ -25,7 +25,7 @@ export interface Athlete {
 export interface AthleteWrite {
   last_name: string
   first_name: string
-  middle_name?: string | null
+  middle_name?: string
   birth_year: number | null
   gender: Gender | null
   region: number | null
@@ -33,8 +33,8 @@ export interface AthleteWrite {
   organization: number | null
   sport_type: number | null
   coach: number | null
-  razryad?: string | null
-  training_experience?: number | null
-  main_competitions?: string | null
+  razryad?: string
+  training_experience?: string
+  main_competitions?: string
   is_active?: boolean
 }
