@@ -9,12 +9,29 @@ export interface User {
   id: number
   username: string
   full_name: string
+  first_name: string
+  last_name: string
   role: Role
   phone: string | null
   email: string | null
   is_active: boolean
   region: NamedRef | null
   organization: NamedRef | null
+}
+
+/** Create/update payload — region/organization are PKs (the read `User` nests them), and
+ * `password` is write-only (required on create, omit on edit to keep the current one). */
+export interface UserWrite {
+  username: string
+  password?: string
+  first_name?: string
+  last_name?: string
+  email?: string
+  phone?: string
+  role: Role | null
+  is_active?: boolean
+  region: number | null
+  organization: number | null
 }
 
 /** POST /auth/login/ — the backend returns the tokens plus the profile in one call. */

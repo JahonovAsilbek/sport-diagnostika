@@ -7,6 +7,7 @@ import type {
   Norm,
   NormWrite,
   Organization,
+  OrganizationWrite,
   OrgType,
   Paginated,
   Region,
@@ -30,6 +31,13 @@ export const getAgeCategories = () => listAll<AgeCategory>('/catalog/age-categor
 export const getExercises = () => listAll<Exercise>('/catalog/exercises/')
 export const getOrganizations = (params?: { region?: number; type?: OrgType }) =>
   listAll<Organization>('/catalog/organizations/', params)
+
+// Organization management (FRNTND-28) — write is super_admin-only (ReadOnlyOrSuperAdmin, BCKND-21).
+export const createOrganization = (payload: OrganizationWrite) =>
+  api.post<Organization>('/catalog/organizations/', payload).then((r) => r.data)
+export const updateOrganization = (id: number, payload: OrganizationWrite) =>
+  api.put<Organization>(`/catalog/organizations/${id}/`, payload).then((r) => r.data)
+export const deleteOrganization = (id: number) => api.delete(`/catalog/organizations/${id}/`)
 export const getBatteries = (params?: { age_category?: number; gender?: Gender }) =>
   listAll<TestBattery>('/catalog/batteries/', params)
 export const getDarajaThresholds = () => listAll<DarajaThreshold>('/catalog/daraja-thresholds/')

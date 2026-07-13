@@ -9,9 +9,9 @@ The Vue 3 SPA lives in `frontend/` (scaffolded in F1, FRNTND-1…4). Confirmed f
 (both were "decision to confirm" in TASK.md):
 
 - **TypeScript** (not plain JS) and **PrimeVue 4** (not Naive UI) — pick-ONE, locked.
-- **Theme preset comes from `@primeuix/themes`** (e.g. `import Aura from '@primeuix/themes/aura'`),
-  NOT `@primevue/themes` — the latter is deprecated as of primevue 4.5. `app.use(PrimeVue, { theme:
-  { preset: Aura, options: { darkModeSelector: '.dark' } } })`.
+- **Theme preset comes from `@primeuix/themes`** (`import Aura from '@primeuix/themes/aura'`), NOT
+  `@primevue/themes` (deprecated as of primevue 4.5). The app now ships a **custom dark preset**
+  (cyan/navy, dark by default) — see [[project_theme]].
 
 Stack: Vite 6, Vue Router, Pinia (setup stores), axios, ESLint 9 flat config
 (`@vue/eslint-config-typescript` + `eslint-plugin-vue` + prettier-skip-formatting), Prettier
@@ -34,8 +34,15 @@ Stack: Vite 6, Vue Router, Pinia (setup stores), axios, ESLint 9 flat config
   profile), so the store skips a separate /me on login. `restore()` (app load) validates via
   `/auth/me/`. Logout: `POST /auth/logout/ {refresh}` blacklists.
 - Roles (backend `Role`): `super_admin` · `region_admin` · `coach` · `lab_operator` · `ministry`.
-  Uzbek labels + the daraja map live in `src/constants/labels.ts` (English enum → Uzbek display,
-  CLAUDE.md §4). Extend that file per feature rather than hardcoding labels in components.
+  Enum→label helpers are **reactive functions in `src/i18n/labels.ts`** (FRNTND-25); `constants/
+  labels.ts` keeps only `DarajaLevel`/`Severity`/`DARAJA_SEVERITY` (CSS). See [[project_i18n]].
+
+**Management UIs (FRNTND-27/28):** users at `/users` (`UsersView` → User CRUD `/users/`, incl. the
+`reset-password` action; region_admin scoped, can't create super_admin) and organizations at
+`/catalog/organizations` (`OrganizationsView`, super_admin, linked from `CatalogView`). **Catalog
+write is super_admin-only via `CatalogViewSet` (a `ModelViewSet` + `ReadOnlyOrSuperAdmin`)** — there
+are no separate catalog write APIs, just reuse `/catalog/<entity>/` POST/PUT/DELETE. The read
+`UserSerializer` now also exposes `first_name`/`last_name` (so the edit form prefills).
 
 The SPA build (`frontend/dist`) is what nginx serves in prod (D3/D5) — `/` 404s until it exists.
 See [[project_deploy_prod]].

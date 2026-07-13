@@ -13,8 +13,6 @@ declare module 'vue-router' {
   }
 }
 
-// Sections whose real views arrive in later F-blocks render a placeholder for now.
-const placeholder = () => import('@/views/PlaceholderView.vue')
 
 const router = createRouter({
   history: createWebHistory(),
@@ -97,9 +95,15 @@ const router = createRouter({
           meta: { title: 'Normalar', roles: ['super_admin'] },
         },
         {
+          path: 'catalog/organizations',
+          name: 'catalog-organizations',
+          component: () => import('@/views/catalog/OrganizationsView.vue'),
+          meta: { title: 'Tashkilotlar', roles: ['super_admin'] },
+        },
+        {
           path: 'users',
           name: 'users',
-          component: placeholder,
+          component: () => import('@/views/users/UsersView.vue'),
           meta: { title: 'Foydalanuvchilar', roles: ['super_admin', 'region_admin'] },
         },
       ],

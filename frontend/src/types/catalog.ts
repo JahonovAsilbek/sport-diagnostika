@@ -25,6 +25,14 @@ export interface Organization {
   district: number | null
 }
 
+/** Write shape for organization management (FRNTND-28) — `region`/`district` are PKs. */
+export interface OrganizationWrite {
+  name: string
+  type: OrgType
+  region: number | null
+  district: number | null
+}
+
 export interface SportType {
   id: number
   name: string

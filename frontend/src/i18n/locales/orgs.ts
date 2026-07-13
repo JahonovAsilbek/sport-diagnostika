@@ -1,0 +1,55 @@
+// Organization management (FRNTND-28). Reuses common.* and enums.orgType via orgTypeLabel.
+// kk omitted → falls back to uz.
+export default {
+  uz: {
+    title: 'Tashkilotlar',
+    manageLink: 'Tashkilotlar',
+    new: 'Yangi tashkilot',
+    edit: 'Tashkilotni tahrirlash',
+    name: 'Tashkilot nomi',
+    type: 'Turi',
+    saved: 'Saqlandi',
+    deleted: 'Oʻchirildi',
+    deleteConfirm: '"{name}" tashkilotini oʻchirasizmi?',
+    empty: 'Tashkilotlar topilmadi',
+    validation: {
+      name: 'Tashkilot nomini kiriting.',
+      type: 'Turini tanlang.',
+      region: 'Viloyatni tanlang.',
+    },
+  },
+  ru: {
+    title: 'Организации',
+    manageLink: 'Организации',
+    new: 'Новая организация',
+    edit: 'Редактировать организацию',
+    name: 'Название организации',
+    type: 'Тип',
+    saved: 'Сохранено',
+    deleted: 'Удалено',
+    deleteConfirm: 'Удалить организацию «{name}»?',
+    empty: 'Организации не найдены',
+    validation: {
+      name: 'Введите название организации.',
+      type: 'Выберите тип.',
+      region: 'Выберите область.',
+    },
+  },
+  en: {
+    title: 'Organizations',
+    manageLink: 'Organizations',
+    new: 'New organization',
+    edit: 'Edit organization',
+    name: 'Organization name',
+    type: 'Type',
+    saved: 'Saved',
+    deleted: 'Deleted',
+    deleteConfirm: 'Delete organization "{name}"?',
+    empty: 'No organizations found',
+    validation: {
+      name: 'Enter the organization name.',
+      type: 'Select a type.',
+      region: 'Select the region.',
+    },
+  },
+}

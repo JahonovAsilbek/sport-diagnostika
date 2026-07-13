@@ -40,6 +40,13 @@ function ageName(id: number) {
       <template #actions>
         <Button
           v-if="auth.role === 'super_admin'"
+          :label="$t('orgs.manageLink')"
+          icon="pi pi-building"
+          outlined
+          @click="router.push('/catalog/organizations')"
+        />
+        <Button
+          v-if="auth.role === 'super_admin'"
           :label="$t('catalog.manageNorms')"
           icon="pi pi-sliders-h"
           @click="router.push('/catalog/norms')"

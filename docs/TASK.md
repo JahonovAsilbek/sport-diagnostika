@@ -1889,6 +1889,15 @@ building (design tasks are the standard multi-file, plan-mode workflow).
 
 # FRNTND-27 — User management view (replace the `/users` placeholder)
 
+> ✅ **Done** (2026-07-13) — `views/users/UsersView.vue` replaces the placeholder: a scoped list
+> (role / search / active-only filters) + a create/edit dialog (username, password, first/last name,
+> email, phone, role, region + organization pickers, active) + **reset-password** + soft-deactivate,
+> wired to the existing User CRUD API (BCKND-15) at `/users/`. Added `listUsers`/`createUser`/
+> `updateUser`/`deactivateUser`/`resetPassword` to `api/users.ts`, a `users` i18n namespace, and
+> `first_name`/`last_name` to the **read** `UserSerializer` (so edit prefills). super_admin sees all;
+> region_admin is scoped and can't create super_admins (backend-enforced, option hidden). Verified:
+> `vue-tsc`+`eslint`+`build` clean, accounts `pytest` 15 passed, e2e `POST /users/` → 201.
+
 `/users` is currently a placeholder — coaches/operators can only be created in Django admin.
 Build the real view: list + create/edit/deactivate users of every role (incl. coaches),
 region/organization-scoped, wired to the existing User CRUD API (BCKND-15). super_admin +
@@ -1896,11 +1905,24 @@ region_admin only.
 
 # FRNTND-28 — Organization management (catalog admin UI)
 
+> ✅ **Done** (2026-07-13) — `views/catalog/OrganizationsView.vue` (super_admin): a list (region +
+> type filters) + create/edit dialog (name, type OTM/OPSTTM, region, district) + delete-confirm,
+> linked from `CatalogView` and routed at `/catalog/organizations`. Added `createOrganization`/
+> `updateOrganization`/`deleteOrganization` to `api/catalog.ts`, an `orgs` i18n namespace, and an
+> `OrganizationWrite` type. Uses the existing `OrganizationViewSet` (it extends the full-CRUD
+> `CatalogViewSet`; `ReadOnlyOrSuperAdmin` permits super_admin writes) — **no backend change**.
+> Verified: `vue-tsc`+`eslint`+`build` clean, e2e `POST /catalog/organizations/` → 201.
+
 No SPA screen creates organizations (only Django admin), yet an athlete **requires** one. Add
 list + create/edit for organizations (name, type OTM/OPSTTM, region, district) in the catalog
 area, scoped. Depends on BCKND-71 if the catalog API is read-only.
 
 # BCKND-71 — Organization write API (verify first)
+
+> ✅ **N/A — not needed** (2026-07-13) — verified during FRNTND-28: `OrganizationViewSet` already
+> extends `CatalogViewSet`, which is a full `ModelViewSet` guarded by `ReadOnlyOrSuperAdmin` — so
+> scoped org CRUD (super_admin write) already exists at `/catalog/organizations/`. Confirmed by an
+> e2e `POST` → 201. No code added.
 
 BCKND-21 shipped **read-only** catalog APIs. Add scoped CRUD for Organization (and any other
 catalog entity the management UI needs). Skip/trim if a write endpoint already exists.

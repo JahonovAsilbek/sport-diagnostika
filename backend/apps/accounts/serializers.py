@@ -22,6 +22,8 @@ class UserSerializer(serializers.ModelSerializer):
             "id",
             "username",
             "full_name",
+            "first_name",
+            "last_name",
             "role",
             "phone",
             "email",
