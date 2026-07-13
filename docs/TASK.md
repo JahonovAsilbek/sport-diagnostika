@@ -1982,8 +1982,13 @@ hardcoded light colors.
 > primary filled buttons now lift with a cyan `--shadow-glow` on hover (severity/text/outlined
 > excluded via a `:not(...)` list), and DataTable headers are compact-uppercase + muted for a premium
 > table look. Dark scrollbars + cyan focus ring + card transitions/glows landed in F-29/30/31.
-> Verified: `vue-tsc` + `eslint` + `build` clean. **Design migration (F-29→F-32) complete — the SPA
-> now wears the premium dark cyan/navy look end to end.**
+> Verified: `vue-tsc` + `eslint` + `build` clean. **Design migration (F-29→F-32) complete.**
+>
+> **Update (2026-07-13):** the premium dark cyan/navy direction was **reverted per user preference**
+> — the SPA now mirrors the **lite root landing** (`assets/css/style.css`): a minimal **light** theme,
+> blue primary (`#1d4ed8`), flat white cards, subtle shadows, no gradients/glow. The token-based
+> foundation made the switch a re-point of the `--color-*` tokens + preset primary (blue) + drop the
+> dark class; login restyled to match `login.html`. See [[project_theme]].
 
 Hover glows, transitions, dark scrollbars, responsive tuning, empty/error/loading states, chart
 colors, focus-visible rings — the finishing pass.

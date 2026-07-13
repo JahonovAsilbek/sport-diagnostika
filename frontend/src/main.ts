@@ -14,16 +14,12 @@ import router from './router'
 import { SportPreset } from './theme/preset'
 import { useAuthStore } from './stores/auth'
 
-// Dark by default — the premium look is a dark theme (FRNTND-29). The class also drives PrimeVue's
-// dark color scheme via darkModeSelector below.
-document.documentElement.classList.add('dark')
-
 const app = createApp(App)
 
 app.use(createPinia())
 app.use(i18n)
 app.use(router)
-app.use(PrimeVue, { theme: { preset: SportPreset, options: { darkModeSelector: '.dark' } } })
+app.use(PrimeVue, { theme: { preset: SportPreset, options: { darkModeSelector: '.app-dark' } } })
 app.use(ToastService)
 app.use(ConfirmationService)
 

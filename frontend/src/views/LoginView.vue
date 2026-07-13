@@ -100,17 +100,15 @@ async function submit() {
 }
 .login__card {
   width: 100%;
-  max-width: 360px;
+  max-width: 420px;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  padding: 2rem;
+  padding: 1.75rem;
   border-radius: var(--radius-lg);
-  background: var(--gradient-card);
+  background: var(--color-bg-elev);
   border: 1px solid var(--color-border);
-  box-shadow:
-    var(--shadow-lg),
-    var(--shadow-glow);
+  box-shadow: var(--shadow-sm);
 }
 .login__locale {
   display: flex;
@@ -119,14 +117,11 @@ async function submit() {
 }
 .login__brand {
   margin: 0;
-  font-size: 1.35rem;
-  font-weight: 800;
-  letter-spacing: 0.02em;
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
   text-align: center;
-  background: var(--gradient-hero);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--color-text);
 }
 .login__hint {
   margin: 0 0 0.5rem;

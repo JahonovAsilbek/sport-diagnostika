@@ -1,51 +1,42 @@
 :root {
-  --sd-content-max: 1200px;
+  --sd-content-max: 1120px;
 
-  /* Premium design tokens (mirrors premium/assets/css/base.css) — used by custom styles and the
-     per-view restyle in later phases. */
-  --color-bg: #07101f;
-  --color-bg-elev: #0e1b30;
-  --color-bg-soft: #15243c;
-  --color-border: #1f3354;
-  --color-text: #e6eefb;
-  --color-text-muted: #9aa8c2;
-  --color-text-dim: #6a7894;
+  /* Lite design tokens — mirrors the root landing (assets/css/style.css): a clean light theme,
+     blue primary, subtle borders + shadows, no gradients/glow. */
+  --color-bg: #f8fafc; /* app page */
+  --color-bg-elev: #ffffff; /* cards / topbar / sidebar */
+  --color-bg-soft: #f1f5f9;
+  --color-border: #e2e8f0;
+  --color-border-strong: #cbd5e1;
+  --color-text: #0f172a;
+  --color-text-muted: #475569;
+  --color-text-dim: #64748b;
 
-  --color-primary: #00d4ff;
-  --color-primary-700: #0099b5;
-  --color-accent: #1eb53a;
-  --color-warn: #f5b700;
-  --color-danger: #ef4444;
-  --color-success: #10b981;
+  --color-primary: #1d4ed8;
+  --color-primary-700: #1e40af;
+  --color-accent: #15803d;
+  --color-warn: #d97706;
+  --color-danger: #dc2626;
+  --color-success: #15803d;
 
-  --gradient-hero: linear-gradient(135deg, #00d4ff 0%, #1eb53a 100%);
-  --gradient-card: linear-gradient(180deg, #15243c 0%, #0e1b30 100%);
+  /* Kept as tokens so the component styles need no edits — flat in the lite theme. */
+  --gradient-card: #ffffff;
+  --gradient-hero: #1d4ed8;
 
-  --radius-sm: 6px;
-  --radius: 12px;
-  --radius-lg: 20px;
+  --radius-sm: 4px;
+  --radius: 8px;
+  --radius-lg: 12px;
   --radius-pill: 999px;
 
-  --shadow-sm: 0 2px 8px rgb(0 0 0 / 25%);
-  --shadow: 0 8px 24px rgb(0 0 0 / 35%);
-  --shadow-lg: 0 20px 60px rgb(0 0 0 / 50%);
-  --shadow-glow: 0 0 40px rgb(0 212 255 / 25%);
+  --shadow-xs: 0 1px 2px rgb(15 23 42 / 4%);
+  --shadow-sm:
+    0 1px 3px rgb(15 23 42 / 6%),
+    0 1px 2px rgb(15 23 42 / 4%);
+  --shadow: 0 4px 12px rgb(15 23 42 / 8%);
+  --shadow-lg: 0 10px 30px rgb(15 23 42 / 10%);
+  --shadow-glow: var(--shadow-sm); /* no glow in the lite theme */
 
   --font-sans: 'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-}
-
-/* Pin the PrimeVue dark scheme to the exact premium hues on the surfaces the shell + components
-   read directly. `html.dark` (0,1,1) outranks PrimeVue's `.dark` rules, so these win while the
-   preset still supplies the full component token graph. */
-html.dark {
-  --p-content-background: var(--color-bg-elev);
-  --p-content-hover-background: var(--color-bg-soft);
-  --p-content-border-color: var(--color-border);
-  --p-text-color: var(--color-text);
-  --p-text-muted-color: var(--color-text-muted);
-  --p-primary-color: var(--color-primary);
-  --p-highlight-background: rgb(0 212 255 / 14%);
-  --p-highlight-color: #7fe9ff;
 }
 
 *,
@@ -66,20 +57,6 @@ body {
   background: var(--color-bg);
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
-  position: relative;
-}
-
-/* The premium ambient glow (base.css body::before). */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    radial-gradient(600px circle at 12% 8%, rgb(0 212 255 / 8%), transparent 60%),
-    radial-gradient(620px circle at 92% 96%, rgb(30 181 58 / 8%), transparent 60%);
-  filter: blur(40px);
 }
 
 #app {
@@ -87,54 +64,34 @@ body::before {
 }
 
 a {
-  color: var(--p-primary-color);
+  color: var(--color-primary);
   text-decoration: none;
 }
 
 ::selection {
-  background: var(--color-primary);
-  color: #04111e;
+  background: color-mix(in srgb, var(--color-primary) 18%, transparent);
 }
 
-/* Dark scrollbars to match the theme. */
+/* Subtle light scrollbars. */
 * {
-  scrollbar-color: var(--color-border) transparent;
+  scrollbar-color: var(--color-border-strong) transparent;
 }
 *::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
 *::-webkit-scrollbar-thumb {
-  background: var(--color-border);
+  background: var(--color-border-strong);
   border-radius: var(--radius-pill);
 }
 *::-webkit-scrollbar-thumb:hover {
-  background: #2a4470;
+  background: var(--color-text-dim);
 }
 
-/* --- Premium component polish (FRNTND-32) --- */
-
-/* Primary filled buttons lift with a cyan glow on hover (severity/text/outlined excluded). */
-.p-button:not(
-    .p-button-secondary,
-    .p-button-success,
-    .p-button-info,
-    .p-button-warn,
-    .p-button-help,
-    .p-button-danger,
-    .p-button-contrast,
-    .p-button-text,
-    .p-button-outlined,
-    .p-button-link
-  ):not(:disabled):hover {
-  box-shadow: var(--shadow-glow);
-}
-
-/* Premium table headers — compact uppercase, muted. */
+/* Compact, muted table headers. */
 .p-datatable-thead > tr > th {
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  font-size: 0.78rem;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
 }
 
 /* Simple utility for centered, width-capped page content. */

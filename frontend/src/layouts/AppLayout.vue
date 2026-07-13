@@ -128,20 +128,16 @@ async function logout() {
   gap: 0.75rem;
   height: 56px;
   padding: 0 1rem;
-  background: color-mix(in srgb, var(--color-bg-elev) 85%, transparent);
-  backdrop-filter: blur(10px);
+  background: var(--color-bg-elev);
   border-bottom: 1px solid var(--color-border);
   position: sticky;
   top: 0;
   z-index: 10;
 }
 .shell__brand {
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  background: var(--gradient-hero);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--color-text);
 }
 .shell__spacer {
   flex: 1;

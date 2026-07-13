@@ -329,8 +329,8 @@ onMounted(async () => {
   font-size: 1.05rem;
 }
 .cmp__win {
-  background: color-mix(in srgb, var(--color-accent) 15%, transparent);
-  color: #4ade80;
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  color: var(--color-accent);
   font-weight: 600;
 }
 .cmp__note {
