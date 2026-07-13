@@ -1,6 +1,8 @@
+from datetime import date
+
 import factory
 
-from apps.athletes.models import Athlete
+from apps.athletes.models import Athlete, AthleteAssignmentHistory
 from apps.catalog.factories import OrganizationFactory, RegionFactory, SportTypeFactory
 from apps.common.models import Gender
 
@@ -19,3 +21,18 @@ class AthleteFactory(factory.django.DjangoModelFactory):
     organization = factory.SubFactory(OrganizationFactory, region=factory.SelfAttribute("..region"))
     sport_type = factory.SubFactory(SportTypeFactory)
     is_active = True
+
+
+class AssignmentHistoryFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = AthleteAssignmentHistory
+
+    athlete = factory.SubFactory(AthleteFactory)
+    # Mirror the athlete's current placement by default (an open, current record).
+    region = factory.SelfAttribute("athlete.region")
+    district = factory.SelfAttribute("athlete.district")
+    organization = factory.SelfAttribute("athlete.organization")
+    sport_type = factory.SelfAttribute("athlete.sport_type")
+    coach = factory.SelfAttribute("athlete.coach")
+    valid_from = factory.LazyFunction(date.today)
+    valid_to = None

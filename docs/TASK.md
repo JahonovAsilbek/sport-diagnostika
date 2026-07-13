@@ -1737,6 +1737,19 @@ block.
 
 # BCKND-68 — Athlete transfer history (extends B5)
 
+> ✅ **Done** (2026-07-10) — `AthleteAssignmentHistory` ledger (`apps/athletes/models.py`) with a
+> **partial unique constraint** `uniq_open_assignment_per_athlete` (Q(valid_to__isnull=True)) — the
+> DB-level "exactly one open record per athlete" invariant. New `apps/athletes/services.py`:
+> `open_initial_assignment` (called from `perform_create`) + `transfer_athlete` (atomic,
+> `select_for_update`, no-op when unchanged, closes the open record, opens a new one, syncs the
+> athlete's denormalized FKs). **Decision:** placement changes go ONLY through
+> `POST /athletes/{id}/transfer/` (reason required, scoped via `_guard_scope`); a plain PATCH that
+> changes region/district/organization/sport_type/coach is **rejected 400**. `GET /athletes/{id}/
+> history/` returns the ledger newest-first (scoped). Migration `0002` creates the model + a
+> **RunPython backfill** (one open record per existing athlete). History-safe: TestSession/Evaluation
+> snapshot their own dims (BCKND-39), verified by a test. Verified: ruff clean, makemigrations
+> --check clean, **323 pytest passed** (+13 new in `test_transfer.py`).
+
 `AthleteAssignmentHistory` model (`athlete`, `organization`, `region`, `district`,
 `sport_type`, `coach`, `valid_from`, `valid_to` null=current, `changed_by`,
 `reason`). A transactional transfer service: on any change to an athlete's

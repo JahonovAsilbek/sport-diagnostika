@@ -1,11 +1,16 @@
 from rest_framework import viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 
 from apps.athletes.filters import AthleteFilterSet
 from apps.athletes.models import Athlete
-from apps.athletes.serializers import AthleteSerializer
+from apps.athletes.serializers import (
+    AssignmentHistorySerializer,
+    AthleteSerializer,
+    AthleteTransferSerializer,
+)
+from apps.athletes.services import ASSIGNMENT_FIELDS, open_initial_assignment, transfer_athlete
 from apps.catalog.models import AgeCategory
 from apps.common.permissions import COACH, LAB_OPERATOR, REGION_ADMIN, DataEntryOrReadOnly
 from apps.common.scoping import ScopedQuerysetMixin
@@ -41,10 +46,26 @@ class AthleteViewSet(ScopedQuerysetMixin, viewsets.ModelViewSet):
         return context
 
     def perform_create(self, serializer):
-        serializer.save(**self._guard_scope(serializer.validated_data))
+        athlete = serializer.save(**self._guard_scope(serializer.validated_data))
+        # Open the athlete's first (current) assignment record (BCKND-68).
+        open_initial_assignment(athlete, changed_by=self.request.user)
 
     def perform_update(self, serializer):
-        serializer.save(**self._guard_scope(serializer.validated_data))
+        # Placement changes go only through the transfer action (an atomic, recorded move) — a
+        # plain PATCH/PUT that tries to change one is rejected (BCKND-68).
+        data = serializer.validated_data
+        instance = serializer.instance
+        if any(
+            field in data and data[field] != getattr(instance, field)
+            for field in ASSIGNMENT_FIELDS
+        ):
+            raise ValidationError(
+                {
+                    "detail": "Tayinlash (viloyat/tuman/tashkilot/sport/murabbiy) faqat "
+                    "transfer orqali oʻzgartiriladi."
+                }
+            )
+        serializer.save(**self._guard_scope(data))
 
     def perform_destroy(self, instance):
         # Soft delete (like users): athletes accrue sessions/evaluations, so preserve the
@@ -102,3 +123,33 @@ class AthleteViewSet(ScopedQuerysetMixin, viewsets.ModelViewSet):
         athlete = self.get_object()
         recommendations = recommendations_for_athlete(athlete)
         return Response(RecommendationSerializer(recommendations, many=True).data)
+
+    @action(detail=True, methods=["get"])
+    def history(self, request, pk=None):
+        """The athlete's assignment/transfer history, newest first (BCKND-68)."""
+        athlete = self.get_object()
+        records = athlete.assignment_history.select_related(
+            "region", "district", "organization", "sport_type", "coach", "changed_by"
+        )
+        return Response(AssignmentHistorySerializer(records, many=True).data)
+
+    @action(detail=True, methods=["post"])
+    def transfer(self, request, pk=None):
+        """Move the athlete to a new placement — atomic, records changed_by + reason (BCKND-68).
+        Unspecified fields keep their current value; the target is scoped like a create."""
+        athlete = self.get_object()
+        serializer = AthleteTransferSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        target = {field: data.get(field, getattr(athlete, field)) for field in ASSIGNMENT_FIELDS}
+        if target["district"] is not None and target["district"].region_id != target["region"].id:
+            raise ValidationError(
+                {"district": "Tuman tanlangan viloyatga tegishli bo'lishi kerak."}
+            )
+        # Scope the target placement (region_admin/coach/lab_operator can't move out of scope).
+        target.update(self._guard_scope(target))
+
+        transfer_athlete(athlete, changed_by=request.user, reason=data["reason"], **target)
+        athlete.refresh_from_db()
+        return Response(AthleteSerializer(athlete, context=self.get_serializer_context()).data)

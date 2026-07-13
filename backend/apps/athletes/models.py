@@ -69,3 +69,55 @@ class Athlete(TimeStampedModel):
             raise ValidationError(
                 {"district": "Tuman tanlangan viloyatga tegishli bo'lishi kerak."}
             )
+
+
+class AthleteAssignmentHistory(TimeStampedModel):
+    """An append-only ledger of an athlete's placement (region/district/organization/sport_type/
+    coach) over time (BCKND-68). Exactly ONE open record (`valid_to=None`) per athlete is the
+    current assignment, kept in sync with the athlete's denormalized FKs by the transfer service
+    (`services.transfer_athlete`). Past TestSessions/Evaluations snapshot their own dims, so a
+    transfer never rewrites history (BCKND-39)."""
+
+    athlete = models.ForeignKey(
+        Athlete, on_delete=models.CASCADE, related_name="assignment_history"
+    )
+    region = models.ForeignKey("catalog.Region", on_delete=models.PROTECT, related_name="+")
+    district = models.ForeignKey(
+        "catalog.District", on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
+    organization = models.ForeignKey(
+        "catalog.Organization", on_delete=models.PROTECT, related_name="+"
+    )
+    sport_type = models.ForeignKey("catalog.SportType", on_delete=models.PROTECT, related_name="+")
+    coach = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        limit_choices_to={"role": Role.COACH},
+        related_name="+",
+    )
+    changed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    valid_from = models.DateField()
+    valid_to = models.DateField(null=True, blank=True)
+    reason = models.TextField(blank=True, default="")
+
+    class Meta:
+        ordering = ["-valid_from", "-id"]
+        constraints = [
+            # The invariant: at most one open (current) assignment per athlete.
+            models.UniqueConstraint(
+                fields=["athlete"],
+                condition=models.Q(valid_to__isnull=True),
+                name="uniq_open_assignment_per_athlete",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.athlete_id}: {self.valid_from} → {self.valid_to or 'hozir'}"
