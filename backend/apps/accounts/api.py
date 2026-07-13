@@ -1,27 +1,55 @@
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import AuthenticationFailed, PermissionDenied, Throttled
 from rest_framework.generics import RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 from apps.accounts.models import Role
+from apps.accounts.security import clear_failures, is_locked, register_failure
 from apps.accounts.serializers import LoginSerializer, UserSerializer, UserWriteSerializer
+from apps.audit.context import client_ip
 from apps.common.permissions import IsUserAdmin
 from apps.common.scoping import ScopedQuerysetMixin
 
 User = get_user_model()
 
+# The generic credential error — identical whether the username exists, is wrong, or is locked,
+# so nothing leaks account existence (BCKND-69).
+_BAD_CREDENTIALS = "Login yoki parol noto'g'ri."
+
 
 class LoginView(TokenObtainPairView):
     serializer_class = LoginSerializer
+    # A harder, dedicated rate cap on top of the general API throttle.
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "login"
+
+    def post(self, request, *args, **kwargs):
+        username = request.data.get("username") or ""
+        ip = client_ip(request)
+        if is_locked(username, ip):
+            # 429 with a generic message — don't reveal that this pair is locked (or exists).
+            raise Throttled(
+                wait=settings.LOGIN_LOCKOUT_COOLDOWN,
+                detail="Juda ko'p urinish. Birozdan so'ng qayta urinib ko'ring.",
+            )
+        try:
+            response = super().post(request, *args, **kwargs)
+        except AuthenticationFailed as exc:
+            register_failure(username, ip)
+            raise AuthenticationFailed(_BAD_CREDENTIALS) from exc
+        clear_failures(username, ip)
+        return response
 
 
 class LogoutView(APIView):

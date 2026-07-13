@@ -205,7 +205,24 @@ REST_FRAMEWORK = {
         "rest_framework.filters.OrderingFilter",
     ),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    # Rate limiting (BCKND-69): a general per-client cap on the whole API; the login endpoint
+    # adds a harder scoped throttle (`login`) on top. Rates are env-tunable.
+    "DEFAULT_THROTTLE_CLASSES": (
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ),
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": env("THROTTLE_ANON", default="60/min"),
+        "user": env("THROTTLE_USER", default="2000/day"),
+        "login": env("THROTTLE_LOGIN", default="10/min"),
+    },
 }
+
+# Login brute-force lockout (BCKND-69): N failed attempts per (username, IP) within the window
+# locks that pair for the cooldown. Stored in the cache (auto-expiring), silent (generic 429).
+LOGIN_LOCKOUT_THRESHOLD = env.int("LOGIN_LOCKOUT_THRESHOLD", default=5)
+LOGIN_LOCKOUT_WINDOW = env.int("LOGIN_LOCKOUT_WINDOW", default=15 * 60)
+LOGIN_LOCKOUT_COOLDOWN = env.int("LOGIN_LOCKOUT_COOLDOWN", default=15 * 60)
 
 # JWT — full login/refresh/logout lands in B2; the config lives here.
 SIMPLE_JWT = {

@@ -10,4 +10,5 @@
 - [Prod topology](project_deploy_prod.md) — nginx+gunicorn prod overlay (D3): root-owned-volume chown, compose !override to drop source mount, XFF overwrite, HTTP-only-until-D5 SSL gate
 - [Frontend](project_frontend.md) — Vue 3 + TS + PrimeVue 4 (@primeuix/themes); auth tokens/interceptor/no-cycle pattern; verify = lint+type-check+build from frontend/
 - [Athlete transfer](project_athlete_transfer.md) — placement is transfer-only via an append-only ledger (one-open partial-unique invariant); transfers never rewrite history (snapshots)
+- [Login security](project_login_security.md) — DRF throttling + cache-based (username,IP) lockout, generic no-enumeration error; root autouse `_isolate_cache` test fixture clears the cache per test
 - [Doc language](feedback_doc_language.md) — Internal docs in English (full English domain terms, TVI→BMI); Uzbek only for product/UI

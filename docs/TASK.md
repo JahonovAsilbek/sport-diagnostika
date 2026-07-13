@@ -1762,6 +1762,18 @@ assignment (BCKND-39), so past evaluations/rankings are unaffected by transfers.
 
 # BCKND-69 — Login security: throttling + brute-force lockout (extends B2)
 
+> ✅ **Done** (2026-07-10) — DRF throttling in `REST_FRAMEWORK`: global `Anon`/`User` rate limits
+> + a **scoped `login` throttle** (`ScopedRateThrottle`, harder) on `LoginView`; all rates
+> env-tunable (`THROTTLE_*`). Brute-force lockout in `apps/accounts/security.py` (cache/Redis,
+> per **(username, IP)**): N fails in a window → locked for a cooldown (`LOGIN_LOCKOUT_*`, defaults
+> 5 / 15 min / 15 min), fails **open** on a cache outage (the rate throttle still caps volume).
+> `LoginView.post` checks the lock (→ **429**), counts failures on `AuthenticationFailed`, and
+> returns a **generic** message identical for wrong-password / unknown-user / locked — no account
+> enumeration; success clears the counter. Client IP via the shared `apps/audit/context.client_ip`
+> (XFF-aware, gated by `AUDIT_TRUST_X_FORWARDED_FOR`). Added a root-conftest autouse
+> `_isolate_cache` fixture so throttle/lockout/stats caches don't leak across tests. Verified: ruff
+> clean, makemigrations --check clean, **328 pytest passed** (+5 in `test_login_security.py`).
+
 DRF throttling (a hard scoped throttle on the login endpoint + a general API rate
 limit), brute-force protection (track failed logins, temporary account/IP lockout
 after N failures within a window), `429` responses.
