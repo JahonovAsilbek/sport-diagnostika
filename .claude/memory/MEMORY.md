@@ -13,4 +13,5 @@
 - [Login security](project_login_security.md) — DRF throttling + cache-based (username,IP) lockout, generic no-enumeration error; root autouse `_isolate_cache` test fixture clears the cache per test
 - [Period filter](project_period_filter.md) — optional quarter/half/year across rating/comparison/history/reports; range filters inside `_latest_ids` before distinct; period in the rating cache key; FRNTND-26 consumes the params
 - [Frontend i18n](project_i18n.md) — vue-i18n v11; per-namespace locales glob-composed; kk→uz fallback; `$t` in templates / `useI18n({useScope:'global'})` in scripts; enum labels are reactive helper fns in i18n/labels.ts
+- [Traceability / QA](project_traceability.md) — docs/TRACEABILITY.md maps TZ→tasks (QA acceptance basis, hand-maintained); build is physical-scope complete, rest is client-criteria-gated (DEFERRED.md)
 - [Doc language](feedback_doc_language.md) — Internal docs in English (full English domain terms, TVI→BMI); Uzbek only for product/UI

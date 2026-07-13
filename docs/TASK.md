@@ -1859,6 +1859,20 @@ URL/query for shareable links.
 
 # DVPS-20 — QA: TZ → task traceability matrix + UAT checklist (QA/process)
 
+> ✅ **Done** (2026-07-13) — `docs/TRACEABILITY.md` authored: a requirement matrix mapping all
+> **18 TZ sections + the main technical task + the "Eng kuchli sportchilarni aniqlash" (Top
+> Athletes) button** to their implementing task IDs and a concrete acceptance check, with a
+> status legend (✅ Done / 🟡 Partial / ⛔ Deferred). TZ text extracted from `SPORT.docx`
+> (read-only). Coverage gaps are surfaced explicitly and every one traces to missing client
+> criteria (functional #6, training-load #13, morphofunctional fields in #1, the percentage
+> scheme in #7, OPSTTM/OTM report types in #15, device integration in #18 — all parked in
+> `DEFERRED.md`), not to implementation misses. Also: a cross-cutting/platform table (auth,
+> scoping, CI, deploy, backups, i18n, period…) and a role-by-role + feature UAT checklist for
+> client sign-off. Verified: all 18 TZ rows present, every referenced task ID exists in this
+> ledger, no code changes (docs-only — ruff/pytest N/A). At sign-off **115/116 non-deferred
+> tasks were complete**; DVPS-20 closes the last one.
+> **All planned tasks complete (physical-first scope) → remaining work is client-criteria-gated (see `DEFERRED.md`).**
+
 Create `docs/TRACEABILITY.md` mapping every TZ requirement (the 18 sections + the
 physical 10/8/6 → daraja scoring + the "Top Athletes" feature) to the implementing
 task(s) and an acceptance check; plus a UAT checklist for client sign-off.
