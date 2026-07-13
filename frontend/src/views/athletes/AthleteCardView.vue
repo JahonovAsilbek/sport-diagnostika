@@ -9,7 +9,7 @@ import TabPanels from 'primevue/tabpanels'
 import Tabs from 'primevue/tabs'
 import Tag from 'primevue/tag'
 import { useToast } from 'primevue/usetoast'
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -42,6 +42,14 @@ const districtName = ref('—')
 const orgName = ref('—')
 const coachName = ref('—')
 const sessions = ref<TestSession[]>([])
+
+// Keep the active tab in the URL so leaving for a session detail and coming back restores it.
+const TABS = ['info', 'sessions', 'evaluation', 'recs']
+const initialTab = route.query.tab
+const activeTab = ref(typeof initialTab === 'string' && TABS.includes(initialTab) ? initialTab : 'info')
+watch(activeTab, (tab) => {
+  router.replace({ query: { ...route.query, tab } })
+})
 
 const regionName = (rid: number | null) =>
   rid ? (catalog.regions.find((r) => r.id === rid)?.name ?? '—') : '—'
@@ -105,7 +113,7 @@ onMounted(async () => {
       />
     </div>
 
-    <Tabs value="info">
+    <Tabs v-model:value="activeTab">
       <TabList>
         <Tab value="info">{{ $t('athletes.card.tabs.info') }}</Tab>
         <Tab value="sessions">{{ $t('athletes.card.tabs.sessions') }}</Tab>

@@ -18,8 +18,10 @@ const { t } = useI18n({ useScope: 'global' })
 
 const CURRENT_YEAR = new Date().getFullYear()
 
+// 'all' (not '') is the sentinel for "no period" — an empty string reads as no-selection to
+// PrimeVue Select and would render blank instead of the "Butun davr" label.
 const typeOptions = computed(() => [
-  { value: '', label: t('period.all') },
+  { value: 'all', label: t('period.all') },
   ...PERIOD_TYPES.map((value) => ({ value, label: t(`enums.periodType.${value}`) })),
 ])
 
@@ -31,18 +33,17 @@ const indexOptions = computed(() => {
   return Array.from({ length: count }, (_, i) => ({ value: i + 1, label: t(key, { n: i + 1 }) }))
 })
 
-const type = computed<PeriodType | ''>({
-  get: () => model.value.period_type ?? '',
+const type = computed<PeriodType | 'all'>({
+  get: () => model.value.period_type ?? 'all',
   set: (value) => {
-    model.value = cleanPeriod(
-      value
-        ? {
+    model.value =
+      value === 'all'
+        ? {}
+        : cleanPeriod({
             period_type: value,
             period_year: model.value.period_year ?? CURRENT_YEAR,
             period_index: value === 'year' ? undefined : (model.value.period_index ?? 1),
-          }
-        : {},
-    )
+          })
   },
 })
 

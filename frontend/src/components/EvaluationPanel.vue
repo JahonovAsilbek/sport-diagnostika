@@ -60,7 +60,14 @@ async function load() {
       ordering: '-session_date',
       ...cleanPeriod(period.value),
     })
+    // Newest first, deterministically — several evaluations can share a session_date, so break the
+    // tie by evaluation_id (higher = created later = more recent).
     evaluations.value = data.results
+      .slice()
+      .sort(
+        (a, b) =>
+          b.session_date.localeCompare(a.session_date) || b.evaluation_id - a.evaluation_id,
+      )
   } finally {
     loading.value = false
   }
@@ -165,7 +172,9 @@ onMounted(async () => {
   margin: 1.5rem 0 0.5rem;
 }
 .eval__chart {
+  position: relative; /* constrain the chart.js canvas to the 240px box (else it overflows) */
   height: 240px;
   max-width: 640px;
+  margin-bottom: 1rem;
 }
 </style>
