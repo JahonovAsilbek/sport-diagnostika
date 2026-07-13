@@ -51,8 +51,7 @@ def transfer_athlete(
     }
     current = athlete.assignment_history.filter(valid_to__isnull=True).first()
     if current is not None and all(
-        getattr(current, f"{name}_id") == (obj.pk if obj else None)
-        for name, obj in target.items()
+        getattr(current, f"{name}_id") == (obj.pk if obj else None) for name, obj in target.items()
     ):
         return current  # nothing changed
 

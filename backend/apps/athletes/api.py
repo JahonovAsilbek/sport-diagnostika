@@ -57,8 +57,7 @@ class AthleteViewSet(ScopedQuerysetMixin, viewsets.ModelViewSet):
         data = serializer.validated_data
         instance = serializer.instance
         if any(
-            field in data and data[field] != getattr(instance, field)
-            for field in ASSIGNMENT_FIELDS
+            field in data and data[field] != getattr(instance, field) for field in ASSIGNMENT_FIELDS
         ):
             raise ValidationError(
                 {

@@ -52,6 +52,7 @@ def test_out_of_range_period_is_empty():
 def test_invalid_period_is_400():
     partition = make_partition()
     resp = _client(UserFactory(role="super_admin")).get(
-        TOP, {**partition_query(partition), "period_type": "quarter"}  # no year
+        TOP,
+        {**partition_query(partition), "period_type": "quarter"},  # no year
     )
     assert resp.status_code == 400
