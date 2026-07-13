@@ -1962,6 +1962,15 @@ fallbacks (`#fff`, `#e5e7eb`, …).
 
 # FRNTND-31 — Components & views restyle (design migration · phase 3)
 
+> ✅ **Done** (2026-07-13) — swept the light-primitive leaks the dark theme exposed: `TopAthletes`
+> rank badge (`--p-surface-200` → `--color-bg-soft`; podium medal colors kept — intentional),
+> `ComparisonView` winner cell (`--p-green-50/700` light-green → dark accent-tinted + brighter text).
+> Gave the card surfaces a consistent premium look (`--gradient-card` bg, `--color-border`, radius-lg,
+> hover glow): `StatCard` (+ icon now in a tinted rounded square), `HomeView` dash panels + quick-link
+> tiles, `ComparisonView` athlete cards + leader glow. Chart/medal colors + red/yellow accent text
+> left as-is (read fine on dark; palette tuning is F-32). Verified: `vue-tsc` + `eslint` + `build`
+> clean; a grep confirms no light `--p-surface-NN`/`--p-green-0..4` leaks remain.
+
 Align buttons (pill), inputs, tables, chips, badges (daraja green/yellow/red already match),
 dashboard cards, and chart palettes across every view to the premium tokens; sweep out remaining
 hardcoded light colors.

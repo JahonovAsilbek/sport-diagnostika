@@ -149,8 +149,9 @@ onMounted(load)
 }
 .dash__panel {
   padding: 1.25rem;
-  border: 1px solid var(--p-content-border-color, #e2e8f0);
-  border-radius: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--gradient-card);
 }
 .dash__h {
   margin: 0 0 1rem;
@@ -167,17 +168,19 @@ onMounted(load)
   align-items: center;
   gap: 0.5rem;
   padding: 1.25rem 1rem;
-  border: 1px solid var(--p-content-border-color, #e2e8f0);
-  border-radius: 12px;
-  background: var(--p-content-background, #fff);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--gradient-card);
   cursor: pointer;
-  color: var(--p-text-color);
+  color: var(--color-text);
   font-size: 0.95rem;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 .dash__link:hover {
-  border-color: var(--p-primary-color);
-  box-shadow: 0 0 0 1px var(--p-primary-color);
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-glow);
 }
 .dash__link i {
   font-size: 1.4rem;

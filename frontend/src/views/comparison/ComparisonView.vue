@@ -270,13 +270,14 @@ onMounted(async () => {
 .cmp__card {
   position: relative;
   padding: 1rem;
-  border: 1px solid var(--p-content-border-color, #e2e8f0);
-  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--gradient-card);
   text-align: center;
 }
 .cmp__card--leader {
-  border-color: var(--p-primary-color);
-  box-shadow: 0 0 0 1px var(--p-primary-color);
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-glow);
 }
 .cmp__card-name {
   font-weight: 600;
@@ -328,8 +329,9 @@ onMounted(async () => {
   font-size: 1.05rem;
 }
 .cmp__win {
-  background: var(--p-green-50, #f0fdf4);
-  color: var(--p-green-700, #15803d);
+  background: color-mix(in srgb, var(--color-accent) 15%, transparent);
+  color: #4ade80;
+  font-weight: 600;
 }
 .cmp__note {
   display: block;

@@ -73,8 +73,8 @@ const MEDAL: Record<number, string> = { 1: 'medal-gold', 2: 'medal-silver', 3: '
   place-items: center;
   border-radius: 50%;
   font-weight: 700;
-  background: var(--p-surface-200, #e2e8f0);
-  color: var(--p-text-color);
+  background: var(--color-bg-soft);
+  color: var(--color-text);
 }
 .top__rank.medal-gold {
   background: #fde047;

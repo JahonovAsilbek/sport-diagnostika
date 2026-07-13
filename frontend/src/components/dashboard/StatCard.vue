@@ -19,13 +19,27 @@ defineProps<{ label: string; value: number | string; icon: string; accent?: stri
   align-items: center;
   gap: 1rem;
   padding: 1.1rem 1.25rem;
-  border: 1px solid var(--p-content-border-color, #e2e8f0);
-  border-radius: 14px;
-  background: var(--p-content-background, #fff);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--gradient-card);
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+.stat:hover {
+  border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
+  box-shadow: var(--shadow-sm);
 }
 .stat__icon {
-  font-size: 1.6rem;
-  color: var(--p-primary-color);
+  flex-shrink: 0;
+  width: 2.75rem;
+  height: 2.75rem;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius);
+  background: var(--color-bg-soft);
+  font-size: 1.4rem;
+  color: var(--color-primary);
 }
 .stat__value {
   font-size: 1.75rem;
