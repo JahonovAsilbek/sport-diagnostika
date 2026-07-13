@@ -105,9 +105,12 @@ async function submit() {
   flex-direction: column;
   gap: 0.75rem;
   padding: 2rem;
-  border-radius: 12px;
-  background: var(--p-content-background, #fff);
-  box-shadow: 0 6px 24px rgb(0 0 0 / 8%);
+  border-radius: var(--radius-lg);
+  background: var(--gradient-card);
+  border: 1px solid var(--color-border);
+  box-shadow:
+    var(--shadow-lg),
+    var(--shadow-glow);
 }
 .login__locale {
   display: flex;
@@ -116,8 +119,14 @@ async function submit() {
 }
 .login__brand {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
   text-align: center;
+  background: var(--gradient-hero);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 .login__hint {
   margin: 0 0 0.5rem;

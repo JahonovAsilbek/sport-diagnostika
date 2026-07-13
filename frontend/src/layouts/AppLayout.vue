@@ -128,16 +128,20 @@ async function logout() {
   gap: 0.75rem;
   height: 56px;
   padding: 0 1rem;
-  background: var(--p-content-background, #fff);
-  border-bottom: 1px solid var(--p-content-border-color, #e5e7eb);
+  background: color-mix(in srgb, var(--color-bg-elev) 85%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--color-border);
   position: sticky;
   top: 0;
   z-index: 10;
 }
 .shell__brand {
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  color: var(--p-primary-color);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  background: var(--gradient-hero);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 .shell__spacer {
   flex: 1;
@@ -161,7 +165,7 @@ async function logout() {
   border-radius: 8px;
 }
 .shell__user:hover {
-  background: var(--p-content-hover-background, #f1f5f9);
+  background: var(--color-bg-soft);
 }
 .shell__user-name {
   font-size: 0.9rem;
@@ -178,8 +182,8 @@ async function logout() {
 .shell__sidebar {
   width: 240px;
   flex-shrink: 0;
-  border-right: 1px solid var(--p-content-border-color, #e5e7eb);
-  background: var(--p-content-background, #fff);
+  border-right: 1px solid var(--color-border);
+  background: var(--color-bg-elev);
   padding: 0.75rem;
 }
 .shell__nav {
@@ -192,17 +196,22 @@ async function logout() {
   align-items: center;
   gap: 0.75rem;
   padding: 0.6rem 0.75rem;
-  border-radius: 8px;
-  color: var(--p-text-color);
+  border-radius: var(--radius);
+  color: var(--color-text-muted);
   font-size: 0.925rem;
+  transition:
+    background 160ms ease,
+    color 160ms ease;
 }
 .shell__nav-link:hover {
-  background: var(--p-content-hover-background, #f1f5f9);
+  background: var(--color-bg-soft);
+  color: var(--color-text);
 }
 .shell__nav-link--active {
-  background: var(--p-highlight-background, #ecfdf5);
-  color: var(--p-primary-color);
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  color: var(--color-primary);
   font-weight: 600;
+  box-shadow: inset 3px 0 0 var(--color-primary);
 }
 .shell__main {
   flex: 1;

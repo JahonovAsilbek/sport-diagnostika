@@ -1948,6 +1948,14 @@ Foundation only; no per-view restyle yet.
 
 # FRNTND-30 — Shell & auth restyle (design migration · phase 2)
 
+> ✅ **Done** (2026-07-13) — `AppLayout`: topbar → translucent elevated-navy + `backdrop-blur` +
+> `--color-border`; brand → cyan→green gradient text; sidebar → elevated-navy + border; nav links →
+> muted text that brightens on hover, active = cyan text on a cyan-tint bg with an inset cyan accent
+> bar + transition. `LoginView`: card → `--gradient-card` bg + cyan border + `--shadow-lg` +
+> `--shadow-glow`, radius-lg; brand → gradient text. All hardcoded light fallbacks (`#fff`/`#e5e7eb`/
+> `#f1f5f9`/`#ecfdf5`) in the shell replaced with premium `--color-*` tokens. Verified: `vue-tsc` +
+> `eslint` + `build` clean.
+
 Restyle `AppLayout` (topbar/sidebar/cards) and `LoginView` to the premium look: elevated-navy
 surfaces, cyan active states + glow, pill buttons, gradient login card. Remove hardcoded light
 fallbacks (`#fff`, `#e5e7eb`, …).
