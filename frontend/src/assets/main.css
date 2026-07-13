@@ -112,6 +112,31 @@ a {
   background: #2a4470;
 }
 
+/* --- Premium component polish (FRNTND-32) --- */
+
+/* Primary filled buttons lift with a cyan glow on hover (severity/text/outlined excluded). */
+.p-button:not(
+    .p-button-secondary,
+    .p-button-success,
+    .p-button-info,
+    .p-button-warn,
+    .p-button-help,
+    .p-button-danger,
+    .p-button-contrast,
+    .p-button-text,
+    .p-button-outlined,
+    .p-button-link
+  ):not(:disabled):hover {
+  box-shadow: var(--shadow-glow);
+}
+
+/* Premium table headers — compact uppercase, muted. */
+.p-datatable-thead > tr > th {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.78rem;
+}
+
 /* Simple utility for centered, width-capped page content. */
 .sd-container {
   width: 100%;

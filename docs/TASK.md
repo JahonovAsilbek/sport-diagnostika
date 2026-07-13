@@ -1977,6 +1977,14 @@ hardcoded light colors.
 
 # FRNTND-32 — Design polish (design migration · phase 4)
 
+> ✅ **Done** (2026-07-13) — the finishing pass: daraja donut colours aligned to the premium palette
+> (II → `#f5b700`, none → `#6a7894`; I/III already match — the TZ #9 green/yellow/red indicator),
+> primary filled buttons now lift with a cyan `--shadow-glow` on hover (severity/text/outlined
+> excluded via a `:not(...)` list), and DataTable headers are compact-uppercase + muted for a premium
+> table look. Dark scrollbars + cyan focus ring + card transitions/glows landed in F-29/30/31.
+> Verified: `vue-tsc` + `eslint` + `build` clean. **Design migration (F-29→F-32) complete — the SPA
+> now wears the premium dark cyan/navy look end to end.**
+
 Hover glows, transitions, dark scrollbars, responsive tuning, empty/error/loading states, chart
 colors, focus-visible rings — the finishing pass.
 

@@ -14,11 +14,12 @@ const props = defineProps<{ byDaraja: Record<DarajaLevel | 'none', number> }>()
 const { t } = useI18n({ useScope: 'global' })
 
 const ORDER: (DarajaLevel | 'none')[] = ['I', 'II', 'III', 'none']
+// Daraja colour indicator (TZ #9): green / yellow / red, aligned to the premium palette.
 const COLORS: Record<DarajaLevel | 'none', string> = {
   I: '#10b981',
-  II: '#f59e0b',
+  II: '#f5b700',
   III: '#ef4444',
-  none: '#94a3b8',
+  none: '#6a7894',
 }
 const labelFor = (k: DarajaLevel | 'none') => (k === 'none' ? t('enums.daraja.none') : darajaLabel(k))
 
