@@ -12,13 +12,13 @@ const props = defineProps<{ region?: number | null }>()
 
 const options = ref<Organization[]>([])
 const loading = ref(false)
-let first = true
 
 watch(
   () => props.region,
-  async (region) => {
-    if (!first) model.value = null
-    first = false
+  async (region, prev) => {
+    // Reset the dependent pick only on a real region change — NOT on the initial prefill in edit
+    // forms, where region goes undefined/null → the loaded value (which must keep the org).
+    if (prev != null && region !== prev) model.value = null
     loading.value = true
     try {
       options.value = await getOrganizations(region ? { region } : undefined)

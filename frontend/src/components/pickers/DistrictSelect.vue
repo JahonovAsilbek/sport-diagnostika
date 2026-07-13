@@ -12,13 +12,13 @@ const props = defineProps<{ region: number | null }>()
 
 const catalog = useCatalogStore()
 const districts = ref<District[]>([])
-let first = true
 
 watch(
   () => props.region,
-  async (region) => {
-    if (!first) model.value = null
-    first = false
+  async (region, prev) => {
+    // Reset the dependent pick only on a real region change — NOT on the initial prefill in edit
+    // forms, where region goes undefined/null → the loaded value (which must keep the district).
+    if (prev != null && region !== prev) model.value = null
     districts.value = region ? await catalog.districtsFor(region) : []
   },
   { immediate: true },

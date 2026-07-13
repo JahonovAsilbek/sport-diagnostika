@@ -6,11 +6,11 @@ import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
 import Textarea from 'primevue/textarea'
 import { useToast } from 'primevue/usetoast'
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
-import { createAthlete, getAthlete, updateAthlete } from '@/api/athletes'
+import { createAthlete, getAthlete, transferAthlete, updateAthlete } from '@/api/athletes'
 import { toMessage } from '@/api/client'
 import CoachSelect from '@/components/pickers/CoachSelect.vue'
 import DistrictSelect from '@/components/pickers/DistrictSelect.vue'
@@ -19,7 +19,6 @@ import OrganizationSelect from '@/components/pickers/OrganizationSelect.vue'
 import RegionSelect from '@/components/pickers/RegionSelect.vue'
 import SportSelect from '@/components/pickers/SportSelect.vue'
 import PageHeader from '@/components/PageHeader.vue'
-import type { AthleteWrite } from '@/types/athlete'
 import type { Gender } from '@/types/catalog'
 
 const route = useRoute()
@@ -30,6 +29,16 @@ const { t } = useI18n({ useScope: 'global' })
 const editingId = ref<number | null>(route.params.id ? Number(route.params.id) : null)
 const saving = ref(false)
 const errors = ref<string[]>([])
+// Placement (region/district/organization/sport/coach) is transfer-only (BCKND-68). Track the
+// loaded values so an edit that changes any of them routes through the transfer endpoint.
+const original = reactive({
+  region: null as number | null,
+  district: null as number | null,
+  organization: null as number | null,
+  sport_type: null as number | null,
+  coach: null as number | null,
+})
+const reason = ref('')
 
 const form = reactive({
   last_name: '',
@@ -68,10 +77,23 @@ onMounted(async () => {
       main_competitions: a.main_competitions ?? '',
       is_active: a.is_active,
     })
+    Object.assign(original, {
+      region: a.region,
+      district: a.district,
+      organization: a.organization,
+      sport_type: a.sport_type,
+      coach: a.coach,
+    })
   } catch (e) {
     toast.add({ severity: 'error', summary: t('common.error'), detail: toMessage(e), life: 4000 })
   }
 })
+
+// True when editing and any placement field differs from the loaded athlete → needs a transfer.
+const ASSIGNMENT = ['region', 'district', 'organization', 'sport_type', 'coach'] as const
+const placementChanged = computed(
+  () => !!editingId.value && ASSIGNMENT.some((field) => form[field] !== original[field]),
+)
 
 function validate(): boolean {
   const e: string[] = []
@@ -86,31 +108,58 @@ function validate(): boolean {
   return e.length === 0
 }
 
-async function save() {
-  if (!validate()) return
-  const payload: AthleteWrite = {
+// The mutable profile fields — everything except the transfer-only placement.
+function profile() {
+  return {
     last_name: form.last_name.trim(),
     first_name: form.first_name.trim(),
     middle_name: form.middle_name.trim(),
     birth_year: form.birth_year,
     gender: form.gender,
-    region: form.region,
-    district: form.district,
-    organization: form.organization,
-    sport_type: form.sport_type,
-    coach: form.coach,
     razryad: form.razryad.trim(),
     training_experience: form.training_experience.trim(),
     main_competitions: form.main_competitions.trim(),
     is_active: form.is_active,
   }
+}
+
+async function save() {
+  if (!validate()) return
+  // A placement change on edit is a transfer, which records a reason (BCKND-68).
+  if (placementChanged.value && !reason.value.trim()) {
+    errors.value = [t('athletes.form.validation.transferReason')]
+    return
+  }
   saving.value = true
   try {
-    const saved = editingId.value
-      ? await updateAthlete(editingId.value, payload)
-      : await createAthlete(payload)
+    let id = editingId.value
+    if (!id) {
+      // Create sets the initial placement in one call.
+      const created = await createAthlete({
+        ...profile(),
+        region: form.region,
+        district: form.district,
+        organization: form.organization,
+        sport_type: form.sport_type,
+        coach: form.coach,
+      })
+      id = created.id
+    } else {
+      // Edit updates the profile only; placement moves go through the transfer endpoint.
+      await updateAthlete(id, profile())
+      if (placementChanged.value) {
+        await transferAthlete(id, {
+          region: form.region,
+          district: form.district,
+          organization: form.organization,
+          sport_type: form.sport_type,
+          coach: form.coach,
+          reason: reason.value.trim(),
+        })
+      }
+    }
     toast.add({ severity: 'success', summary: t('athletes.form.saved'), life: 2500 })
-    router.push(`/athletes/${saved.id}`)
+    router.push(`/athletes/${id}`)
   } catch (e) {
     toast.add({ severity: 'error', summary: t('athletes.form.saveError'), detail: toMessage(e), life: 5000 })
   } finally {
@@ -170,6 +219,11 @@ async function save() {
         <label>{{ $t('common.fields.coach') }}</label>
         <CoachSelect v-model="form.coach" />
       </div>
+      <div v-if="placementChanged" class="field field--wide field--transfer">
+        <label>{{ $t('athletes.form.transferReason') }} *</label>
+        <InputText v-model="reason" fluid />
+        <small class="form-transfer-hint">{{ $t('athletes.form.transferReasonHint') }}</small>
+      </div>
       <div class="field">
         <label>{{ $t('athletes.razryad') }}</label>
         <InputText v-model="form.razryad" fluid />
@@ -224,6 +278,15 @@ async function save() {
   flex-direction: row;
   align-items: center;
   gap: 0.5rem;
+}
+.field--transfer {
+  padding: 0.75rem;
+  border: 1px solid var(--p-primary-color);
+  border-radius: 8px;
+}
+.form-transfer-hint {
+  color: var(--p-text-muted-color);
+  font-size: 0.8rem;
 }
 .form-actions {
   display: flex;

@@ -26,6 +26,8 @@ export default {
       trainingExperience: 'Mashgʻulot tajribasi (yil)',
       saved: 'Saqlandi',
       saveError: 'Saqlashda xatolik',
+      transferReason: 'Transfer sababi',
+      transferReasonHint: 'Joylashuv oʻzgardi — bu oʻzgarish transfer sifatida saqlanadi.',
       validation: {
         lastName: 'Familiyani kiriting.',
         firstName: 'Ismni kiriting.',
@@ -34,6 +36,7 @@ export default {
         region: 'Viloyatni tanlang.',
         organization: 'Tashkilotni tanlang.',
         sport: 'Sport turini tanlang.',
+        transferReason: 'Transfer sababini kiriting.',
       },
     },
     card: {
@@ -75,6 +78,8 @@ export default {
       trainingExperience: 'Тренировочный стаж (лет)',
       saved: 'Сохранено',
       saveError: 'Ошибка при сохранении',
+      transferReason: 'Причина перевода',
+      transferReasonHint: 'Размещение изменено — это будет сохранено как перевод.',
       validation: {
         lastName: 'Введите фамилию.',
         firstName: 'Введите имя.',
@@ -83,6 +88,7 @@ export default {
         region: 'Выберите область.',
         organization: 'Выберите организацию.',
         sport: 'Выберите вид спорта.',
+        transferReason: 'Укажите причину перевода.',
       },
     },
     card: {
@@ -124,6 +130,8 @@ export default {
       trainingExperience: 'Training experience (years)',
       saved: 'Saved',
       saveError: 'Error while saving',
+      transferReason: 'Transfer reason',
+      transferReasonHint: 'Placement changed — this is saved as a transfer.',
       validation: {
         lastName: 'Enter the last name.',
         firstName: 'Enter the first name.',
@@ -132,6 +140,7 @@ export default {
         region: 'Select the region.',
         organization: 'Select the organization.',
         sport: 'Select the sport.',
+        transferReason: 'Enter a transfer reason.',
       },
     },
     card: {
