@@ -20,7 +20,7 @@ async function search(event: AutoCompleteCompleteEvent) {
     v-model="model"
     :suggestions="suggestions"
     option-label="full_name"
-    placeholder="Sportchini qidiring"
+    :placeholder="$t('common.searchAthlete')"
     dropdown
     fluid
     @complete="search"

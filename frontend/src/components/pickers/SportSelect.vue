@@ -17,7 +17,7 @@ onMounted(() => catalog.ensureLoaded())
     :options="catalog.sportTypes"
     option-label="name"
     option-value="id"
-    :placeholder="placeholder ?? 'Sport turi'"
+    :placeholder="placeholder ?? $t('common.fields.sport')"
     filter
     show-clear
     fluid

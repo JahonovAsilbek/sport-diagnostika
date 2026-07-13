@@ -10,6 +10,7 @@ import InputIcon from 'primevue/inputicon'
 import InputText from 'primevue/inputtext'
 import { useToast } from 'primevue/usetoast'
 import { onMounted, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
 import { type AthleteFilters, listAthletes } from '@/api/athletes'
@@ -19,7 +20,7 @@ import GenderSelect from '@/components/pickers/GenderSelect.vue'
 import RegionSelect from '@/components/pickers/RegionSelect.vue'
 import SportSelect from '@/components/pickers/SportSelect.vue'
 import PageHeader from '@/components/PageHeader.vue'
-import { GENDER_LABELS } from '@/constants/labels'
+import { genderLabel } from '@/i18n/labels'
 import { useAuthStore } from '@/stores/auth'
 import { useCatalogStore } from '@/stores/catalog'
 import type { Athlete } from '@/types/athlete'
@@ -30,6 +31,7 @@ const router = useRouter()
 const auth = useAuthStore()
 const catalog = useCatalogStore()
 const toast = useToast()
+const { t } = useI18n({ useScope: 'global' })
 
 const PAGE_SIZE = 25
 const rows = ref<Athlete[]>([])
@@ -54,7 +56,7 @@ async function load() {
     rows.value = data.results
     total.value = data.count
   } catch (e) {
-    toast.add({ severity: 'error', summary: 'Xatolik', detail: toMessage(e), life: 4000 })
+    toast.add({ severity: 'error', summary: t('common.error'), detail: toMessage(e), life: 4000 })
   } finally {
     loading.value = false
   }
@@ -95,11 +97,11 @@ onMounted(() => {
 
 <template>
   <div>
-    <PageHeader title="Sportchilar" subtitle="Ro'yxat va filtrlar">
+    <PageHeader :title="$t('nav.athletes')" :subtitle="$t('athletes.list.subtitle')">
       <template #actions>
         <Button
           v-if="canWrite(auth.role)"
-          label="Yangi sportchi"
+          :label="$t('athletes.newAthlete')"
           icon="pi pi-plus"
           @click="router.push('/athletes/new')"
         />
@@ -109,7 +111,11 @@ onMounted(() => {
     <div class="athletes__filters">
       <IconField class="athletes__search">
         <InputIcon class="pi pi-search" />
-        <InputText v-model="filters.search" placeholder="Ism boʻyicha qidirish" @input="onSearch" />
+        <InputText
+          v-model="filters.search"
+          :placeholder="$t('athletes.list.searchPlaceholder')"
+          @input="onSearch"
+        />
       </IconField>
       <RegionSelect v-model="filters.region" @update:model-value="reload" />
       <SportSelect v-model="filters.sport_type" @update:model-value="reload" />
@@ -132,26 +138,26 @@ onMounted(() => {
       @sort="onSort"
       @row-click="router.push(`/athletes/${$event.data.id}`)"
     >
-      <template #empty>Sportchi topilmadi.</template>
-      <Column field="last_name" header="F.I.O" sortable>
+      <template #empty>{{ $t('athletes.list.empty') }}</template>
+      <Column field="last_name" :header="$t('athletes.fullName')" sortable>
         <template #body="{ data }">
           <span class="athletes__name">{{ data.full_name }}</span>
         </template>
       </Column>
-      <Column field="birth_year" header="Tugʻ. yili" sortable />
-      <Column header="Jins">
-        <template #body="{ data }">{{ GENDER_LABELS[data.gender as Gender] }}</template>
+      <Column field="birth_year" :header="$t('athletes.list.birthYear')" sortable />
+      <Column :header="$t('common.fields.gender')">
+        <template #body="{ data }">{{ genderLabel(data.gender as Gender) }}</template>
       </Column>
-      <Column header="Sport">
+      <Column :header="$t('athletes.list.sport')">
         <template #body="{ data }">{{ sportName(data.sport_type) }}</template>
       </Column>
-      <Column header="Viloyat">
+      <Column :header="$t('common.fields.region')">
         <template #body="{ data }">{{ regionName(data.region) }}</template>
       </Column>
-      <Column header="TOIFA">
+      <Column :header="$t('athletes.list.toifa')">
         <template #body="{ data }">{{ data.age_category?.name ?? '—' }}</template>
       </Column>
-      <Column header="Blok">
+      <Column :header="$t('athletes.block')">
         <template #body="{ data }">{{ data.block ?? '—' }}</template>
       </Column>
     </DataTable>

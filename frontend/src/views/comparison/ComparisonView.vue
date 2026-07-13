@@ -5,6 +5,7 @@ import Message from 'primevue/message'
 import Tag from 'primevue/tag'
 import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import { getAthlete } from '@/api/athletes'
@@ -22,6 +23,7 @@ import type { Athlete } from '@/types/athlete'
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
+const { t } = useI18n({ useScope: 'global' })
 
 // A lightweight {id, full_name} is all a chip needs — decoupled from the full Athlete so we
 // can hydrate the selection from a shareable URL / the comparison result too.
@@ -96,7 +98,7 @@ async function compare() {
     // Reflect the selection in the URL for shareable links.
     router.replace({ query: { athletes: ids.join(',') } })
   } catch (e) {
-    toast.add({ severity: 'error', summary: 'Xatolik', detail: toMessage(e), life: 4000 })
+    toast.add({ severity: 'error', summary: t('common.error'), detail: toMessage(e), life: 4000 })
   } finally {
     loading.value = false
   }
@@ -116,7 +118,7 @@ onMounted(async () => {
       result.value = await compareAthletes(ids)
       selected.value = result.value.athletes.map((a) => ({ id: a.id, full_name: a.full_name }))
     } catch (e) {
-      toast.add({ severity: 'error', summary: 'Xatolik', detail: toMessage(e), life: 4000 })
+      toast.add({ severity: 'error', summary: t('common.error'), detail: toMessage(e), life: 4000 })
     } finally {
       loading.value = false
     }
@@ -134,12 +136,12 @@ onMounted(async () => {
 
 <template>
   <div>
-    <PageHeader title="Taqqoslash" subtitle="2–3 sportchini yonma-yon solishtiring" />
+    <PageHeader :title="$t('comparison.title')" :subtitle="$t('comparison.subtitle')" />
 
     <div class="cmp__pick">
       <AthleteAutocomplete v-model="picker" :disabled="selected.length >= 3" class="cmp__auto" />
       <Button
-        label="Taqqoslash"
+        :label="$t('comparison.compare')"
         icon="pi pi-arrow-right-arrow-left"
         :disabled="selected.length < 2 || loading"
         :loading="loading"
@@ -156,7 +158,7 @@ onMounted(async () => {
         @remove="remove(s.id)"
       />
     </div>
-    <small v-else class="cmp__hint">Solishtirish uchun kamida 2 ta sportchi tanlang.</small>
+    <small v-else class="cmp__hint">{{ $t('comparison.hintMinTwo') }}</small>
 
     <div v-if="result" class="cmp__result">
       <div class="cmp__cards" :style="{ '--cols': athletes.length }">
@@ -173,7 +175,7 @@ onMounted(async () => {
           <DarajaBadge :level="a.daraja" />
           <Tag
             v-if="a.id === result.leader"
-            value="Yetakchi"
+            :value="$t('comparison.leader')"
             icon="pi pi-crown"
             severity="success"
             class="cmp__leader"
@@ -184,7 +186,7 @@ onMounted(async () => {
       <table v-if="matrix.length" class="cmp__table">
         <thead>
           <tr>
-            <th>Mashq</th>
+            <th>{{ $t('comparison.exercise') }}</th>
             <th v-for="a in athletes" :key="a.id">{{ a.full_name }}</th>
           </tr>
         </thead>
@@ -201,7 +203,7 @@ onMounted(async () => {
         </tbody>
         <tfoot>
           <tr>
-            <td>Umumiy ball</td>
+            <td>{{ $t('comparison.total') }}</td>
             <td
               v-for="a in athletes"
               :key="a.id"
@@ -213,11 +215,11 @@ onMounted(async () => {
         </tfoot>
       </table>
       <Message v-else severity="info" variant="simple">
-        Tanlangan sportchilarda baholangan umumiy mashqlar yoʻq.
+        {{ $t('comparison.noCommon') }}
       </Message>
 
       <small class="cmp__note">
-        Batareyalar yosh×jins boʻyicha farq qiladi — faqat umumiy mashqlar solishtiriladi.
+        {{ $t('comparison.note') }}
       </small>
     </div>
   </div>

@@ -8,8 +8,8 @@ const router = useRouter()
 <template>
   <div class="sd-container notfound">
     <h1>404</h1>
-    <p>Sahifa topilmadi.</p>
-    <Button label="Bosh sahifa" icon="pi pi-home" @click="router.push('/')" />
+    <p>{{ $t('errors.notFound.message') }}</p>
+    <Button :label="$t('nav.home')" icon="pi pi-home" @click="router.push('/')" />
   </div>
 </template>
 

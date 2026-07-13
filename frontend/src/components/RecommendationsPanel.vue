@@ -21,7 +21,7 @@ onMounted(async () => {
 <template>
   <div v-if="loading" class="recs__loading"><i class="pi pi-spin pi-spinner" /></div>
   <Message v-else-if="!recs.length" severity="info" variant="simple">
-    Hozircha tavsiyalar yoʻq (baholashdan keyin avtomatik yaratiladi).
+    {{ $t('recommendations.panel.empty') }}
   </Message>
   <ul v-else class="recs">
     <li v-for="rec in recs" :key="rec.id" class="recs__item">

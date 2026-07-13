@@ -17,7 +17,7 @@ onMounted(() => catalog.ensureLoaded())
     :options="catalog.exercises"
     option-label="name"
     option-value="id"
-    :placeholder="placeholder ?? 'Mashq'"
+    :placeholder="placeholder ?? $t('common.fields.exercise')"
     filter
     show-clear
     fluid

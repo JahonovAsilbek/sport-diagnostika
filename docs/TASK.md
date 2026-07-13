@@ -1805,6 +1805,25 @@ the period; combine with role scope; no period entity (derived from `session_dat
 
 # FRNTND-25 — i18n (vue-i18n, 4 locales) (extends F1)
 
+> ✅ **Done** (2026-07-13) — vue-i18n v11 (Composition mode, `legacy:false`) wired in
+> `src/i18n/`: `config.ts` (locale registry), `messages.ts` (composes the message tree from
+> per-namespace files via `import.meta.glob`), `index.ts` (`createI18n`, `fallbackLocale:'uz'`,
+> `setLocale` persists to `localStorage` + syncs `<html lang>`), `labels.ts` (enum→label helper
+> fns via `i18n.global.t`, callable from plain `.ts`). 14 namespace files under `locales/`
+> (common/nav/enums/errors/auth/home/athletes/measurements/rating/comparison/recommendations/
+> reports/catalog/dashboard) — **299 uz keys**, uz/ru/en fully translated, **kk omitted → falls
+> back to uz** (user decision). `LocaleSwitcher.vue` in the topbar + LoginView. Every `.vue`
+> extracted (`$t` in templates, `useI18n({useScope:'global'})` in scripts), all 9 pickers +
+> `utils/{normBands,rawValue}.ts` migrated; enum maps removed from `constants/labels.ts` (kept
+> `DarajaLevel`/`Severity`/`DARAJA_SEVERITY` — CSS, not translated); report type/status labels
+> moved to i18n, `REPORT_FORMAT_LABELS`/comparator symbols kept literal. Reference content
+> (region/sport/exercise names, recommendation texts) stays Uzbek. Built via a 6-agent swarm
+> (one namespace group each, disjoint files) + orchestrator cleanup. Verified: `vue-tsc` +
+> `eslint` + `vite build` clean; a headless script confirmed uz/ru/en structural parity across
+> all 14 namespaces and that all **336 static `$t`/`t` key refs resolve**; no residual hardcoded
+> Uzbek. Decision: comparator (≤<≥>) + PDF/Word/Excel + OTM/OPSTTM kept literal (locale-neutral).
+> **FRNTND-26 (period filter UI + this switcher) next.**
+
 Set up vue-i18n with 4 locales — **uz, ru, kk, en** — for UI strings only. A locale
 switcher in the app shell; persist the choice; default `uz`. The
 English-enum → localized-label maps (daraja, colors) live in the locale files.

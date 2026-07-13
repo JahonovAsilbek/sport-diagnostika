@@ -7,6 +7,7 @@ import Message from 'primevue/message'
 import Textarea from 'primevue/textarea'
 import { useToast } from 'primevue/usetoast'
 import { onMounted, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import { createAthlete, getAthlete, updateAthlete } from '@/api/athletes'
@@ -24,6 +25,7 @@ import type { Gender } from '@/types/catalog'
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
+const { t } = useI18n({ useScope: 'global' })
 
 const editingId = ref<number | null>(route.params.id ? Number(route.params.id) : null)
 const saving = ref(false)
@@ -67,18 +69,18 @@ onMounted(async () => {
       is_active: a.is_active,
     })
   } catch (e) {
-    toast.add({ severity: 'error', summary: 'Xatolik', detail: toMessage(e), life: 4000 })
+    toast.add({ severity: 'error', summary: t('common.error'), detail: toMessage(e), life: 4000 })
   }
 })
 
 function validate(): boolean {
   const e: string[] = []
-  if (!form.last_name.trim()) e.push('Familiyani kiriting.')
-  if (!form.first_name.trim()) e.push('Ismni kiriting.')
-  if (form.birth_year === null) e.push('Tugʻilgan yilni kiriting.')
-  if (!form.gender) e.push('Jinsni tanlang.')
-  if (!form.region) e.push('Viloyatni tanlang.')
-  if (!form.sport_type) e.push('Sport turini tanlang.')
+  if (!form.last_name.trim()) e.push(t('athletes.form.validation.lastName'))
+  if (!form.first_name.trim()) e.push(t('athletes.form.validation.firstName'))
+  if (form.birth_year === null) e.push(t('athletes.form.validation.birthYear'))
+  if (!form.gender) e.push(t('athletes.form.validation.gender'))
+  if (!form.region) e.push(t('athletes.form.validation.region'))
+  if (!form.sport_type) e.push(t('athletes.form.validation.sport'))
   errors.value = e
   return e.length === 0
 }
@@ -106,10 +108,10 @@ async function save() {
     const saved = editingId.value
       ? await updateAthlete(editingId.value, payload)
       : await createAthlete(payload)
-    toast.add({ severity: 'success', summary: 'Saqlandi', life: 2500 })
+    toast.add({ severity: 'success', summary: t('athletes.form.saved'), life: 2500 })
     router.push(`/athletes/${saved.id}`)
   } catch (e) {
-    toast.add({ severity: 'error', summary: 'Saqlashda xatolik', detail: toMessage(e), life: 5000 })
+    toast.add({ severity: 'error', summary: t('athletes.form.saveError'), detail: toMessage(e), life: 5000 })
   } finally {
     saving.value = false
   }
@@ -118,23 +120,23 @@ async function save() {
 
 <template>
   <div class="form-page">
-    <PageHeader :title="editingId ? 'Sportchini tahrirlash' : 'Yangi sportchi'" />
+    <PageHeader :title="editingId ? $t('athletes.form.editTitle') : $t('athletes.newAthlete')" />
 
     <div class="form-grid">
       <div class="field">
-        <label>Familiya *</label>
+        <label>{{ $t('athletes.form.lastName') }} *</label>
         <InputText v-model="form.last_name" fluid />
       </div>
       <div class="field">
-        <label>Ism *</label>
+        <label>{{ $t('athletes.form.firstName') }} *</label>
         <InputText v-model="form.first_name" fluid />
       </div>
       <div class="field">
-        <label>Otasining ismi</label>
+        <label>{{ $t('athletes.form.middleName') }}</label>
         <InputText v-model="form.middle_name" fluid />
       </div>
       <div class="field">
-        <label>Tugʻilgan yil *</label>
+        <label>{{ $t('common.fields.birthYear') }} *</label>
         <InputNumber
           v-model="form.birth_year"
           :use-grouping="false"
@@ -144,44 +146,44 @@ async function save() {
         />
       </div>
       <div class="field">
-        <label>Jins *</label>
+        <label>{{ $t('common.fields.gender') }} *</label>
         <GenderSelect v-model="form.gender" />
       </div>
       <div class="field">
-        <label>Sport turi *</label>
+        <label>{{ $t('common.fields.sport') }} *</label>
         <SportSelect v-model="form.sport_type" />
       </div>
       <div class="field">
-        <label>Viloyat *</label>
+        <label>{{ $t('common.fields.region') }} *</label>
         <RegionSelect v-model="form.region" />
       </div>
       <div class="field">
-        <label>Tuman</label>
+        <label>{{ $t('common.fields.district') }}</label>
         <DistrictSelect v-model="form.district" :region="form.region" />
       </div>
       <div class="field">
-        <label>Tashkilot</label>
+        <label>{{ $t('common.fields.organization') }}</label>
         <OrganizationSelect v-model="form.organization" :region="form.region" />
       </div>
       <div class="field">
-        <label>Murabbiy</label>
+        <label>{{ $t('common.fields.coach') }}</label>
         <CoachSelect v-model="form.coach" />
       </div>
       <div class="field">
-        <label>Razryad</label>
+        <label>{{ $t('athletes.razryad') }}</label>
         <InputText v-model="form.razryad" fluid />
       </div>
       <div class="field">
-        <label>Mashgʻulot tajribasi (yil)</label>
+        <label>{{ $t('athletes.form.trainingExperience') }}</label>
         <InputNumber v-model="form.training_experience" :min="0" :max="80" fluid />
       </div>
       <div class="field field--wide">
-        <label>Asosiy musobaqalar</label>
+        <label>{{ $t('athletes.mainCompetitions') }}</label>
         <Textarea v-model="form.main_competitions" rows="2" auto-resize fluid />
       </div>
       <div class="field field--check">
         <Checkbox v-model="form.is_active" input-id="is_active" binary />
-        <label for="is_active">Faol</label>
+        <label for="is_active">{{ $t('athletes.active') }}</label>
       </div>
     </div>
 
@@ -190,8 +192,8 @@ async function save() {
     </Message>
 
     <div class="form-actions">
-      <Button label="Bekor" text @click="router.back()" />
-      <Button label="Saqlash" icon="pi pi-check" :loading="saving" @click="save" />
+      <Button :label="$t('common.cancel')" text @click="router.back()" />
+      <Button :label="$t('common.save')" icon="pi pi-check" :loading="saving" @click="save" />
     </div>
   </div>
 </template>

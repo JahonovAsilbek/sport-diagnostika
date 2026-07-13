@@ -4,6 +4,7 @@ import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 import Message from 'primevue/message'
 import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { listEvaluations } from '@/api/evaluations'
 import DarajaBadge from '@/components/DarajaBadge.vue'
@@ -14,6 +15,7 @@ import type { Evaluation } from '@/types/measurement'
 const props = defineProps<{ athleteId: number }>()
 
 const catalog = useCatalogStore()
+const { t } = useI18n({ useScope: 'global' })
 const evaluations = ref<Evaluation[]>([])
 const loading = ref(true)
 
@@ -29,7 +31,7 @@ const chartData = computed(() => {
     labels: asc.map((e) => e.session_date),
     datasets: [
       {
-        label: 'Umumiy ball',
+        label: t('measurements.evaluation.totalScore'),
         data: asc.map((e) => e.physical_total),
         borderColor: '#10b981',
         backgroundColor: '#10b98133',
@@ -60,7 +62,7 @@ onMounted(async () => {
 <template>
   <div v-if="loading" class="eval__loading"><i class="pi pi-spin pi-spinner" /></div>
   <Message v-else-if="!latest" severity="info" variant="simple">
-    Bu sportchi hali baholanmagan.
+    {{ $t('measurements.evaluation.notEvaluated') }}
   </Message>
   <div v-else class="eval">
     <div class="eval__score">
@@ -71,23 +73,23 @@ onMounted(async () => {
     </div>
 
     <DataTable :value="latest.indicators" data-key="exercise" class="eval__table">
-      <Column header="Mashq">
+      <Column :header="$t('measurements.cols.exercise')">
         <template #body="{ data }">{{ exName(data.exercise) }}</template>
       </Column>
-      <Column field="raw_value" header="Natija" />
-      <Column field="points" header="Ball" />
+      <Column field="raw_value" :header="$t('measurements.cols.result')" />
+      <Column field="points" :header="$t('measurements.cols.points')" />
     </DataTable>
 
     <template v-if="evaluations.length > 1">
-      <h4 class="eval__h">Dinamika</h4>
+      <h4 class="eval__h">{{ $t('measurements.evaluation.dynamics') }}</h4>
       <div class="eval__chart"><Chart type="line" :data="chartData" :options="chartOptions" /></div>
     </template>
 
-    <h4 class="eval__h">Tarix</h4>
+    <h4 class="eval__h">{{ $t('measurements.evaluation.history') }}</h4>
     <DataTable :value="evaluations" data-key="evaluation_id" paginator :rows="8" class="eval__table">
-      <Column field="session_date" header="Sana" sortable />
-      <Column field="physical_total" header="Ball" sortable />
-      <Column header="Daraja">
+      <Column field="session_date" :header="$t('common.fields.date')" sortable />
+      <Column field="physical_total" :header="$t('measurements.cols.points')" sortable />
+      <Column :header="$t('measurements.evaluation.levelCol')">
         <template #body="{ data }"><DarajaBadge :level="data.daraja" /></template>
       </Column>
     </DataTable>

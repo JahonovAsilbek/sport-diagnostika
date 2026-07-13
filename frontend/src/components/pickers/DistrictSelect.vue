@@ -32,7 +32,7 @@ watch(
     option-label="name"
     option-value="id"
     :disabled="!region"
-    placeholder="Tuman"
+    :placeholder="$t('common.fields.district')"
     filter
     show-clear
     fluid

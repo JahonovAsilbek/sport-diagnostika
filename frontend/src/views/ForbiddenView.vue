@@ -9,8 +9,8 @@ const router = useRouter()
   <div class="forbidden">
     <i class="pi pi-lock forbidden__icon" />
     <h1>403</h1>
-    <p>Ushbu boʻlimga kirish uchun ruxsatingiz yoʻq.</p>
-    <Button label="Bosh sahifa" icon="pi pi-home" @click="router.push('/')" />
+    <p>{{ $t('errors.forbidden.message') }}</p>
+    <Button :label="$t('nav.home')" icon="pi pi-home" @click="router.push('/')" />
   </div>
 </template>
 

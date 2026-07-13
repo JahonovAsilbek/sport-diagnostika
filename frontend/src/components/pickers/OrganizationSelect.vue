@@ -37,7 +37,7 @@ watch(
     option-label="name"
     option-value="id"
     :loading="loading"
-    placeholder="Tashkilot"
+    :placeholder="$t('common.fields.organization')"
     filter
     show-clear
     fluid

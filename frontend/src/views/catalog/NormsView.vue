@@ -11,16 +11,18 @@ import Tag from 'primevue/tag'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
 import { onMounted, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { createNorm, deleteNorm, getDarajaThresholds, getNorms, updateNorm } from '@/api/catalog'
 import { toMessage } from '@/api/client'
 import ExerciseSelect from '@/components/pickers/ExerciseSelect.vue'
 import GenderSelect from '@/components/pickers/GenderSelect.vue'
 import PageHeader from '@/components/PageHeader.vue'
-import { GENDER_LABELS } from '@/constants/labels'
+import { genderLabel } from '@/i18n/labels'
 import type { DarajaThreshold, Gender, Norm, NormBand, NormWrite } from '@/types/catalog'
 import { validateBands } from '@/utils/normBands'
 
+const { t } = useI18n({ useScope: 'global' })
 const toast = useToast()
 const confirm = useConfirm()
 
@@ -40,7 +42,7 @@ async function load() {
     })
     norms.value = res.results
   } catch (e) {
-    toast.add({ severity: 'error', summary: 'Xatolik', detail: toMessage(e), life: 4000 })
+    toast.add({ severity: 'error', summary: t('common.error'), detail: toMessage(e), life: 4000 })
   } finally {
     loading.value = false
   }
@@ -113,9 +115,10 @@ function isoDate(d: Date | null): string {
 
 async function save() {
   const errors: string[] = []
-  if (!form.exercise) errors.push('Mashqni tanlang.')
-  if (!form.gender) errors.push('Jinsni tanlang.')
-  if (form.age_min === null || form.age_max === null) errors.push('Yosh oraligʻini kiriting.')
+  if (!form.exercise) errors.push(t('catalog.norms.validation.exercise'))
+  if (!form.gender) errors.push(t('catalog.norms.validation.gender'))
+  if (form.age_min === null || form.age_max === null)
+    errors.push(t('catalog.norms.validation.ageRange'))
   errors.push(...validateBands(form.bands))
   formErrors.value = errors
   if (errors.length) return
@@ -133,11 +136,16 @@ async function save() {
   try {
     if (editingId.value) await updateNorm(editingId.value, payload)
     else await createNorm(payload)
-    toast.add({ severity: 'success', summary: 'Saqlandi', life: 2500 })
+    toast.add({ severity: 'success', summary: t('catalog.norms.saved'), life: 2500 })
     dialogVisible.value = false
     await load()
   } catch (e) {
-    toast.add({ severity: 'error', summary: 'Saqlashda xatolik', detail: toMessage(e), life: 4000 })
+    toast.add({
+      severity: 'error',
+      summary: t('catalog.norms.saveError'),
+      detail: toMessage(e),
+      life: 4000,
+    })
   } finally {
     saving.value = false
   }
@@ -145,19 +153,19 @@ async function save() {
 
 function confirmDelete(norm: Norm) {
   confirm.require({
-    message: `"${norm.exercise.name}" normasini oʻchirasizmi?`,
-    header: 'Tasdiqlash',
+    message: t('catalog.norms.deleteConfirm', { name: norm.exercise.name }),
+    header: t('common.confirm'),
     icon: 'pi pi-exclamation-triangle',
-    acceptLabel: 'Oʻchirish',
-    rejectLabel: 'Bekor',
+    acceptLabel: t('common.delete'),
+    rejectLabel: t('common.cancel'),
     acceptProps: { severity: 'danger' },
     accept: async () => {
       try {
         await deleteNorm(norm.id)
-        toast.add({ severity: 'success', summary: 'Oʻchirildi', life: 2500 })
+        toast.add({ severity: 'success', summary: t('catalog.norms.deleted'), life: 2500 })
         await load()
       } catch (e) {
-        toast.add({ severity: 'error', summary: 'Xatolik', detail: toMessage(e), life: 4000 })
+        toast.add({ severity: 'error', summary: t('common.error'), detail: toMessage(e), life: 4000 })
       }
     },
   })
@@ -172,117 +180,131 @@ function bandsSummary(bands: NormBand[]): string {
 
 <template>
   <div>
-    <PageHeader title="Normalar" subtitle="Baholash normalari va daraja chegaralari (super_admin)">
+    <PageHeader :title="$t('catalog.norms.title')" :subtitle="$t('catalog.norms.subtitle')">
       <template #actions>
-        <Button label="Yangi norma" icon="pi pi-plus" @click="openCreate" />
+        <Button :label="$t('catalog.norms.newNorm')" icon="pi pi-plus" @click="openCreate" />
       </template>
     </PageHeader>
 
     <div class="norms__filters">
-      <ExerciseSelect v-model="filter.exercise" placeholder="Mashq boʻyicha" @update:model-value="load" />
-      <GenderSelect v-model="filter.gender" placeholder="Jins boʻyicha" @update:model-value="load" />
+      <ExerciseSelect
+        v-model="filter.exercise"
+        :placeholder="$t('catalog.norms.filterExercise')"
+        @update:model-value="load"
+      />
+      <GenderSelect
+        v-model="filter.gender"
+        :placeholder="$t('catalog.norms.filterGender')"
+        @update:model-value="load"
+      />
     </div>
 
     <DataTable :value="norms" :loading="loading" paginator :rows="10" data-key="id">
-      <template #empty>Norma topilmadi.</template>
-      <Column header="Mashq">
+      <template #empty>{{ $t('catalog.norms.empty') }}</template>
+      <Column :header="$t('catalog.columns.exercise')">
         <template #body="{ data }">{{ data.exercise.name }}</template>
       </Column>
-      <Column header="Jins">
-        <template #body="{ data }">{{ GENDER_LABELS[data.gender as Gender] }}</template>
+      <Column :header="$t('common.fields.gender')">
+        <template #body="{ data }">{{ genderLabel(data.gender as Gender) }}</template>
       </Column>
-      <Column header="Yosh">
+      <Column :header="$t('catalog.norms.age')">
         <template #body="{ data }">{{ data.age_min }}–{{ data.age_max }}</template>
       </Column>
-      <Column header="Chegaralar (ball: oraliq)">
+      <Column :header="$t('catalog.norms.bandsColumn')">
         <template #body="{ data }">
           <span class="norms__bands">{{ bandsSummary(data.bands) }}</span>
         </template>
       </Column>
-      <Column field="valid_from" header="Amal qiladi" />
-      <Column header="Holat">
+      <Column field="valid_from" :header="$t('catalog.norms.validFrom')" />
+      <Column :header="$t('common.fields.status')">
         <template #body="{ data }">
           <Tag
-            :value="data.is_active ? 'Faol' : 'Nofaol'"
+            :value="data.is_active ? $t('catalog.active') : $t('catalog.inactive')"
             :severity="data.is_active ? 'success' : 'secondary'"
           />
         </template>
       </Column>
       <Column header="" style="width: 6rem">
         <template #body="{ data }">
-          <Button icon="pi pi-pencil" text rounded aria-label="Tahrirlash" @click="openEdit(data)" />
+          <Button
+            icon="pi pi-pencil"
+            text
+            rounded
+            :aria-label="$t('common.edit')"
+            @click="openEdit(data)"
+          />
           <Button
             icon="pi pi-trash"
             text
             rounded
             severity="danger"
-            aria-label="Oʻchirish"
+            :aria-label="$t('common.delete')"
             @click="confirmDelete(data)"
           />
         </template>
       </Column>
     </DataTable>
 
-    <h3 class="norms__section">Daraja chegaralari</h3>
-    <p class="norms__hint">Umumiy ball (0–50) → daraja. Django admin panelida tahrirlanadi.</p>
+    <h3 class="norms__section">{{ $t('catalog.norms.thresholdsTitle') }}</h3>
+    <p class="norms__hint">{{ $t('catalog.norms.thresholdsHint') }}</p>
     <DataTable :value="thresholds" data-key="id" class="norms__thresholds">
-      <Column field="level" header="Daraja" />
-      <Column header="Ball oraligʻi">
+      <Column field="level" :header="$t('catalog.norms.level')" />
+      <Column :header="$t('catalog.norms.pointsRange')">
         <template #body="{ data }">{{ data.total_min }}–{{ data.total_max }}</template>
       </Column>
     </DataTable>
 
     <Dialog
       v-model:visible="dialogVisible"
-      :header="editingId ? 'Normani tahrirlash' : 'Yangi norma'"
+      :header="editingId ? $t('catalog.norms.editNorm') : $t('catalog.norms.newNorm')"
       modal
       :style="{ width: '540px' }"
     >
       <div class="norms__form">
         <div class="norms__field">
-          <label>Mashq</label>
+          <label>{{ $t('catalog.columns.exercise') }}</label>
           <ExerciseSelect v-model="form.exercise" />
         </div>
         <div class="norms__row">
           <div class="norms__field">
-            <label>Jins</label>
+            <label>{{ $t('common.fields.gender') }}</label>
             <GenderSelect v-model="form.gender" />
           </div>
           <div class="norms__field">
-            <label>Yosh (min)</label>
+            <label>{{ $t('catalog.norms.ageMin') }}</label>
             <InputNumber v-model="form.age_min" :min="0" :max="99" fluid />
           </div>
           <div class="norms__field">
-            <label>Yosh (max)</label>
+            <label>{{ $t('catalog.norms.ageMax') }}</label>
             <InputNumber v-model="form.age_max" :min="0" :max="99" fluid />
           </div>
         </div>
         <div class="norms__row">
           <div class="norms__field">
-            <label>Amal qilish sanasi</label>
+            <label>{{ $t('catalog.norms.validFromDate') }}</label>
             <DatePicker v-model="form.valid_from" date-format="yy-mm-dd" show-icon fluid />
           </div>
           <div class="norms__field norms__field--check">
             <Checkbox v-model="form.is_active" input-id="is_active" binary />
-            <label for="is_active">Faol</label>
+            <label for="is_active">{{ $t('catalog.active') }}</label>
           </div>
         </div>
 
-        <label class="norms__bands-label">Chegaralar (ball → [quyi, yuqori))</label>
+        <label class="norms__bands-label">{{ $t('catalog.norms.bandsLabel') }}</label>
         <div v-for="(band, i) in form.bands" :key="band.points" class="norms__band-row">
-          <span class="norms__band-points">{{ band.points }} ball</span>
+          <span class="norms__band-points">{{ $t('catalog.norms.pointsSuffix', { n: band.points }) }}</span>
           <InputNumber
             v-model="form.bands[i].lower_bound"
             :min-fraction-digits="0"
             :max-fraction-digits="2"
-            placeholder="quyi (−∞ boʻsh)"
+            :placeholder="$t('catalog.norms.lowerPlaceholder')"
             fluid
           />
           <InputNumber
             v-model="form.bands[i].upper_bound"
             :min-fraction-digits="0"
             :max-fraction-digits="2"
-            placeholder="yuqori (∞ boʻsh)"
+            :placeholder="$t('catalog.norms.upperPlaceholder')"
             fluid
           />
         </div>
@@ -293,8 +315,8 @@ function bandsSummary(bands: NormBand[]): string {
       </div>
 
       <template #footer>
-        <Button label="Bekor" text @click="dialogVisible = false" />
-        <Button label="Saqlash" icon="pi pi-check" :loading="saving" @click="save" />
+        <Button :label="$t('common.cancel')" text @click="dialogVisible = false" />
+        <Button :label="$t('common.save')" icon="pi pi-check" :loading="saving" @click="save" />
       </template>
     </Dialog>
   </div>

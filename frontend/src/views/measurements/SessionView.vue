@@ -8,6 +8,7 @@ import Message from 'primevue/message'
 import Tag from 'primevue/tag'
 import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 
 import { toMessage } from '@/api/client'
@@ -29,6 +30,7 @@ import { rawPlaceholder, validateRaw } from '@/utils/rawValue'
 const route = useRoute()
 const toast = useToast()
 const catalog = useCatalogStore()
+const { t } = useI18n({ useScope: 'global' })
 
 const id = Number(route.params.id)
 const session = ref<TestSession | null>(null)
@@ -74,7 +76,7 @@ onMounted(async () => {
       evaluation.value = (await listEvaluations({ session: id })).results[0] ?? null
     }
   } catch (e) {
-    toast.add({ severity: 'error', summary: 'Xatolik', detail: toMessage(e), life: 4000 })
+    toast.add({ severity: 'error', summary: t('common.error'), detail: toMessage(e), life: 4000 })
   } finally {
     loading.value = false
   }
@@ -97,7 +99,7 @@ function formatErrors(): string | null {
 async function persist(): Promise<boolean> {
   const fmtErr = formatErrors()
   if (fmtErr) {
-    toast.add({ severity: 'warn', summary: 'Format xatosi', detail: fmtErr, life: 4000 })
+    toast.add({ severity: 'warn', summary: t('measurements.session.formatError'), detail: fmtErr, life: 4000 })
     return false
   }
   await saveMeasurements(id, collectMeasurements())
@@ -111,9 +113,9 @@ async function persist(): Promise<boolean> {
 async function saveDraft() {
   saving.value = true
   try {
-    if (await persist()) toast.add({ severity: 'success', summary: 'Qoralama saqlandi', life: 2500 })
+    if (await persist()) toast.add({ severity: 'success', summary: t('measurements.session.draftSaved'), life: 2500 })
   } catch (e) {
-    toast.add({ severity: 'error', summary: 'Xatolik', detail: toMessage(e), life: 4000 })
+    toast.add({ severity: 'error', summary: t('common.error'), detail: toMessage(e), life: 4000 })
   } finally {
     saving.value = false
   }
@@ -125,10 +127,10 @@ async function finalize() {
     if (!(await persist())) return
     evaluation.value = await finalizeSession(id)
     if (session.value) session.value.status = 'finalized'
-    toast.add({ severity: 'success', summary: 'Yakunlandi', life: 2500 })
+    toast.add({ severity: 'success', summary: t('measurements.session.finalizeDone'), life: 2500 })
   } catch (e) {
     // The backend 400 names the missing battery exercises.
-    toast.add({ severity: 'error', summary: 'Yakunlab boʻlmadi', detail: toMessage(e), life: 6000 })
+    toast.add({ severity: 'error', summary: t('measurements.session.finalizeFailed'), detail: toMessage(e), life: 6000 })
   } finally {
     finalizing.value = false
   }
@@ -137,17 +139,17 @@ async function finalize() {
 
 <template>
   <div v-if="session">
-    <PageHeader :title="`Test sessiyasi #${session.id}`" :subtitle="session.date">
+    <PageHeader :title="$t('measurements.session.title', { id: session.id })" :subtitle="session.date">
       <template #actions>
         <Tag
-          :value="isDraft ? 'Qoralama' : 'Yakunlangan'"
+          :value="isDraft ? $t('measurements.status.draft') : $t('measurements.status.finalized')"
           :severity="isDraft ? 'warn' : 'success'"
         />
       </template>
     </PageHeader>
 
     <Message v-if="batteryError" severity="warn">
-      {{ batteryError }} — administrator bu guruh uchun batareyani sozlashi kerak.
+      {{ $t('measurements.session.batteryError', { error: batteryError }) }}
     </Message>
 
     <!-- Result (shown right after finalize) -->
@@ -158,11 +160,11 @@ async function finalize() {
         <DarajaBadge :level="evaluation.daraja" />
       </div>
       <DataTable :value="evaluation.indicators" data-key="exercise" class="result__table">
-        <Column header="Mashq">
+        <Column :header="$t('measurements.cols.exercise')">
           <template #body="{ data }">{{ exerciseName(data.exercise) }}</template>
         </Column>
-        <Column field="raw_value" header="Natija" />
-        <Column field="points" header="Ball" />
+        <Column field="raw_value" :header="$t('measurements.cols.result')" />
+        <Column field="points" :header="$t('measurements.cols.points')" />
       </DataTable>
     </div>
 
@@ -174,36 +176,36 @@ async function finalize() {
           <InputText v-model="values[ex.id]" :placeholder="rawPlaceholder(ex.value_type)" fluid />
         </div>
         <div class="entry__row">
-          <label class="entry__label">Boʻy (sm)</label>
+          <label class="entry__label">{{ $t('measurements.session.height') }}</label>
           <InputNumber v-model="height" :min="0" :max="260" fluid />
         </div>
         <div class="entry__row">
-          <label class="entry__label">Vazn (kg)</label>
+          <label class="entry__label">{{ $t('measurements.session.weight') }}</label>
           <InputNumber v-model="weight" :min="0" :max="300" :max-fraction-digits="1" fluid />
         </div>
       </div>
       <div class="entry__actions">
         <Button
-          label="Qoralamani saqlash"
+          :label="$t('measurements.session.saveDraft')"
           icon="pi pi-save"
           severity="secondary"
           :loading="saving"
           @click="saveDraft"
         />
-        <Button label="Yakunlash" icon="pi pi-check-circle" :loading="finalizing" @click="finalize" />
+        <Button :label="$t('measurements.session.finalize')" icon="pi pi-check-circle" :loading="finalizing" @click="finalize" />
       </div>
     </template>
 
     <!-- Finalized (reloaded — the evaluation lives in the Results section, F6) -->
     <template v-else-if="!isDraft">
       <Message severity="info" variant="simple">
-        Sessiya yakunlangan. Baholash natijasi topilmadi.
+        {{ $t('measurements.session.noEvaluation') }}
       </Message>
       <DataTable :value="session.measurements" data-key="exercise" class="result__table">
-        <Column header="Mashq">
+        <Column :header="$t('measurements.cols.exercise')">
           <template #body="{ data }">{{ exerciseName(data.exercise) }}</template>
         </Column>
-        <Column field="raw_value" header="Natija" />
+        <Column field="raw_value" :header="$t('measurements.cols.result')" />
       </DataTable>
     </template>
   </div>

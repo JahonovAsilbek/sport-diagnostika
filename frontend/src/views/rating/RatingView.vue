@@ -8,6 +8,7 @@ import TabPanels from 'primevue/tabpanels'
 import Tabs from 'primevue/tabs'
 import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
 import { toMessage } from '@/api/client'
@@ -26,12 +27,14 @@ import GenderSelect from '@/components/pickers/GenderSelect.vue'
 import RegionSelect from '@/components/pickers/RegionSelect.vue'
 import SportSelect from '@/components/pickers/SportSelect.vue'
 import TopAthletes from '@/components/rating/TopAthletes.vue'
+import { darajaLabel } from '@/i18n/labels'
 import { useAuthStore } from '@/stores/auth'
 import { useCatalogStore } from '@/stores/catalog'
 import type { Gender } from '@/types/catalog'
 
 const router = useRouter()
 const toast = useToast()
+const { t } = useI18n({ useScope: 'global' })
 const auth = useAuthStore()
 const catalog = useCatalogStore()
 
@@ -80,7 +83,7 @@ async function fetchTop() {
     topRows.value = (await getTopAthletes({ ...queryFor(), limit: 10 })).results
     loaded.top = true
   } catch (e) {
-    toast.add({ severity: 'error', summary: 'Xatolik', detail: toMessage(e), life: 4000 })
+    toast.add({ severity: 'error', summary: t('common.error'), detail: toMessage(e), life: 4000 })
   } finally {
     topLoading.value = false
   }
@@ -94,7 +97,7 @@ async function fetchFull() {
     fullTotal.value = data.count
     loaded.full = true
   } catch (e) {
-    toast.add({ severity: 'error', summary: 'Xatolik', detail: toMessage(e), life: 4000 })
+    toast.add({ severity: 'error', summary: t('common.error'), detail: toMessage(e), life: 4000 })
   } finally {
     fullLoading.value = false
   }
@@ -106,7 +109,7 @@ async function fetchRegions() {
     regionRows.value = (await getRegionRating(queryFor())).results
     loaded.regions = true
   } catch (e) {
-    toast.add({ severity: 'error', summary: 'Xatolik', detail: toMessage(e), life: 4000 })
+    toast.add({ severity: 'error', summary: t('common.error'), detail: toMessage(e), life: 4000 })
   } finally {
     regionLoading.value = false
   }
@@ -139,7 +142,7 @@ onMounted(() => {
 
 <template>
   <div>
-    <PageHeader title="Reyting" subtitle="Eng kuchli sportchilar va viloyatlar reytingi" />
+    <PageHeader :title="$t('rating.title')" :subtitle="$t('rating.subtitle')" />
 
     <div class="rating__filters">
       <RegionSelect v-model="filters.region" @update:model-value="onFilterChange" />
@@ -150,9 +153,9 @@ onMounted(() => {
 
     <Tabs v-model:value="activeTab">
       <TabList>
-        <Tab value="top"><i class="pi pi-star" /> Top sportchilar</Tab>
-        <Tab value="full"><i class="pi pi-list" /> Toʻliq reyting</Tab>
-        <Tab v-if="canSeeRegions" value="regions"><i class="pi pi-map" /> Viloyatlar</Tab>
+        <Tab value="top"><i class="pi pi-star" /> {{ $t('rating.tabs.top') }}</Tab>
+        <Tab value="full"><i class="pi pi-list" /> {{ $t('rating.tabs.full') }}</Tab>
+        <Tab v-if="canSeeRegions" value="regions"><i class="pi pi-map" /> {{ $t('rating.tabs.regions') }}</Tab>
       </TabList>
       <TabPanels>
         <TabPanel value="top">
@@ -174,19 +177,19 @@ onMounted(() => {
             @page="onFullPage"
             @row-click="router.push(`/athletes/${$event.data.athlete.id}`)"
           >
-            <template #empty>Baholangan sportchi topilmadi.</template>
-            <Column header="Oʻrin" class="rating__rank">
+            <template #empty>{{ $t('rating.emptyAthletes') }}</template>
+            <Column :header="$t('rating.columns.rank')" class="rating__rank">
               <template #body="{ data }">{{ data.rank }}</template>
             </Column>
-            <Column header="F.I.O">
+            <Column :header="$t('rating.columns.fullName')">
               <template #body="{ data }">
                 <span class="rating__name">{{ data.athlete.full_name }}</span>
               </template>
             </Column>
-            <Column header="Ball">
+            <Column :header="$t('rating.columns.score')">
               <template #body="{ data }">{{ data.ranking_score }}</template>
             </Column>
-            <Column header="Daraja">
+            <Column :header="$t('rating.columns.daraja')">
               <template #body="{ data }"><DarajaBadge :level="data.daraja" /></template>
             </Column>
           </DataTable>
@@ -199,13 +202,13 @@ onMounted(() => {
             data-key="region"
             class="rating__table"
           >
-            <template #empty>Maʼlumot yoʻq.</template>
-            <Column field="rank" header="Oʻrin" class="rating__rank" />
-            <Column field="region" header="Viloyat" />
-            <Column header="I daraja">
+            <template #empty>{{ $t('common.empty') }}</template>
+            <Column field="rank" :header="$t('rating.columns.rank')" class="rating__rank" />
+            <Column field="region" :header="$t('common.fields.region')" />
+            <Column :header="darajaLabel('I')">
               <template #body="{ data }">{{ data.daraja_i_count }}</template>
             </Column>
-            <Column header="Oʻrtacha ball">
+            <Column :header="$t('rating.columns.avgScore')">
               <template #body="{ data }">{{ data.avg_score ?? '—' }}</template>
             </Column>
           </DataTable>

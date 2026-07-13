@@ -5,15 +5,18 @@ import Drawer from 'primevue/drawer'
 import Menu from 'primevue/menu'
 import type { MenuItem } from 'primevue/menuitem'
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
+import LocaleSwitcher from '@/components/LocaleSwitcher.vue'
 import { visibleNav } from '@/config/navigation'
-import { roleLabel } from '@/constants/labels'
+import { roleLabel } from '@/i18n/labels'
 import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
 const router = useRouter()
 const route = useRoute()
+const { t } = useI18n({ useScope: 'global' })
 
 const nav = computed(() => visibleNav(auth.role))
 // The user's scope context — org (coach/lab) or region (region_admin); ministry/super see all.
@@ -30,7 +33,9 @@ const initials = computed(() => {
 
 const mobileOpen = ref(false)
 const userMenu = ref<InstanceType<typeof Menu> | null>(null)
-const userItems: MenuItem[] = [{ label: 'Chiqish', icon: 'pi pi-sign-out', command: () => logout() }]
+const userItems = computed<MenuItem[]>(() => [
+  { label: t('nav.logout'), icon: 'pi pi-sign-out', command: () => logout() },
+])
 
 function isActive(to: string): boolean {
   return to === '/' ? route.path === '/' : route.path.startsWith(to)
@@ -50,12 +55,13 @@ async function logout() {
         icon="pi pi-bars"
         text
         rounded
-        aria-label="Menyu"
+        :aria-label="$t('nav.menu')"
         @click="mobileOpen = true"
       />
       <RouterLink to="/" class="shell__brand">SPORT-DIAGNOSTIKA</RouterLink>
       <div class="shell__spacer" />
       <span v-if="scope" class="shell__scope"><i class="pi pi-map-marker" /> {{ scope }}</span>
+      <LocaleSwitcher />
       <button class="shell__user" type="button" @click="userMenu?.toggle($event)">
         <Avatar :label="initials" shape="circle" />
         <span class="shell__user-name">{{ auth.user?.full_name || auth.user?.username }}</span>
@@ -82,12 +88,12 @@ async function logout() {
             :class="{ 'shell__nav-link--active': isActive(item.to) }"
           >
             <i :class="item.icon" />
-            <span>{{ item.label }}</span>
+            <span>{{ $t(item.labelKey) }}</span>
           </RouterLink>
         </nav>
       </aside>
 
-      <Drawer v-model:visible="mobileOpen" header="Menyu">
+      <Drawer v-model:visible="mobileOpen" :header="$t('nav.menu')">
         <nav class="shell__nav">
           <RouterLink
             v-for="item in nav"
@@ -98,7 +104,7 @@ async function logout() {
             @click="mobileOpen = false"
           >
             <i :class="item.icon" />
-            <span>{{ item.label }}</span>
+            <span>{{ $t(item.labelKey) }}</span>
           </RouterLink>
         </nav>
       </Drawer>

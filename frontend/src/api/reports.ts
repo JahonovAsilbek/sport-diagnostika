@@ -6,22 +6,13 @@ export type ReportType = 'athlete' | 'region' | 'sport' | 'republic'
 export type ReportFormat = 'pdf' | 'word' | 'excel'
 export type ReportStatus = 'pending' | 'processing' | 'done' | 'failed'
 
-export const REPORT_TYPE_LABELS: Record<ReportType, string> = {
-  athlete: 'Sportchi',
-  region: 'Viloyat',
-  sport: 'Sport turi',
-  republic: 'Respublika',
-}
+// Formats are proper nouns — identical across locales, so they stay here (not in i18n). Report
+// TYPE and STATUS labels are localized via the reportTypeLabel/reportStatusLabel helpers in
+// @/i18n/labels (backed by enums.ts).
 export const REPORT_FORMAT_LABELS: Record<ReportFormat, string> = {
   pdf: 'PDF',
   word: 'Word',
   excel: 'Excel',
-}
-export const REPORT_STATUS_LABELS: Record<ReportStatus, string> = {
-  pending: 'Navbatda',
-  processing: 'Ishlanmoqda',
-  done: 'Tayyor',
-  failed: 'Xato',
 }
 export const REPORT_STATUS_SEVERITY: Record<ReportStatus, string> = {
   pending: 'secondary',

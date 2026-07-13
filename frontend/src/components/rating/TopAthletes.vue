@@ -17,7 +17,7 @@ const MEDAL: Record<number, string> = { 1: 'medal-gold', 2: 'medal-silver', 3: '
 <template>
   <div v-if="loading" class="top__loading"><i class="pi pi-spin pi-spinner" /></div>
   <Message v-else-if="!rows.length" severity="info" variant="simple">
-    Ushbu filtr uchun baholangan sportchi topilmadi.
+    {{ $t('rating.emptyFiltered') }}
   </Message>
   <ol v-else class="top">
     <li

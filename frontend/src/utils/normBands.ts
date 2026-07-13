@@ -1,3 +1,4 @@
+import i18n from '@/i18n'
 import type { NormBand } from '@/types/catalog'
 
 // Client-side mirror of the backend assert_bands_no_overlap (BCKND-26). Bands are half-open
@@ -7,7 +8,7 @@ export function validateBands(bands: NormBand[]): string[] {
 
   for (const b of bands) {
     if (b.lower_bound !== null && b.upper_bound !== null && b.lower_bound >= b.upper_bound) {
-      errors.push(`${b.points} ball: quyi chegara yuqori chegaradan kichik boʻlishi kerak.`)
+      errors.push(i18n.global.t('catalog.norms.validation.bandBounds', { points: b.points }))
     }
   }
 
@@ -18,7 +19,7 @@ export function validateBands(bands: NormBand[]): string[] {
     const prevUpper = sorted[i - 1].upper_bound ?? Infinity
     const curLower = sorted[i].lower_bound ?? -Infinity
     if (curLower < prevUpper) {
-      errors.push('Chegaralar bir-birini qoplamasligi kerak (oraliqlar kesishmasin).')
+      errors.push(i18n.global.t('catalog.norms.validation.bandsOverlap'))
       break
     }
   }

@@ -8,6 +8,7 @@ import Message from 'primevue/message'
 import Tag from 'primevue/tag'
 import { useToast } from 'primevue/usetoast'
 import { computed, onBeforeUnmount, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { toMessage } from '@/api/client'
 import { commitImport, downloadTemplate, getImport, uploadImport } from '@/api/imports'
@@ -18,6 +19,7 @@ import type { Gender } from '@/types/catalog'
 import type { ImportBatch } from '@/types/measurement'
 
 const toast = useToast()
+const { t } = useI18n({ useScope: 'global' })
 
 const ageCategory = ref<number | null>(null)
 const gender = ref<Gender | null>(null)
@@ -47,7 +49,7 @@ async function template() {
     a.click()
     URL.revokeObjectURL(url)
   } catch (e) {
-    toast.add({ severity: 'error', summary: 'Xatolik', detail: toMessage(e), life: 4000 })
+    toast.add({ severity: 'error', summary: t('common.error'), detail: toMessage(e), life: 4000 })
   }
 }
 
@@ -62,7 +64,7 @@ async function poll(batchId: number) {
     batch.value = b
     if (b.status === 'validating') pollTimer = setTimeout(() => poll(batchId), 1500)
   } catch (e) {
-    toast.add({ severity: 'error', summary: 'Xatolik', detail: toMessage(e), life: 4000 })
+    toast.add({ severity: 'error', summary: t('common.error'), detail: toMessage(e), life: 4000 })
   }
 }
 onBeforeUnmount(() => clearTimeout(pollTimer))
@@ -75,7 +77,7 @@ async function upload() {
     batch.value = b
     if (b.status === 'validating') poll(b.id)
   } catch (e) {
-    toast.add({ severity: 'error', summary: 'Yuklashda xatolik', detail: toMessage(e), life: 5000 })
+    toast.add({ severity: 'error', summary: t('measurements.import.uploadError'), detail: toMessage(e), life: 5000 })
   } finally {
     uploading.value = false
   }
@@ -86,9 +88,9 @@ async function commit() {
   committing.value = true
   try {
     batch.value = await commitImport(batch.value.id)
-    toast.add({ severity: 'success', summary: 'Saqlandi', life: 3000 })
+    toast.add({ severity: 'success', summary: t('measurements.import.saved'), life: 3000 })
   } catch (e) {
-    toast.add({ severity: 'error', summary: 'Xatolik', detail: toMessage(e), life: 5000 })
+    toast.add({ severity: 'error', summary: t('common.error'), detail: toMessage(e), life: 5000 })
   } finally {
     committing.value = false
   }
@@ -97,13 +99,13 @@ async function commit() {
 
 <template>
   <div class="import">
-    <PageHeader title="Excel import" subtitle="Guruh boʻyicha shablon → toʻldirish → yuklash" />
+    <PageHeader :title="$t('measurements.import.title')" :subtitle="$t('measurements.import.subtitle')" />
 
     <div class="import__group">
       <AgeCategorySelect v-model="ageCategory" />
       <GenderSelect v-model="gender" />
       <Button
-        label="Shablon yuklab olish"
+        :label="$t('measurements.import.downloadTemplate')"
         icon="pi pi-download"
         severity="secondary"
         outlined
@@ -118,51 +120,51 @@ async function commit() {
         accept=".xlsx"
         :auto="false"
         custom-upload
-        choose-label="Fayl tanlash"
+        :choose-label="$t('measurements.import.chooseFile')"
         @select="onSelect"
       />
       <DatePicker v-model="date" date-format="yy-mm-dd" show-icon />
       <Button
-        label="Yuklash"
+        :label="$t('measurements.import.upload')"
         icon="pi pi-upload"
         :disabled="!ready || !file"
         :loading="uploading"
         @click="upload"
       />
     </div>
-    <small class="import__hint">Sana barcha satrlar uchun sessiya sanasi sifatida ishlatiladi.</small>
+    <small class="import__hint">{{ $t('measurements.import.dateHint') }}</small>
 
     <div v-if="batch" class="import__result">
       <div v-if="validating" class="import__validating">
-        <i class="pi pi-spin pi-spinner" /> Tekshirilmoqda…
+        <i class="pi pi-spin pi-spinner" /> {{ $t('measurements.import.checking') }}
       </div>
 
       <template v-else>
         <div class="import__summary">
-          <Tag :value="batch.status" :severity="batch.status === 'failed' ? 'danger' : 'info'" />
-          <span>Satrlar: {{ batch.row_count }}</span>
-          <span :class="{ 'import__err': batch.error_count > 0 }">Xatolar: {{ batch.error_count }}</span>
+          <Tag :value="$t(`measurements.import.status.${batch.status}`)" :severity="batch.status === 'failed' ? 'danger' : 'info'" />
+          <span>{{ $t('measurements.import.rowsCount', { n: batch.row_count }) }}</span>
+          <span :class="{ 'import__err': batch.error_count > 0 }">{{ $t('measurements.import.errorsCount', { n: batch.error_count }) }}</span>
         </div>
 
         <Message v-if="batch.error" severity="error">{{ batch.error }}</Message>
 
         <DataTable v-if="errorRows.length" :value="errorRows" data-key="row_number" class="import__errors">
-          <Column field="row_number" header="Satr" style="width: 5rem" />
-          <Column header="Xatolar">
+          <Column field="row_number" :header="$t('measurements.import.colRow')" style="width: 5rem" />
+          <Column :header="$t('measurements.import.colErrors')">
             <template #body="{ data }">{{ data.errors.join('; ') }}</template>
           </Column>
         </DataTable>
 
         <Button
           v-if="batch.status === 'validated'"
-          label="Saqlash (commit)"
+          :label="$t('measurements.import.commit')"
           icon="pi pi-check"
           :loading="committing"
           class="import__commit"
           @click="commit"
         />
         <Message v-else-if="batch.status === 'committed'" severity="success" variant="simple">
-          Import saqlandi — sessiyalar yaratildi va baholandi.
+          {{ $t('measurements.import.committed') }}
         </Message>
       </template>
     </div>

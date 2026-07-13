@@ -17,7 +17,7 @@ onMounted(() => catalog.ensureLoaded())
     :options="catalog.regions"
     option-label="name"
     option-value="id"
-    :placeholder="placeholder ?? 'Viloyat'"
+    :placeholder="placeholder ?? $t('common.fields.region')"
     filter
     show-clear
     fluid

@@ -7,6 +7,7 @@ import Dialog from 'primevue/dialog'
 import Tag from 'primevue/tag'
 import { useToast } from 'primevue/usetoast'
 import { onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
 import { toMessage } from '@/api/client'
@@ -21,6 +22,7 @@ import { canWrite } from '@/utils/permissions'
 const router = useRouter()
 const toast = useToast()
 const auth = useAuthStore()
+const { t } = useI18n({ useScope: 'global' })
 
 const sessions = ref<TestSession[]>([])
 const loading = ref(false)
@@ -30,7 +32,7 @@ async function load() {
   try {
     sessions.value = (await listSessions()).results
   } catch (e) {
-    toast.add({ severity: 'error', summary: 'Xatolik', detail: toMessage(e), life: 4000 })
+    toast.add({ severity: 'error', summary: t('common.error'), detail: toMessage(e), life: 4000 })
   } finally {
     loading.value = false
   }
@@ -56,7 +58,7 @@ async function create() {
     dialog.value = false
     router.push(`/measurements/session/${session.id}`)
   } catch (e) {
-    toast.add({ severity: 'error', summary: 'Xatolik', detail: toMessage(e), life: 4000 })
+    toast.add({ severity: 'error', summary: t('common.error'), detail: toMessage(e), life: 4000 })
   } finally {
     creating.value = false
   }
@@ -65,10 +67,10 @@ async function create() {
 
 <template>
   <div>
-    <PageHeader title="Oʻlchovlar" subtitle="Test sessiyalari va Excel import">
+    <PageHeader :title="$t('measurements.list.title')" :subtitle="$t('measurements.list.subtitle')">
       <template #actions>
         <Button
-          label="Excel import"
+          :label="$t('measurements.list.excelImport')"
           icon="pi pi-file-excel"
           severity="secondary"
           outlined
@@ -76,7 +78,7 @@ async function create() {
         />
         <Button
           v-if="canWrite(auth.role)"
-          label="Yangi sessiya"
+          :label="$t('measurements.list.newSession')"
           icon="pi pi-plus"
           @click="dialog = true"
         />
@@ -92,37 +94,37 @@ async function create() {
       row-hover
       @row-click="router.push(`/measurements/session/${$event.data.id}`)"
     >
-      <template #empty>Sessiya topilmadi.</template>
-      <Column field="date" header="Sana" sortable />
-      <Column header="Holat">
+      <template #empty>{{ $t('measurements.list.empty') }}</template>
+      <Column field="date" :header="$t('common.fields.date')" sortable />
+      <Column :header="$t('common.fields.status')">
         <template #body="{ data }">
           <Tag
-            :value="data.status === 'draft' ? 'Qoralama' : 'Yakunlangan'"
+            :value="data.status === 'draft' ? $t('measurements.status.draft') : $t('measurements.status.finalized')"
             :severity="data.status === 'draft' ? 'warn' : 'success'"
           />
         </template>
       </Column>
       <Column header="" style="width: 8rem">
         <template #body="{ data }">
-          <Button label="Ochish" text icon="pi pi-arrow-right" @click="router.push(`/measurements/session/${data.id}`)" />
+          <Button :label="$t('measurements.list.open')" text icon="pi pi-arrow-right" @click="router.push(`/measurements/session/${data.id}`)" />
         </template>
       </Column>
     </DataTable>
 
-    <Dialog v-model:visible="dialog" header="Yangi test sessiyasi" modal :style="{ width: '420px' }">
+    <Dialog v-model:visible="dialog" :header="$t('measurements.list.dialogTitle')" modal :style="{ width: '420px' }">
       <div class="new-session">
         <div class="field">
-          <label>Sportchi</label>
+          <label>{{ $t('common.fields.athlete') }}</label>
           <AthleteAutocomplete v-model="newAthlete" />
         </div>
         <div class="field">
-          <label>Sana</label>
+          <label>{{ $t('common.fields.date') }}</label>
           <DatePicker v-model="newDate" date-format="yy-mm-dd" show-icon fluid />
         </div>
       </div>
       <template #footer>
-        <Button label="Bekor" text @click="dialog = false" />
-        <Button label="Yaratish" icon="pi pi-check" :disabled="!newAthlete" :loading="creating" @click="create" />
+        <Button :label="$t('common.cancel')" text @click="dialog = false" />
+        <Button :label="$t('measurements.list.create')" icon="pi pi-check" :disabled="!newAthlete" :loading="creating" @click="create" />
       </template>
     </Dialog>
   </div>

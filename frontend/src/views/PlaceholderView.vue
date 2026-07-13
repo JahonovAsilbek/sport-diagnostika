@@ -9,7 +9,7 @@ const route = useRoute()
 
 <template>
   <PageHeader
-    :title="(route.meta.title as string) ?? 'Boʻlim'"
-    subtitle="Ushbu boʻlim keyingi bloklarda toʻldiriladi."
+    :title="(route.meta.title as string) ?? $t('errors.placeholder.title')"
+    :subtitle="$t('errors.placeholder.subtitle')"
   />
 </template>

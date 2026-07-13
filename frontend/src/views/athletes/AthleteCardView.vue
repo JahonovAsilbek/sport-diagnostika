@@ -10,6 +10,7 @@ import Tabs from 'primevue/tabs'
 import Tag from 'primevue/tag'
 import { useToast } from 'primevue/usetoast'
 import { onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import { getAthlete } from '@/api/athletes'
@@ -20,7 +21,7 @@ import { getCoaches } from '@/api/users'
 import EvaluationPanel from '@/components/EvaluationPanel.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import RecommendationsPanel from '@/components/RecommendationsPanel.vue'
-import { GENDER_LABELS } from '@/constants/labels'
+import { genderLabel } from '@/i18n/labels'
 import { useAuthStore } from '@/stores/auth'
 import { useCatalogStore } from '@/stores/catalog'
 import type { Athlete } from '@/types/athlete'
@@ -30,6 +31,7 @@ import { canWrite } from '@/utils/permissions'
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
+const { t } = useI18n({ useScope: 'global' })
 const auth = useAuthStore()
 const catalog = useCatalogStore()
 
@@ -67,7 +69,7 @@ onMounted(async () => {
     }
     sessions.value = (await listSessions({ athlete: id })).results
   } catch (e) {
-    toast.add({ severity: 'error', summary: 'Xatolik', detail: toMessage(e), life: 4000 })
+    toast.add({ severity: 'error', summary: t('common.error'), detail: toMessage(e), life: 4000 })
   } finally {
     loading.value = false
   }
@@ -79,7 +81,7 @@ onMounted(async () => {
     <PageHeader :title="athlete.full_name" :subtitle="`${sportName(athlete.sport_type)} · ${athlete.birth_year}`">
       <template #actions>
         <Button
-          label="Taqqoslash"
+          :label="$t('nav.comparison')"
           icon="pi pi-arrow-right-arrow-left"
           severity="secondary"
           outlined
@@ -87,7 +89,7 @@ onMounted(async () => {
         />
         <Button
           v-if="canWrite(auth.role)"
-          label="Tahrirlash"
+          :label="$t('common.edit')"
           icon="pi pi-pencil"
           @click="router.push(`/athletes/${athlete.id}/edit`)"
         />
@@ -98,35 +100,35 @@ onMounted(async () => {
       <Tag v-if="athlete.age_category" :value="athlete.age_category.name" icon="pi pi-users" />
       <Tag v-if="athlete.block" :value="athlete.block" severity="info" />
       <Tag
-        :value="athlete.is_active ? 'Faol' : 'Nofaol'"
+        :value="athlete.is_active ? $t('athletes.active') : $t('athletes.inactive')"
         :severity="athlete.is_active ? 'success' : 'secondary'"
       />
     </div>
 
     <Tabs value="info">
       <TabList>
-        <Tab value="info">Maʼlumot</Tab>
-        <Tab value="sessions">Sessiyalar</Tab>
-        <Tab value="evaluation">Baholash</Tab>
-        <Tab value="recs">Tavsiyalar</Tab>
+        <Tab value="info">{{ $t('athletes.card.tabs.info') }}</Tab>
+        <Tab value="sessions">{{ $t('athletes.card.tabs.sessions') }}</Tab>
+        <Tab value="evaluation">{{ $t('athletes.card.tabs.evaluation') }}</Tab>
+        <Tab value="recs">{{ $t('nav.recommendations') }}</Tab>
       </TabList>
       <TabPanels>
         <TabPanel value="info">
           <dl class="info-grid">
-            <div><dt>F.I.O</dt><dd>{{ athlete.full_name }}</dd></div>
-            <div><dt>Tugʻilgan yil</dt><dd>{{ athlete.birth_year }}</dd></div>
-            <div><dt>Jins</dt><dd>{{ GENDER_LABELS[athlete.gender] }}</dd></div>
-            <div><dt>Yosh toifasi (TOIFA)</dt><dd>{{ athlete.age_category?.name ?? '—' }}</dd></div>
-            <div><dt>Blok</dt><dd>{{ athlete.block ?? '—' }}</dd></div>
-            <div><dt>Sport turi</dt><dd>{{ sportName(athlete.sport_type) }}</dd></div>
-            <div><dt>Viloyat</dt><dd>{{ regionName(athlete.region) }}</dd></div>
-            <div><dt>Tuman</dt><dd>{{ districtName }}</dd></div>
-            <div><dt>Tashkilot</dt><dd>{{ orgName }}</dd></div>
-            <div><dt>Murabbiy</dt><dd>{{ coachName }}</dd></div>
-            <div><dt>Razryad</dt><dd>{{ athlete.razryad ?? '—' }}</dd></div>
-            <div><dt>Tajriba (yil)</dt><dd>{{ athlete.training_experience ?? '—' }}</dd></div>
+            <div><dt>{{ $t('athletes.fullName') }}</dt><dd>{{ athlete.full_name }}</dd></div>
+            <div><dt>{{ $t('common.fields.birthYear') }}</dt><dd>{{ athlete.birth_year }}</dd></div>
+            <div><dt>{{ $t('common.fields.gender') }}</dt><dd>{{ genderLabel(athlete.gender) }}</dd></div>
+            <div><dt>{{ $t('athletes.card.ageCategory') }}</dt><dd>{{ athlete.age_category?.name ?? '—' }}</dd></div>
+            <div><dt>{{ $t('athletes.block') }}</dt><dd>{{ athlete.block ?? '—' }}</dd></div>
+            <div><dt>{{ $t('common.fields.sport') }}</dt><dd>{{ sportName(athlete.sport_type) }}</dd></div>
+            <div><dt>{{ $t('common.fields.region') }}</dt><dd>{{ regionName(athlete.region) }}</dd></div>
+            <div><dt>{{ $t('common.fields.district') }}</dt><dd>{{ districtName }}</dd></div>
+            <div><dt>{{ $t('common.fields.organization') }}</dt><dd>{{ orgName }}</dd></div>
+            <div><dt>{{ $t('common.fields.coach') }}</dt><dd>{{ coachName }}</dd></div>
+            <div><dt>{{ $t('athletes.razryad') }}</dt><dd>{{ athlete.razryad ?? '—' }}</dd></div>
+            <div><dt>{{ $t('athletes.card.experience') }}</dt><dd>{{ athlete.training_experience ?? '—' }}</dd></div>
             <div class="info-grid__wide">
-              <dt>Asosiy musobaqalar</dt>
+              <dt>{{ $t('athletes.mainCompetitions') }}</dt>
               <dd>{{ athlete.main_competitions ?? '—' }}</dd>
             </div>
           </dl>
@@ -140,12 +142,16 @@ onMounted(async () => {
             row-hover
             @row-click="router.push(`/measurements/session/${$event.data.id}`)"
           >
-            <template #empty>Test sessiyasi yoʻq.</template>
-            <Column field="date" header="Sana" sortable />
-            <Column header="Holat">
+            <template #empty>{{ $t('athletes.card.sessionsEmpty') }}</template>
+            <Column field="date" :header="$t('common.fields.date')" sortable />
+            <Column :header="$t('common.fields.status')">
               <template #body="{ data }">
                 <Tag
-                  :value="data.status === 'draft' ? 'Qoralama' : 'Yakunlangan'"
+                  :value="
+                    data.status === 'draft'
+                      ? $t('athletes.card.session.draft')
+                      : $t('athletes.card.session.finalized')
+                  "
                   :severity="data.status === 'draft' ? 'warn' : 'success'"
                 />
               </template>

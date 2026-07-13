@@ -25,19 +25,19 @@ const activeTab = ref('athlete')
 
 <template>
   <div>
-    <PageHeader title="Tavsiyalar" subtitle="Sportchi tavsiyalari va qoidalar" />
+    <PageHeader :title="$t('nav.recommendations')" :subtitle="$t('recommendations.view.subtitle')" />
 
     <Tabs v-model:value="activeTab">
       <TabList>
-        <Tab value="athlete"><i class="pi pi-user" /> Sportchi tavsiyalari</Tab>
-        <Tab v-if="canManageRules" value="rules"><i class="pi pi-sliders-h" /> Qoidalar</Tab>
+        <Tab value="athlete"><i class="pi pi-user" /> {{ $t('recommendations.view.athleteTab') }}</Tab>
+        <Tab v-if="canManageRules" value="rules"><i class="pi pi-sliders-h" /> {{ $t('recommendations.view.rulesTab') }}</Tab>
       </TabList>
       <TabPanels>
         <TabPanel value="athlete">
           <AthleteAutocomplete v-model="picked" class="recs__pick" />
           <RecommendationsPanel v-if="picked" :key="picked.id" :athlete-id="picked.id" />
           <Message v-else severity="info" variant="simple">
-            Tavsiyalarni koʻrish uchun sportchini tanlang.
+            {{ $t('recommendations.view.pickPrompt') }}
           </Message>
         </TabPanel>
         <TabPanel v-if="canManageRules" value="rules">

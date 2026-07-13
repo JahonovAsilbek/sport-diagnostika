@@ -11,6 +11,7 @@ import ToggleSwitch from 'primevue/toggleswitch'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { toMessage } from '@/api/client'
 import {
@@ -31,6 +32,7 @@ import { useCatalogStore } from '@/stores/catalog'
 const toast = useToast()
 const confirm = useConfirm()
 const catalog = useCatalogStore()
+const { t } = useI18n({ useScope: 'global' })
 
 const rules = ref<RecommendationRule[]>([])
 const loading = ref(false)
@@ -47,7 +49,7 @@ const form = reactive<RecommendationRuleWrite>({
 })
 
 const targetOptions = computed(() => [
-  { label: 'Umumiy ball (0–50)', value: null as number | null },
+  { label: t('recommendations.rules.overallScoreOption'), value: null as number | null },
   ...catalog.exercises.map((e) => ({ label: e.name, value: e.id as number | null })),
 ])
 const comparatorOptions = (Object.keys(COMPARATOR_LABELS) as Comparator[]).map((c) => ({
@@ -58,7 +60,7 @@ const comparatorOptions = (Object.keys(COMPARATOR_LABELS) as Comparator[]).map((
 const thresholdMax = computed(() => (form.exercise === null ? 50 : 10))
 
 function targetName(exerciseId: number | null): string {
-  if (exerciseId === null) return 'Umumiy ball'
+  if (exerciseId === null) return t('recommendations.rules.overallScore')
   return catalog.exercises.find((e) => e.id === exerciseId)?.name ?? `#${exerciseId}`
 }
 
@@ -67,7 +69,7 @@ async function load() {
   try {
     rules.value = (await listRules()).results
   } catch (e) {
-    toast.add({ severity: 'error', summary: 'Xatolik', detail: toMessage(e), life: 4000 })
+    toast.add({ severity: 'error', summary: t('common.error'), detail: toMessage(e), life: 4000 })
   } finally {
     loading.value = false
   }
@@ -99,7 +101,12 @@ function openEdit(rule: RecommendationRule) {
 
 async function save() {
   if (!form.template_text.trim()) {
-    toast.add({ severity: 'warn', summary: 'Matn kiriting', detail: 'Tavsiya matni boʻsh.', life: 3500 })
+    toast.add({
+      severity: 'warn',
+      summary: t('recommendations.rules.textRequired'),
+      detail: t('recommendations.rules.textEmpty'),
+      life: 3500,
+    })
     return
   }
   saving.value = true
@@ -107,11 +114,11 @@ async function save() {
     const payload = { ...form }
     if (editingId.value === null) await createRule(payload)
     else await updateRule(editingId.value, payload)
-    toast.add({ severity: 'success', summary: 'Saqlandi', life: 2500 })
+    toast.add({ severity: 'success', summary: t('recommendations.rules.saved'), life: 2500 })
     dialogOpen.value = false
     await load()
   } catch (e) {
-    toast.add({ severity: 'error', summary: 'Xatolik', detail: toMessage(e), life: 5000 })
+    toast.add({ severity: 'error', summary: t('common.error'), detail: toMessage(e), life: 5000 })
   } finally {
     saving.value = false
   }
@@ -119,19 +126,19 @@ async function save() {
 
 function remove(rule: RecommendationRule) {
   confirm.require({
-    message: `"${targetName(rule.exercise)}" qoidasi oʻchirilsinmi?`,
-    header: 'Tasdiqlang',
+    message: t('recommendations.rules.deleteConfirm', { name: targetName(rule.exercise) }),
+    header: t('common.confirm'),
     icon: 'pi pi-exclamation-triangle',
-    acceptLabel: 'Oʻchirish',
-    rejectLabel: 'Bekor',
+    acceptLabel: t('common.delete'),
+    rejectLabel: t('common.cancel'),
     acceptProps: { severity: 'danger' },
     accept: async () => {
       try {
         await deleteRule(rule.id)
-        toast.add({ severity: 'success', summary: 'Oʻchirildi', life: 2500 })
+        toast.add({ severity: 'success', summary: t('recommendations.rules.deleted'), life: 2500 })
         await load()
       } catch (e) {
-        toast.add({ severity: 'error', summary: 'Xatolik', detail: toMessage(e), life: 4000 })
+        toast.add({ severity: 'error', summary: t('common.error'), detail: toMessage(e), life: 4000 })
       }
     },
   })
@@ -147,26 +154,26 @@ onMounted(() => {
   <div>
     <div class="rules__bar">
       <p class="rules__hint">
-        Qoidalar baholashdan keyin tavsiyalarni avtomatik yaratadi (chegaralar — DATA).
+        {{ $t('recommendations.rules.hint') }}
       </p>
-      <Button label="Yangi qoida" icon="pi pi-plus" @click="openCreate" />
+      <Button :label="$t('recommendations.rules.new')" icon="pi pi-plus" @click="openCreate" />
     </div>
 
     <DataTable :value="rules" :loading="loading" data-key="id" class="rules__table">
-      <template #empty>Qoidalar yoʻq.</template>
-      <Column header="Nishon">
+      <template #empty>{{ $t('recommendations.rules.empty') }}</template>
+      <Column :header="$t('recommendations.rules.target')">
         <template #body="{ data }">{{ targetName(data.exercise) }}</template>
       </Column>
-      <Column header="Shart">
+      <Column :header="$t('recommendations.rules.condition')">
         <template #body="{ data }">{{ COMPARATOR_LABELS[data.comparator as Comparator] }} {{ data.threshold }}</template>
       </Column>
-      <Column header="Tavsiya matni">
+      <Column :header="$t('recommendations.rules.templateText')">
         <template #body="{ data }"><span class="rules__text">{{ data.template_text }}</span></template>
       </Column>
-      <Column header="Holat">
+      <Column :header="$t('common.fields.status')">
         <template #body="{ data }">
           <Tag
-            :value="data.is_active ? 'Faol' : 'Nofaol'"
+            :value="data.is_active ? $t('recommendations.rules.active') : $t('recommendations.rules.inactive')"
             :severity="data.is_active ? 'success' : 'secondary'"
           />
         </template>
@@ -181,31 +188,31 @@ onMounted(() => {
 
     <Dialog
       v-model:visible="dialogOpen"
-      :header="editingId === null ? 'Yangi qoida' : 'Qoidani tahrirlash'"
+      :header="editingId === null ? $t('recommendations.rules.new') : $t('recommendations.rules.editTitle')"
       modal
       :style="{ width: '30rem' }"
     >
       <div class="rules__form">
-        <label>Nishon</label>
+        <label>{{ $t('recommendations.rules.target') }}</label>
         <Select v-model="form.exercise" :options="targetOptions" option-label="label" option-value="value" fluid />
 
-        <label>Shart</label>
+        <label>{{ $t('recommendations.rules.condition') }}</label>
         <Select v-model="form.comparator" :options="comparatorOptions" option-label="label" option-value="value" fluid />
 
-        <label>Chegara (0–{{ thresholdMax }})</label>
+        <label>{{ $t('recommendations.rules.threshold', { max: thresholdMax }) }}</label>
         <InputNumber v-model="form.threshold" :min="0" :max="thresholdMax" fluid />
 
-        <label>Tavsiya matni</label>
+        <label>{{ $t('recommendations.rules.templateText') }}</label>
         <Textarea v-model="form.template_text" rows="3" auto-resize fluid />
 
         <div class="rules__toggle">
           <ToggleSwitch v-model="form.is_active" input-id="rule-active" />
-          <label for="rule-active">Faol</label>
+          <label for="rule-active">{{ $t('recommendations.rules.active') }}</label>
         </div>
       </div>
       <template #footer>
-        <Button label="Bekor" text @click="dialogOpen = false" />
-        <Button label="Saqlash" icon="pi pi-check" :loading="saving" @click="save" />
+        <Button :label="$t('common.cancel')" text @click="dialogOpen = false" />
+        <Button :label="$t('common.save')" icon="pi pi-check" :loading="saving" @click="save" />
       </template>
     </Dialog>
   </div>

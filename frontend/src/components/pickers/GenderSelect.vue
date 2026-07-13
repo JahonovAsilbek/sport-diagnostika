@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import Select from 'primevue/select'
+import { computed } from 'vue'
 
-import { GENDER_LABELS } from '@/constants/labels'
+import { genderLabel } from '@/i18n/labels'
 import type { Gender } from '@/types/catalog'
 
 const model = defineModel<Gender | null>()
 defineProps<{ placeholder?: string }>()
 
-const options = (Object.keys(GENDER_LABELS) as Gender[]).map((value) => ({
-  value,
-  label: GENDER_LABELS[value],
-}))
+const GENDERS: Gender[] = ['male', 'female']
+// Computed so labels re-resolve when the locale changes.
+const options = computed(() => GENDERS.map((value) => ({ value, label: genderLabel(value) })))
 </script>
 
 <template>
@@ -19,7 +19,7 @@ const options = (Object.keys(GENDER_LABELS) as Gender[]).map((value) => ({
     :options="options"
     option-label="label"
     option-value="value"
-    :placeholder="placeholder ?? 'Jins'"
+    :placeholder="placeholder ?? $t('common.fields.gender')"
     show-clear
     fluid
   />

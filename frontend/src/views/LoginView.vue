@@ -6,15 +6,18 @@ import Message from 'primevue/message'
 import Password from 'primevue/password'
 import { useToast } from 'primevue/usetoast'
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import { toMessage } from '@/api/client'
+import LocaleSwitcher from '@/components/LocaleSwitcher.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
 const router = useRouter()
 const route = useRoute()
 const toast = useToast()
+const { t } = useI18n({ useScope: 'global' })
 
 const username = ref('')
 const password = ref('')
@@ -34,7 +37,7 @@ async function submit() {
     const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/'
     router.push(redirect)
   } catch (e) {
-    toast.add({ severity: 'error', summary: 'Kirish xatosi', detail: toMessage(e), life: 4000 })
+    toast.add({ severity: 'error', summary: t('auth.login.error'), detail: toMessage(e), life: 4000 })
   } finally {
     loading.value = false
   }
@@ -44,11 +47,12 @@ async function submit() {
 <template>
   <div class="login">
     <form class="login__card" novalidate @submit.prevent="submit">
+      <div class="login__locale"><LocaleSwitcher /></div>
       <h1 class="login__brand">SPORT-DIAGNOSTIKA.UZ</h1>
-      <p class="login__hint">Tizimga kirish</p>
+      <p class="login__hint">{{ $t('auth.login.subtitle') }}</p>
 
       <div class="login__field">
-        <label for="username">Login</label>
+        <label for="username">{{ $t('auth.login.username') }}</label>
         <InputText
           id="username"
           v-model="username"
@@ -57,12 +61,12 @@ async function submit() {
           fluid
         />
         <Message v-if="usernameInvalid" severity="error" size="small" variant="simple">
-          Loginni kiriting.
+          {{ $t('auth.login.usernameRequired') }}
         </Message>
       </div>
 
       <div class="login__field">
-        <label for="password">Parol</label>
+        <label for="password">{{ $t('auth.login.password') }}</label>
         <Password
           input-id="password"
           v-model="password"
@@ -73,16 +77,16 @@ async function submit() {
           autocomplete="current-password"
         />
         <Message v-if="passwordInvalid" severity="error" size="small" variant="simple">
-          Parolni kiriting.
+          {{ $t('auth.login.passwordRequired') }}
         </Message>
       </div>
 
       <div class="login__remember">
         <Checkbox v-model="remember" input-id="remember" binary />
-        <label for="remember">Meni eslab qol</label>
+        <label for="remember">{{ $t('auth.login.remember') }}</label>
       </div>
 
-      <Button type="submit" label="Kirish" :loading="loading" fluid class="login__submit" />
+      <Button type="submit" :label="$t('auth.login.submit')" :loading="loading" fluid class="login__submit" />
     </form>
   </div>
 </template>
@@ -104,6 +108,11 @@ async function submit() {
   border-radius: 12px;
   background: var(--p-content-background, #fff);
   box-shadow: 0 6px 24px rgb(0 0 0 / 8%);
+}
+.login__locale {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.25rem;
 }
 .login__brand {
   margin: 0;

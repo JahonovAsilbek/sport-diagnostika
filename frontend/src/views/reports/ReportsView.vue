@@ -6,6 +6,7 @@ import Select from 'primevue/select'
 import Tag from 'primevue/tag'
 import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { toMessage } from '@/api/client'
 import {
@@ -13,9 +14,7 @@ import {
   downloadReport,
   listReports,
   REPORT_FORMAT_LABELS,
-  REPORT_STATUS_LABELS,
   REPORT_STATUS_SEVERITY,
-  REPORT_TYPE_LABELS,
   type Report,
   type ReportFormat,
   type ReportStatus,
@@ -27,18 +26,19 @@ import GenderSelect from '@/components/pickers/GenderSelect.vue'
 import RegionSelect from '@/components/pickers/RegionSelect.vue'
 import SportSelect from '@/components/pickers/SportSelect.vue'
 import PageHeader from '@/components/PageHeader.vue'
-import { GENDER_LABELS } from '@/constants/labels'
+import { genderLabel, reportStatusLabel, reportTypeLabel } from '@/i18n/labels'
 import { useCatalogStore } from '@/stores/catalog'
 import type { Athlete } from '@/types/athlete'
 import type { Gender } from '@/types/catalog'
 
 const toast = useToast()
 const catalog = useCatalogStore()
+const { t } = useI18n({ useScope: 'global' })
 
-const typeOptions = (Object.keys(REPORT_TYPE_LABELS) as ReportType[]).map((t) => ({
-  label: REPORT_TYPE_LABELS[t],
-  value: t,
-}))
+const REPORT_TYPES: ReportType[] = ['athlete', 'region', 'sport', 'republic']
+const typeOptions = computed(() =>
+  REPORT_TYPES.map((rt) => ({ label: reportTypeLabel(rt), value: rt })),
+)
 const formatOptions = (Object.keys(REPORT_FORMAT_LABELS) as ReportFormat[]).map((f) => ({
   label: REPORT_FORMAT_LABELS[f],
   value: f,
@@ -75,16 +75,16 @@ function buildParams(): Record<string, number | string> {
 
 async function submit() {
   if (isAthlete.value && !athlete.value) {
-    toast.add({ severity: 'warn', summary: 'Sportchi tanlang', life: 3000 })
+    toast.add({ severity: 'warn', summary: t('reports.selectAthlete'), life: 3000 })
     return
   }
   submitting.value = true
   try {
     await createReport({ type: type.value, format: format.value, params: buildParams() })
-    toast.add({ severity: 'success', summary: 'Soʻrov qabul qilindi', life: 2500 })
+    toast.add({ severity: 'success', summary: t('reports.requestAccepted'), life: 2500 })
     await refresh()
   } catch (e) {
-    toast.add({ severity: 'error', summary: 'Xatolik', detail: toMessage(e), life: 5000 })
+    toast.add({ severity: 'error', summary: t('common.error'), detail: toMessage(e), life: 5000 })
   } finally {
     submitting.value = false
   }
@@ -102,7 +102,7 @@ async function refresh() {
     reports.value = (await listReports()).results
     schedulePoll()
   } catch (e) {
-    toast.add({ severity: 'error', summary: 'Xatolik', detail: toMessage(e), life: 4000 })
+    toast.add({ severity: 'error', summary: t('common.error'), detail: toMessage(e), life: 4000 })
   } finally {
     loading.value = false
   }
@@ -119,7 +119,7 @@ async function download(report: Report) {
     a.click()
     URL.revokeObjectURL(url)
   } catch (e) {
-    toast.add({ severity: 'error', summary: 'Yuklab boʻlmadi', detail: toMessage(e), life: 4000 })
+    toast.add({ severity: 'error', summary: t('reports.downloadFailed'), detail: toMessage(e), life: 4000 })
   } finally {
     downloadingId.value = null
   }
@@ -127,15 +127,15 @@ async function download(report: Report) {
 
 function paramsSummary(r: Report): string {
   const p = r.params
-  if (r.type === 'athlete') return p.athlete ? `Sportchi #${p.athlete}` : '—'
+  if (r.type === 'athlete') return p.athlete ? t('reports.athleteRef', { id: p.athlete }) : '—'
   const parts: string[] = []
   if (p.region) parts.push(catalog.regions.find((x) => x.id === p.region)?.name ?? `#${p.region}`)
   if (p.sport_type)
     parts.push(catalog.sportTypes.find((x) => x.id === p.sport_type)?.name ?? `#${p.sport_type}`)
   if (p.age_category)
     parts.push(catalog.ageCategories.find((x) => x.id === p.age_category)?.name ?? '')
-  if (p.gender) parts.push(GENDER_LABELS[p.gender as Gender])
-  return parts.filter(Boolean).join(' · ') || 'Barchasi'
+  if (p.gender) parts.push(genderLabel(p.gender as Gender))
+  return parts.filter(Boolean).join(' · ') || t('common.all')
 }
 
 onMounted(() => {
@@ -147,33 +147,33 @@ onUnmounted(() => clearTimeout(pollTimer))
 
 <template>
   <div>
-    <PageHeader title="Hisobotlar" subtitle="Hisobot soʻrang va tayyor boʻlganda yuklab oling" />
+    <PageHeader :title="$t('nav.reports')" :subtitle="$t('reports.subtitle')" />
 
     <div class="rep__form">
       <div class="rep__field">
-        <label>Turi</label>
+        <label>{{ $t('reports.type') }}</label>
         <Select v-model="type" :options="typeOptions" option-label="label" option-value="value" fluid />
       </div>
       <div class="rep__field">
-        <label>Format</label>
+        <label>{{ $t('reports.format') }}</label>
         <Select v-model="format" :options="formatOptions" option-label="label" option-value="value" fluid />
       </div>
 
       <div v-if="isAthlete" class="rep__field rep__field--wide">
-        <label>Sportchi</label>
+        <label>{{ $t('common.fields.athlete') }}</label>
         <AthleteAutocomplete v-model="athlete" />
       </div>
       <template v-else>
-        <div class="rep__field"><label>Viloyat</label><RegionSelect v-model="filters.region" /></div>
-        <div class="rep__field"><label>Sport</label><SportSelect v-model="filters.sport_type" /></div>
+        <div class="rep__field"><label>{{ $t('common.fields.region') }}</label><RegionSelect v-model="filters.region" /></div>
+        <div class="rep__field"><label>{{ $t('common.fields.sport') }}</label><SportSelect v-model="filters.sport_type" /></div>
         <div class="rep__field">
-          <label>TOIFA</label><AgeCategorySelect v-model="filters.age_category" />
+          <label>{{ $t('common.fields.ageCategory') }}</label><AgeCategorySelect v-model="filters.age_category" />
         </div>
-        <div class="rep__field"><label>Jins</label><GenderSelect v-model="filters.gender" /></div>
+        <div class="rep__field"><label>{{ $t('common.fields.gender') }}</label><GenderSelect v-model="filters.gender" /></div>
       </template>
 
       <Button
-        label="Soʻrash"
+        :label="$t('reports.request')"
         icon="pi pi-file-export"
         class="rep__submit"
         :loading="submitting"
@@ -182,21 +182,21 @@ onUnmounted(() => clearTimeout(pollTimer))
     </div>
 
     <DataTable :value="reports" :loading="loading" data-key="id" paginator :rows="10" class="rep__table">
-      <template #empty>Hali hisobot soʻralmagan.</template>
+      <template #empty>{{ $t('reports.empty') }}</template>
       <Column field="id" header="#" class="rep__id" />
-      <Column header="Turi">
-        <template #body="{ data }">{{ REPORT_TYPE_LABELS[data.type as ReportType] }}</template>
+      <Column :header="$t('reports.type')">
+        <template #body="{ data }">{{ reportTypeLabel(data.type as ReportType) }}</template>
       </Column>
-      <Column header="Format">
+      <Column :header="$t('reports.format')">
         <template #body="{ data }">{{ REPORT_FORMAT_LABELS[data.format as ReportFormat] }}</template>
       </Column>
-      <Column header="Parametrlar">
+      <Column :header="$t('reports.params')">
         <template #body="{ data }"><span class="rep__params">{{ paramsSummary(data) }}</span></template>
       </Column>
-      <Column header="Holat">
+      <Column :header="$t('common.fields.status')">
         <template #body="{ data }">
           <Tag
-            :value="REPORT_STATUS_LABELS[data.status as ReportStatus]"
+            :value="reportStatusLabel(data.status as ReportStatus)"
             :severity="REPORT_STATUS_SEVERITY[data.status as ReportStatus]"
           />
           <i
@@ -209,7 +209,7 @@ onUnmounted(() => clearTimeout(pollTimer))
       <Column header="" class="rep__actions">
         <template #body="{ data }">
           <Button
-            label="Yuklab olish"
+            :label="$t('common.download')"
             icon="pi pi-download"
             size="small"
             :disabled="data.status !== 'done'"

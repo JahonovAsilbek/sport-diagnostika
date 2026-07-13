@@ -20,7 +20,7 @@ onMounted(async () => {
     :options="options"
     option-label="label"
     option-value="id"
-    :placeholder="placeholder ?? 'Murabbiy'"
+    :placeholder="placeholder ?? $t('common.fields.coach')"
     filter
     show-clear
     fluid

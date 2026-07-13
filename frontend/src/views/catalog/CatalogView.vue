@@ -13,7 +13,7 @@ import { useRouter } from 'vue-router'
 
 import { getBatteries } from '@/api/catalog'
 import PageHeader from '@/components/PageHeader.vue'
-import { DIRECTION_LABELS, GENDER_LABELS, VALUE_TYPE_LABELS } from '@/constants/labels'
+import { directionLabel, genderLabel, valueTypeLabel } from '@/i18n/labels'
 import { useAuthStore } from '@/stores/auth'
 import { useCatalogStore } from '@/stores/catalog'
 import type { Direction, Gender, TestBattery, ValueType } from '@/types/catalog'
@@ -36,11 +36,11 @@ function ageName(id: number) {
 
 <template>
   <div>
-    <PageHeader title="Katalog" subtitle="Maʼlumotnoma — viloyatlar, sport turlari, mashqlar">
+    <PageHeader :title="$t('nav.catalog')" :subtitle="$t('catalog.subtitle')">
       <template #actions>
         <Button
           v-if="auth.role === 'super_admin'"
-          label="Normalarni boshqarish"
+          :label="$t('catalog.manageNorms')"
           icon="pi pi-sliders-h"
           @click="router.push('/catalog/norms')"
         />
@@ -49,32 +49,32 @@ function ageName(id: number) {
 
     <Tabs value="regions">
       <TabList>
-        <Tab value="regions">Viloyatlar</Tab>
-        <Tab value="sports">Sport turlari</Tab>
-        <Tab value="ages">Yosh toifalari</Tab>
-        <Tab value="exercises">Mashqlar</Tab>
-        <Tab value="batteries">Batareyalar</Tab>
+        <Tab value="regions">{{ $t('catalog.tabs.regions') }}</Tab>
+        <Tab value="sports">{{ $t('catalog.tabs.sports') }}</Tab>
+        <Tab value="ages">{{ $t('catalog.tabs.ages') }}</Tab>
+        <Tab value="exercises">{{ $t('catalog.tabs.exercises') }}</Tab>
+        <Tab value="batteries">{{ $t('catalog.tabs.batteries') }}</Tab>
       </TabList>
       <TabPanels>
         <TabPanel value="regions">
           <DataTable :value="catalog.regions" paginator :rows="10" data-key="id">
-            <Column field="name" header="Nomi" sortable />
-            <Column field="code" header="Kodi" />
+            <Column field="name" :header="$t('common.fields.name')" sortable />
+            <Column field="code" :header="$t('catalog.columns.code')" />
           </DataTable>
         </TabPanel>
 
         <TabPanel value="sports">
           <DataTable :value="catalog.sportTypes" paginator :rows="10" data-key="id">
-            <Column field="name" header="Nomi" sortable />
-            <Column field="code" header="Kodi" />
+            <Column field="name" :header="$t('common.fields.name')" sortable />
+            <Column field="code" :header="$t('catalog.columns.code')" />
           </DataTable>
         </TabPanel>
 
         <TabPanel value="ages">
           <DataTable :value="catalog.ageCategories" data-key="id">
             <Column field="ordinal" header="#" sortable />
-            <Column field="name" header="Toifa" />
-            <Column header="Yosh oraligʻi">
+            <Column field="name" :header="$t('catalog.columns.category')" />
+            <Column :header="$t('catalog.columns.ageRange')">
               <template #body="{ data }">{{ data.age_min }}–{{ data.age_max }}</template>
             </Column>
           </DataTable>
@@ -82,22 +82,22 @@ function ageName(id: number) {
 
         <TabPanel value="exercises">
           <DataTable :value="catalog.exercises" paginator :rows="10" data-key="id">
-            <Column field="name" header="Mashq" sortable />
-            <Column field="unit" header="Birlik" />
-            <Column header="Turi">
+            <Column field="name" :header="$t('catalog.columns.exercise')" sortable />
+            <Column field="unit" :header="$t('catalog.columns.unit')" />
+            <Column :header="$t('catalog.columns.type')">
               <template #body="{ data }">
-                {{ VALUE_TYPE_LABELS[data.value_type as ValueType] }}
+                {{ valueTypeLabel(data.value_type as ValueType) }}
               </template>
             </Column>
-            <Column header="Yoʻnalish">
+            <Column :header="$t('catalog.columns.direction')">
               <template #body="{ data }">
-                {{ DIRECTION_LABELS[data.direction as Direction] }}
+                {{ directionLabel(data.direction as Direction) }}
               </template>
             </Column>
-            <Column header="Holat">
+            <Column :header="$t('common.fields.status')">
               <template #body="{ data }">
                 <Tag
-                  :value="data.is_active ? 'Faol' : 'Nofaol'"
+                  :value="data.is_active ? $t('catalog.active') : $t('catalog.inactive')"
                   :severity="data.is_active ? 'success' : 'secondary'"
                 />
               </template>
@@ -107,13 +107,13 @@ function ageName(id: number) {
 
         <TabPanel value="batteries">
           <DataTable :value="batteries" paginator :rows="10" data-key="id">
-            <Column header="Yosh toifasi">
+            <Column :header="$t('common.fields.ageCategory')">
               <template #body="{ data }">{{ ageName(data.age_category) }}</template>
             </Column>
-            <Column header="Jins">
-              <template #body="{ data }">{{ GENDER_LABELS[data.gender as Gender] }}</template>
+            <Column :header="$t('common.fields.gender')">
+              <template #body="{ data }">{{ genderLabel(data.gender as Gender) }}</template>
             </Column>
-            <Column header="Mashqlar">
+            <Column :header="$t('catalog.columns.exercises')">
               <template #body="{ data }">
                 {{ data.items.map((i: TestBattery['items'][number]) => i.exercise.name).join(', ') }}
               </template>

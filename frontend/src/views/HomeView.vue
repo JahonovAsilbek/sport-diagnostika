@@ -2,6 +2,7 @@
 import Button from 'primevue/button'
 import Message from 'primevue/message'
 import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
 import { toMessage } from '@/api/client'
@@ -10,33 +11,27 @@ import DarajaDonut from '@/components/dashboard/DarajaDonut.vue'
 import RegionBars from '@/components/dashboard/RegionBars.vue'
 import StatCard from '@/components/dashboard/StatCard.vue'
 import PageHeader from '@/components/PageHeader.vue'
+import { darajaLabel } from '@/i18n/labels'
 import { useAuthStore } from '@/stores/auth'
-import type { Role } from '@/types/auth'
 
 const auth = useAuthStore()
 const router = useRouter()
+const { t } = useI18n({ useScope: 'global' })
 
 // Per-role framing of the same scoped numbers (ministry → national, coach → own athletes).
-const SCOPE_SUBTITLE: Record<Role, string> = {
-  super_admin: 'Tizim koʻrsatkichlari',
-  ministry: 'Respublika koʻrsatkichlari',
-  region_admin: 'Viloyat koʻrsatkichlari',
-  coach: 'Sizning sportchilaringiz',
-  lab_operator: 'Laboratoriya koʻrsatkichlari',
-}
-const subtitle = computed(() => (auth.role ? SCOPE_SUBTITLE[auth.role] : ''))
+const subtitle = computed(() => (auth.role ? t(`home.scope.${auth.role}`) : ''))
 
 // The national by-region chart is oversight — same gate as the rating regions tab.
 const canSeeRegions = computed(
   () => !!auth.role && ['super_admin', 'ministry'].includes(auth.role),
 )
 
-const quickLinks = [
-  { label: 'Sportchilar', icon: 'pi pi-users', to: '/athletes' },
-  { label: 'Oʻlchovlar', icon: 'pi pi-pencil', to: '/measurements' },
-  { label: 'Reyting', icon: 'pi pi-chart-bar', to: '/rating' },
-  { label: 'Hisobotlar', icon: 'pi pi-file', to: '/reports' },
-]
+const quickLinks = computed(() => [
+  { label: t('nav.athletes'), icon: 'pi pi-users', to: '/athletes' },
+  { label: t('nav.measurements'), icon: 'pi pi-pencil', to: '/measurements' },
+  { label: t('nav.rating'), icon: 'pi pi-chart-bar', to: '/rating' },
+  { label: t('nav.reports'), icon: 'pi pi-file', to: '/reports' },
+])
 
 const stats = ref<StatsOverview | null>(null)
 const loading = ref(true)
@@ -60,7 +55,7 @@ onMounted(load)
 <template>
   <div>
     <PageHeader
-      :title="`Xush kelibsiz, ${auth.user?.full_name || auth.user?.username}`"
+      :title="$t('home.welcome', { name: auth.user?.full_name || auth.user?.username })"
       :subtitle="subtitle"
     />
 
@@ -69,44 +64,44 @@ onMounted(load)
     <Message v-else-if="error" severity="error">
       <div class="dash__error">
         <span>{{ error }}</span>
-        <Button label="Qayta urinish" icon="pi pi-refresh" size="small" text @click="load" />
+        <Button :label="$t('common.retry')" icon="pi pi-refresh" size="small" text @click="load" />
       </div>
     </Message>
 
     <template v-else-if="stats">
       <div class="dash__kpis">
-        <StatCard label="Faol sportchilar" :value="stats.athletes_total" icon="pi pi-users" />
+        <StatCard :label="$t('home.kpi.activeAthletes')" :value="stats.athletes_total" icon="pi pi-users" />
         <StatCard
-          label="I daraja"
+          :label="darajaLabel('I')"
           :value="stats.by_daraja.I"
           icon="pi pi-star-fill"
           accent="#10b981"
         />
         <StatCard
-          label="Soʻnggi 30 kun sessiyalari"
+          :label="$t('home.kpi.recentSessions')"
           :value="stats.recent_sessions"
           icon="pi pi-calendar"
         />
-        <StatCard label="Viloyatlar" :value="stats.regions" icon="pi pi-map" />
+        <StatCard :label="$t('home.kpi.regions')" :value="stats.regions" icon="pi pi-map" />
       </div>
 
       <p class="dash__orgs">
-        Tashkilot turi boʻyicha — OTM: <b>{{ stats.by_organization_type.OTM }}</b> · OPSTTM:
+        {{ $t('home.orgBreakdown') }} — OTM: <b>{{ stats.by_organization_type.OTM }}</b> · OPSTTM:
         <b>{{ stats.by_organization_type.OPSTTM }}</b>
       </p>
 
       <div class="dash__charts">
         <section class="dash__panel">
-          <h3 class="dash__h">Daraja taqsimoti</h3>
+          <h3 class="dash__h">{{ $t('home.charts.darajaDistribution') }}</h3>
           <DarajaDonut :by-daraja="stats.by_daraja" />
         </section>
         <section v-if="canSeeRegions" class="dash__panel">
-          <h3 class="dash__h">Viloyatlar boʻyicha (I daraja)</h3>
+          <h3 class="dash__h">{{ $t('home.charts.byRegion') }}</h3>
           <RegionBars />
         </section>
       </div>
 
-      <h3 class="dash__h">Tezkor havolalar</h3>
+      <h3 class="dash__h">{{ $t('home.quickLinksTitle') }}</h3>
       <div class="dash__links">
         <button
           v-for="link in quickLinks"
