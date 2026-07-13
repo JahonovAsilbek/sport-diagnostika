@@ -41,6 +41,17 @@ data are per-machine (not committed):
    (all idempotent). `seed_physical` (norms + batteries) arrives with B4.
 6. Run tests: `backend/.venv/bin/pytest backend -q`.
 
+**Running the app locally with host processes** (not the Docker `web`/`worker`): three
+background procs — `manage.py runserver 127.0.0.1:8000`, `celery -A config worker`, and
+`cd frontend && npm run dev` (Vite :5173 proxies `/api`→:8000). Login needs a user
+(`seed_admin`); the SPA needs catalog + `seed_physical` seeded.
+- **PDF reports (WeasyPrint) locally:** `weasyprint` (in `requirements.txt`) is pip-installed but
+  needs native libs the Docker image has (DVPS-9) — on a Mac run **`brew install pango gdk-pixbuf
+  libffi`** once, else the worker fails a PDF report with `No module named 'weasyprint'` /
+  "could not import some external libraries". Word/Excel formats don't need it. After installing,
+  restart the Celery worker. `DYLD_FALLBACK_LIBRARY_PATH=/opt/homebrew/lib` is a safe fallback but
+  not required once the brew libs are present.
+
 **CI (D4, `.github/workflows/ci.yml`)** runs on push→main + all PRs: `ruff check` **+
 `ruff format --check`** + `pytest` (postgres:16/redis:7 services) and a `docker build`.
 So **`ruff format` is now enforced** — run `make format` (or `ruff format backend`) before

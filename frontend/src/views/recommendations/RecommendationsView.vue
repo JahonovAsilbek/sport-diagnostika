@@ -49,8 +49,9 @@ const activeTab = ref('athlete')
 </template>
 
 <style scoped>
+/* Don't set `display` here — it would override the AutoComplete's internal flex layout and detach
+   the input from its dropdown button. `fluid` already makes it full-width (capped by max-width). */
 .recs__pick {
-  display: block;
   max-width: 420px;
   margin-bottom: 1.25rem;
 }
