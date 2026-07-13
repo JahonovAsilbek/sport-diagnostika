@@ -1,7 +1,7 @@
+import '@fontsource-variable/inter'
 import 'primeicons/primeicons.css'
 import './assets/main.css'
 
-import Aura from '@primeuix/themes/aura'
 import { createPinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import ConfirmationService from 'primevue/confirmationservice'
@@ -11,14 +11,19 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import i18n from './i18n'
 import router from './router'
+import { SportPreset } from './theme/preset'
 import { useAuthStore } from './stores/auth'
+
+// Dark by default — the premium look is a dark theme (FRNTND-29). The class also drives PrimeVue's
+// dark color scheme via darkModeSelector below.
+document.documentElement.classList.add('dark')
 
 const app = createApp(App)
 
 app.use(createPinia())
 app.use(i18n)
 app.use(router)
-app.use(PrimeVue, { theme: { preset: Aura, options: { darkModeSelector: '.dark' } } })
+app.use(PrimeVue, { theme: { preset: SportPreset, options: { darkModeSelector: '.dark' } } })
 app.use(ToastService)
 app.use(ConfirmationService)
 

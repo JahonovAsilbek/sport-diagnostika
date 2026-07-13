@@ -1,5 +1,51 @@
 :root {
   --sd-content-max: 1200px;
+
+  /* Premium design tokens (mirrors premium/assets/css/base.css) — used by custom styles and the
+     per-view restyle in later phases. */
+  --color-bg: #07101f;
+  --color-bg-elev: #0e1b30;
+  --color-bg-soft: #15243c;
+  --color-border: #1f3354;
+  --color-text: #e6eefb;
+  --color-text-muted: #9aa8c2;
+  --color-text-dim: #6a7894;
+
+  --color-primary: #00d4ff;
+  --color-primary-700: #0099b5;
+  --color-accent: #1eb53a;
+  --color-warn: #f5b700;
+  --color-danger: #ef4444;
+  --color-success: #10b981;
+
+  --gradient-hero: linear-gradient(135deg, #00d4ff 0%, #1eb53a 100%);
+  --gradient-card: linear-gradient(180deg, #15243c 0%, #0e1b30 100%);
+
+  --radius-sm: 6px;
+  --radius: 12px;
+  --radius-lg: 20px;
+  --radius-pill: 999px;
+
+  --shadow-sm: 0 2px 8px rgb(0 0 0 / 25%);
+  --shadow: 0 8px 24px rgb(0 0 0 / 35%);
+  --shadow-lg: 0 20px 60px rgb(0 0 0 / 50%);
+  --shadow-glow: 0 0 40px rgb(0 212 255 / 25%);
+
+  --font-sans: 'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Pin the PrimeVue dark scheme to the exact premium hues on the surfaces the shell + components
+   read directly. `html.dark` (0,1,1) outranks PrimeVue's `.dark` rules, so these win while the
+   preset still supplies the full component token graph. */
+html.dark {
+  --p-content-background: var(--color-bg-elev);
+  --p-content-hover-background: var(--color-bg-soft);
+  --p-content-border-color: var(--color-border);
+  --p-text-color: var(--color-text);
+  --p-text-muted-color: var(--color-text-muted);
+  --p-primary-color: var(--color-primary);
+  --p-highlight-background: rgb(0 212 255 / 14%);
+  --p-highlight-color: #7fe9ff;
 }
 
 *,
@@ -15,16 +61,25 @@ body {
 }
 
 body {
-  font-family:
-    'Inter',
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
-  color: var(--p-text-color);
-  background: var(--p-content-background, #f8f9fa);
+  font-family: var(--font-sans);
+  color: var(--color-text);
+  background: var(--color-bg);
   -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* The premium ambient glow (base.css body::before). */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(600px circle at 12% 8%, rgb(0 212 255 / 8%), transparent 60%),
+    radial-gradient(620px circle at 92% 96%, rgb(30 181 58 / 8%), transparent 60%);
+  filter: blur(40px);
 }
 
 #app {
@@ -34,6 +89,27 @@ body {
 a {
   color: var(--p-primary-color);
   text-decoration: none;
+}
+
+::selection {
+  background: var(--color-primary);
+  color: #04111e;
+}
+
+/* Dark scrollbars to match the theme. */
+* {
+  scrollbar-color: var(--color-border) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: var(--radius-pill);
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: #2a4470;
 }
 
 /* Simple utility for centered, width-capped page content. */

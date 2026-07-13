@@ -1907,6 +1907,18 @@ catalog entity the management UI needs). Skip/trim if a write endpoint already e
 
 # FRNTND-29 — Premium theme foundation (design migration · phase 1)
 
+> ✅ **Done** (2026-07-13) — `src/theme/preset.ts`: a `definePreset(Aura, …)` with a cyan primary
+> (500 = `#00D4FF`) + deep-navy dark surfaces (`surface.950=#07101F` ground → `900=#0E1B30` cards →
+> `700=#1F3354` borders), cyan focus ring, and dark `primary.contrastColor #04111E`. `main.ts` uses
+> the preset, adds `.dark` to `<html>` (dark by default, driving `darkModeSelector:'.dark'`), and
+> imports `@fontsource-variable/inter` (self-hosted, incl. Cyrillic for ru/kk). `assets/main.css`:
+> the premium `--color-*`/radius/shadow/glow tokens, the radial-glow `body::before`, dark
+> scrollbars, `::selection`, and — since the shell reads `--p-*` directly — `html.dark` overrides
+> for the shell-critical PrimeVue vars (content bg/border/text/hover/highlight/primary) pinned to
+> the exact premium hues (`html.dark` outranks PrimeVue's `.dark`). Verified: `vue-tsc` + `eslint` +
+> `vite build` clean; premium hex tokens + Inter woff2 present in the bundle. Foundation only —
+> the shell/login (F-30), component/view sweep (F-31), and polish (F-32) follow.
+
 Adopt the `premium/` look in the SPA. A custom PrimeVue preset — cyan primary (`#00D4FF`) + navy
 surfaces (`#07101F`/`#0E1B30`/`#15243C`), **dark by default**, Inter font — plus global tokens
 (radii/shadows/glow) and the radial-glow background, mirroring `premium/assets/css/base.css`.
