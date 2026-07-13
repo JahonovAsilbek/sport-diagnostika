@@ -29,8 +29,10 @@ class AthletesRatingView(generics.ListAPIView):
     pagination_class = DefaultPagination
 
     def get_queryset(self):
-        filters = _validated_filters(self.request).selector_filters()
-        return ranked_athletes(filters, self.request.user)
+        serializer = _validated_filters(self.request)
+        return ranked_athletes(
+            serializer.selector_filters(), self.request.user, serializer.period_range()
+        )
 
 
 class TopRatingView(APIView):
@@ -43,16 +45,19 @@ class TopRatingView(APIView):
         serializer = _validated_filters(request)
         filters = serializer.selector_filters()
         limit = serializer.validated_data.get("limit", 10)
+        date_range = serializer.period_range()
 
         def build():
-            rows = top_athletes(filters, request.user, limit=limit)
+            rows = top_athletes(filters, request.user, limit=limit, date_range=date_range)
             # Plain list (not DRF's ReturnList) so the value is picklable for the cache.
             return {
                 "filters": serializer.filters_header(),
                 "results": list(RatingRowSerializer(rows, many=True).data),
             }
 
-        return Response(cached_response("top", request.user, {**filters, "limit": limit}, build))
+        # The period must be part of the cache key or Q1/Q2 results collide.
+        cache_filters = {**filters, "limit": limit, **serializer.period_cache_params()}
+        return Response(cached_response("top", request.user, cache_filters, build))
 
 
 class RegionsRatingView(APIView):
@@ -61,10 +66,13 @@ class RegionsRatingView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        filters = _validated_filters(request).selector_filters()
+        serializer = _validated_filters(request)
+        filters = serializer.selector_filters()
+        date_range = serializer.period_range()
 
         def build():
-            rows = region_rating(filters, request.user)
+            rows = region_rating(filters, request.user, date_range)
             return {"results": list(RegionRatingRowSerializer(rows, many=True).data)}
 
-        return Response(cached_response("regions", request.user, filters, build))
+        cache_filters = {**filters, **serializer.period_cache_params()}
+        return Response(cached_response("regions", request.user, cache_filters, build))

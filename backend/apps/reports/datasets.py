@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from rest_framework.exceptions import PermissionDenied, ValidationError
 
 from apps.athletes.models import Athlete
+from apps.common.periods import period_range_from_params
 from apps.common.permissions import REGION_ADMIN
 from apps.common.scoping import scope_queryset
 from apps.rating.selectors import ranked_athletes, region_rating
@@ -65,7 +66,7 @@ def assert_params_in_scope(report_type, params, user):
 def _athlete_dataset(params, user):
     athlete = _scoped_athlete(user, params.get("athlete"))
     columns = ["Mashq", "Natija", "Ball"]
-    evaluation = latest_evaluation(athlete)
+    evaluation = latest_evaluation(athlete, period_range_from_params(params))
     if evaluation is None:
         return ReportDataset(athlete.full_name, "Baholanmagan", columns, [])
     subtitle = f"Umumiy ball: {evaluation.physical_total} — {evaluation.get_daraja_display()}"
@@ -82,7 +83,7 @@ def _ranking_dataset(params, user, title):
             evaluation.ranking_score,
             evaluation.get_daraja_display(),
         ]
-        for evaluation in ranked_athletes(_filters(params), user)
+        for evaluation in ranked_athletes(_filters(params), user, period_range_from_params(params))
     ]
     return ReportDataset(title, "", columns, rows)
 
@@ -96,7 +97,7 @@ def _republic_dataset(params, user):
             row["daraja_i_count"],
             round(float(row["avg_score"] or 0), 1),
         ]
-        for row in region_rating(_filters(params), user)
+        for row in region_rating(_filters(params), user, period_range_from_params(params))
     ]
     return ReportDataset("Respublika reytingi", "", columns, rows)
 

@@ -2,12 +2,14 @@ from rest_framework import serializers
 
 from apps.catalog.models import AgeCategory, Region, SportType
 from apps.common.models import Gender
+from apps.common.periods import PeriodParamsSerializer
 
 
-class RatingFilterSerializer(serializers.Serializer):
+class RatingFilterSerializer(PeriodParamsSerializer):
     """Validates the rating query params (all optional). `region`/`sport_type`/`age_category`
     are PKs; `age_category` filters the Evaluation snapshot FK directly (no birth_year range —
-    that translation is only for the computed athlete list). `limit` applies to `/top/`."""
+    that translation is only for the computed athlete list). `limit` applies to `/top/`. The
+    optional `period_*` fields (inherited) scope ranking to the latest evaluation in a period."""
 
     region = serializers.PrimaryKeyRelatedField(queryset=Region.objects.all(), required=False)
     sport_type = serializers.PrimaryKeyRelatedField(

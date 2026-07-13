@@ -11,4 +11,5 @@
 - [Frontend](project_frontend.md) — Vue 3 + TS + PrimeVue 4 (@primeuix/themes); auth tokens/interceptor/no-cycle pattern; verify = lint+type-check+build from frontend/
 - [Athlete transfer](project_athlete_transfer.md) — placement is transfer-only via an append-only ledger (one-open partial-unique invariant); transfers never rewrite history (snapshots)
 - [Login security](project_login_security.md) — DRF throttling + cache-based (username,IP) lockout, generic no-enumeration error; root autouse `_isolate_cache` test fixture clears the cache per test
+- [Period filter](project_period_filter.md) — optional quarter/half/year across rating/comparison/history/reports; range filters inside `_latest_ids` before distinct; period in the rating cache key; FRNTND-26 consumes the params
 - [Doc language](feedback_doc_language.md) — Internal docs in English (full English domain terms, TVI→BMI); Uzbek only for product/UI

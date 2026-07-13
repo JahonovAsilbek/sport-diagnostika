@@ -7,11 +7,15 @@ def _base():
     ).prefetch_related("indicators__exercise")
 
 
-def athlete_evaluations(athlete):
-    """An athlete's Evaluation snapshots, newest session first (history view)."""
-    return _base().filter(athlete=athlete)
+def athlete_evaluations(athlete, date_range=None):
+    """An athlete's Evaluation snapshots, newest session first (history view). `date_range`
+    (start, end) inclusively narrows `session_date` when given (BCKND-70)."""
+    qs = _base().filter(athlete=athlete)
+    if date_range:
+        qs = qs.filter(session_date__range=date_range)
+    return qs
 
 
-def latest_evaluation(athlete):
-    """The athlete's most recent Evaluation, or `None`."""
-    return athlete_evaluations(athlete).first()
+def latest_evaluation(athlete, date_range=None):
+    """The athlete's most recent Evaluation (within `date_range` if given), or `None`."""
+    return athlete_evaluations(athlete, date_range).first()

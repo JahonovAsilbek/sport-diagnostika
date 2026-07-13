@@ -1,18 +1,18 @@
 from apps.scoring.selectors import latest_evaluation
 
 
-def compare_athletes(athletes):
+def compare_athletes(athletes, date_range=None):
     """Build the side-by-side rows (in the given order) and the `leader` id.
 
-    Each row is the athlete's latest Evaluation (or a no-data row if none). `leader` is the
-    id with the highest `physical_total` among evaluated athletes — request order breaks ties
-    — or `None` if no athlete has an evaluation.
+    Each row is the athlete's latest Evaluation (within `date_range` if given, else overall, or
+    a no-data row if none). `leader` is the id with the highest `physical_total` among evaluated
+    athletes — request order breaks ties — or `None` if no athlete has an evaluation.
     """
     rows = []
     leader_id = None
     leader_total = None
     for athlete in athletes:
-        evaluation = latest_evaluation(athlete)
+        evaluation = latest_evaluation(athlete, date_range)
         rows.append(
             {
                 "id": athlete.id,

@@ -12,6 +12,7 @@ from apps.athletes.serializers import (
 )
 from apps.athletes.services import ASSIGNMENT_FIELDS, open_initial_assignment, transfer_athlete
 from apps.catalog.models import AgeCategory
+from apps.common.periods import PeriodParamsSerializer
 from apps.common.permissions import COACH, LAB_OPERATOR, REGION_ADMIN, DataEntryOrReadOnly
 from apps.common.scoping import ScopedQuerysetMixin
 from apps.recommendations.selectors import recommendations_for_athlete
@@ -101,18 +102,25 @@ class AthleteViewSet(ScopedQuerysetMixin, viewsets.ModelViewSet):
         self.get_object()
         return Response([])
 
+    @staticmethod
+    def _period_range(request):
+        # Optional period filter (BCKND-70) shared by the two evaluation sub-routes.
+        period = PeriodParamsSerializer(data=request.query_params)
+        period.is_valid(raise_exception=True)
+        return period.period_range()
+
     @action(detail=True, methods=["get"])
     def evaluations(self, request, pk=None):
         """The athlete's Evaluation snapshots, newest first (un-paginated history)."""
         athlete = self.get_object()
-        evaluations = athlete_evaluations(athlete)
+        evaluations = athlete_evaluations(athlete, self._period_range(request))
         return Response(EvaluationSerializer(evaluations, many=True).data)
 
     @action(detail=True, methods=["get"], url_path="latest-evaluation")
     def latest_evaluation(self, request, pk=None):
         """The athlete's most recent Evaluation, or 204 if none yet."""
         athlete = self.get_object()
-        evaluation = latest_evaluation(athlete)
+        evaluation = latest_evaluation(athlete, self._period_range(request))
         if evaluation is None:
             return Response(status=204)
         return Response(EvaluationSerializer(evaluation).data)

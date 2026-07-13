@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from apps.common.periods import period_range_from_params
 from apps.reports.datasets import assert_params_in_scope
 from apps.reports.models import Report
 
@@ -14,9 +15,10 @@ class ReportRequestSerializer(serializers.ModelSerializer):
         read_only_fields = ("status", "created_at")
 
     def validate(self, attrs):
-        assert_params_in_scope(
-            attrs["type"], attrs.get("params") or {}, self.context["request"].user
-        )
+        params = attrs.get("params") or {}
+        # Reject a bad period at request time (400) rather than in the async worker (BCKND-70).
+        period_range_from_params(params)
+        assert_params_in_scope(attrs["type"], params, self.context["request"].user)
         return attrs
 
 

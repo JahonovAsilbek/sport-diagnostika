@@ -1784,6 +1784,19 @@ priority (per the owner).
 
 # BCKND-70 — Period filter (backend) — rating/comparison/history/reports (extends B8, B12)
 
+> ✅ **Done** (2026-07-10) — new `apps/common/periods.py`: `resolve_period(type, year, index) →
+> (start, end)` calendar range (or None), `period_range_from_params` (reports), and a
+> `PeriodParamsSerializer` (3 optional query params + `period_range()` + `period_cache_params()`).
+> Threaded an optional `date_range` through the selectors — **critically, in `rating/selectors.py`
+> the range filters inside `_latest_ids()` BEFORE `.distinct("athlete_id")`** so it's "latest per
+> athlete *within* the period," not latest-overall-then-filtered. Rating (top/athletes/regions),
+> comparison, evaluation-history (`EvaluationViewSet.get_queryset` + the two athlete actions) and
+> reports (datasets + request-time validation → 400) all honor it; **absent → unchanged (latest
+> overall)**. The period is folded into the rating **cache key** (`period_cache_params()`) so Q1/Q2
+> never collide. Verified: ruff clean, makemigrations --check clean, **351 pytest passed** (+23:
+> `common/test_periods.py` + period tests across rating/comparison/scoring/reports, incl.
+> cache-varies-by-period and leader-changes-by-period).
+
 Add an optional `period_type` (quarter|half|year) + value to the rating, comparison,
 evaluation-history and report endpoints; translate it to a `session_date` range
 (calendar boundaries); when absent, use the latest Evaluation per athlete.

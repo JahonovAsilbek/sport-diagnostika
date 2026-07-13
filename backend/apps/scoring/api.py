@@ -3,6 +3,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.common.periods import PeriodParamsSerializer
 from apps.common.permissions import IsSuperAdmin
 from apps.common.scoping import ScopedQuerysetMixin
 from apps.scoring.models import Evaluation
@@ -30,6 +31,16 @@ class EvaluationViewSet(ScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet):
     scope_region_field = "region_id"
     scope_organization_field = "session__organization_id"
     scope_coach_field = "athlete__coach"
+
+    def get_queryset(self):
+        # Optional period filter (BCKND-70): narrow the history to a session_date range.
+        qs = super().get_queryset()
+        period = PeriodParamsSerializer(data=self.request.query_params)
+        period.is_valid(raise_exception=True)
+        date_range = period.period_range()
+        if date_range:
+            qs = qs.filter(session_date__range=date_range)
+        return qs
 
 
 class RecomputeView(APIView):

@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.athletes.models import Athlete
+from apps.common.periods import PeriodParamsSerializer
 from apps.common.scoping import scope_queryset
 from apps.comparison.selectors import compare_athletes
 from apps.comparison.serializers import ComparisonAthleteSerializer
@@ -32,7 +33,11 @@ class ComparisonView(APIView):
         if any(athlete_id not in by_id for athlete_id in ids):
             raise PermissionDenied("Ba'zi sportchilar ko'lamingizdan tashqarida.")
 
-        rows, leader = compare_athletes([by_id[athlete_id] for athlete_id in ids])
+        period = PeriodParamsSerializer(data=request.query_params)
+        period.is_valid(raise_exception=True)
+        rows, leader = compare_athletes(
+            [by_id[athlete_id] for athlete_id in ids], date_range=period.period_range()
+        )
         return Response(
             {
                 "athletes": ComparisonAthleteSerializer(rows, many=True).data,
