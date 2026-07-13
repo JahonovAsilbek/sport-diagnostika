@@ -55,9 +55,13 @@ api.interceptors.response.use(
         config.headers.Authorization = `Bearer ${access}`
         return api(config)
       } catch (refreshError) {
-        // Refresh failed → the session is dead. Clear it and bounce to login.
-        clearTokens()
-        if (window.location.pathname !== '/login') window.location.assign('/login')
+        // Only end the session if the refresh was itself rejected (a dead/blacklisted refresh
+        // token). A network error (API momentarily down) must NOT clear tokens or bounce to login —
+        // otherwise a transient blip logs the user out for good.
+        if (axios.isAxiosError(refreshError) && refreshError.response?.status === 401) {
+          clearTokens()
+          if (window.location.pathname !== '/login') window.location.assign('/login')
+        }
         return Promise.reject(refreshError)
       }
     }

@@ -1,3 +1,4 @@
+import { isAxiosError } from 'axios'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
@@ -28,14 +29,26 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /** Called once on app load: if a refresh token survives, validate it via /me (the axios
-   *  interceptor refreshes an expired access token transparently). On failure, stay logged out. */
+   *  interceptor refreshes an expired access token transparently). Only a genuine auth failure
+   *  (401 — the refresh token is dead too) ends the session; a network/server hiccup (API briefly
+   *  down) must NOT nuke valid tokens and force a re-login, or a transient blip logs the user out
+   *  for good. */
   async function restore() {
     if (!getRefresh()) return
-    try {
-      user.value = await authApi.fetchMe()
-    } catch {
-      clearTokens()
-      user.value = null
+    // Retry once on a network/server error — the API may just be (re)starting; a single blip
+    // shouldn't drop the user to the login page.
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        user.value = await authApi.fetchMe()
+        return
+      } catch (e) {
+        user.value = null
+        if (isAxiosError(e) && e.response?.status === 401) {
+          clearTokens()
+          return
+        }
+        if (attempt === 0) await new Promise((resolve) => setTimeout(resolve, 600))
+      }
     }
   }
 
