@@ -12,10 +12,16 @@ outstanding (CLAUDE.md §8).
 
 ```bash
 backend/.venv/bin/ruff check backend
+backend/.venv/bin/ruff format --check backend   # CI enforces this too — NOT the same as `check`
 backend/.venv/bin/pytest backend -q
 cd backend && DJANGO_SETTINGS_MODULE=config.settings.dev \
   .venv/bin/python manage.py makemigrations --check --dry-run
 ```
+
+CI (`.github/workflows/ci.yml`) runs **both** `ruff check` and `ruff format --check` — they are
+different tools (lint vs. formatter). A green `ruff check` does NOT imply formatted code, so always
+run `ruff format --check` (or just `ruff format backend`) before committing, or CI fails on
+formatting alone even with passing tests.
 
 (Once the frontend exists: `eslint` + the build too.) Any failure → fix it first;
 the wrap-up stops here until green.
