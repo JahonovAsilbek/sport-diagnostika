@@ -1,3 +1,4 @@
+import { cleanPeriod, type PeriodParams } from '@/composables/usePeriodQuery'
 import type { DarajaLevel } from '@/constants/labels'
 
 import { api } from './client'
@@ -28,7 +29,10 @@ export interface ComparisonResult {
 }
 
 // Every id must be in the caller's scope server-side (out-of-scope → 403). 2–3 ids only.
-export const compareAthletes = (ids: number[]) =>
+// An optional period (BCKND-70) narrows each athlete to their latest evaluation within it.
+export const compareAthletes = (ids: number[], period?: PeriodParams) =>
   api
-    .get<ComparisonResult>('/comparison/', { params: { athletes: ids.join(',') } })
+    .get<ComparisonResult>('/comparison/', {
+      params: { athletes: ids.join(','), ...cleanPeriod(period) },
+    })
     .then((r) => r.data)

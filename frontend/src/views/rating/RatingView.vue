@@ -9,7 +9,7 @@ import Tabs from 'primevue/tabs'
 import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import { toMessage } from '@/api/client'
 import {
@@ -22,17 +22,20 @@ import {
 } from '@/api/rating'
 import DarajaBadge from '@/components/DarajaBadge.vue'
 import PageHeader from '@/components/PageHeader.vue'
+import PeriodSelector from '@/components/PeriodSelector.vue'
 import AgeCategorySelect from '@/components/pickers/AgeCategorySelect.vue'
 import GenderSelect from '@/components/pickers/GenderSelect.vue'
 import RegionSelect from '@/components/pickers/RegionSelect.vue'
 import SportSelect from '@/components/pickers/SportSelect.vue'
 import TopAthletes from '@/components/rating/TopAthletes.vue'
+import { periodFromQuery, periodToQuery, type PeriodParams } from '@/composables/usePeriodQuery'
 import { darajaLabel } from '@/i18n/labels'
 import { useAuthStore } from '@/stores/auth'
 import { useCatalogStore } from '@/stores/catalog'
 import type { Gender } from '@/types/catalog'
 
 const router = useRouter()
+const route = useRoute()
 const toast = useToast()
 const { t } = useI18n({ useScope: 'global' })
 const auth = useAuthStore()
@@ -52,6 +55,8 @@ const filters = reactive({
   age_category: null as number | null,
   gender: null as Gender | null,
 })
+// Period is shareable: hydrated from and mirrored to the URL query (FRNTND-26).
+const period = ref<PeriodParams>(periodFromQuery(route.query))
 const activeTab = ref('top')
 
 const topRows = ref<RatingRow[]>([])
@@ -74,6 +79,7 @@ function queryFor(): RatingQuery {
     sport_type: filters.sport_type,
     age_category: filters.age_category,
     gender: filters.gender,
+    ...period.value,
   }
 }
 
@@ -127,6 +133,12 @@ function onFilterChange() {
   loadActive()
 }
 
+function onPeriodChange(value: PeriodParams) {
+  period.value = value
+  router.replace({ query: periodToQuery(value) })
+  onFilterChange()
+}
+
 function onFullPage(event: DataTablePageEvent) {
   fullPage.value = event.page + 1
   fetchFull()
@@ -149,6 +161,7 @@ onMounted(() => {
       <SportSelect v-model="filters.sport_type" @update:model-value="onFilterChange" />
       <AgeCategorySelect v-model="filters.age_category" @update:model-value="onFilterChange" />
       <GenderSelect v-model="filters.gender" @update:model-value="onFilterChange" />
+      <PeriodSelector :model-value="period" @update:model-value="onPeriodChange" />
     </div>
 
     <Tabs v-model:value="activeTab">

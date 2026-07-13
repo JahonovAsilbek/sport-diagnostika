@@ -1833,6 +1833,24 @@ to `uz` for missing keys.
 
 # FRNTND-26 — Period filter UI + locale switcher (extends F6/F7/F9)
 
+> ✅ **Done** (2026-07-13) — shared `PeriodSelector.vue` (v-model of `PeriodParams`: type
+> Select "Butun davr"/Chorak/Yarim yil/Yil + year InputNumber defaulting to the current year +
+> quarter/half index Select) backed by `composables/usePeriodQuery.ts` (`cleanPeriod`,
+> `periodToQuery`/`periodFromQuery` for URL (de)serialization) and a new `period` locale
+> namespace. Wired into all four consumers: **RatingView** (folded into `queryFor()`, resets the
+> `loaded` staleness flags on change) and **ComparisonView** (re-runs an active comparison) both
+> **mirror the period to the URL query** (`?period_type=quarter&period_year=2026&period_index=2`,
+> hydrated on load — shareable links, user decision); **ReportsView** folds `cleanPeriod` into the
+> report `params` (backend validates → 400 on a bad combo); **EvaluationPanel** filters the
+> athlete's evaluation history locally. API params threaded through `api/{rating,comparison,
+> evaluations}.ts` (rating `clean()` already forwards them). Default everywhere = no period
+> (latest overall). Verified: `vue-tsc` + `eslint` + `vite build` clean; the i18n key-check still
+> PASSes (15 namespaces, 341 refs); a 14-case unit check of the period logic (URL round-trip,
+> year-drops-index, invalid/empty → latest) passes. The locale switcher shipped in FRNTND-25.
+> Decision: URL-sync only on rating + comparison (list/filter views); reports (create form) +
+> athlete-card history use period as a local filter. Browser click-test deferred (Chrome
+> extension not connected). **FRNTND (gap-review) additions complete → DVPS-20 (QA traceability) next.**
+
 A period selector (quarter/half/year + value) on the rating, evaluation-history,
 comparison and reports views, wired to the backend period filter (BCKND-70). Plus the
 locale switcher from FRNTND-25.

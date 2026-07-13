@@ -18,6 +18,8 @@ import {
 import AthleteAutocomplete from '@/components/pickers/AthleteAutocomplete.vue'
 import DarajaBadge from '@/components/DarajaBadge.vue'
 import PageHeader from '@/components/PageHeader.vue'
+import PeriodSelector from '@/components/PeriodSelector.vue'
+import { periodFromQuery, periodToQuery, type PeriodParams } from '@/composables/usePeriodQuery'
 import type { Athlete } from '@/types/athlete'
 
 const route = useRoute()
@@ -33,6 +35,8 @@ const selected = ref<Pick[]>([])
 const picker = ref<Athlete | null>(null)
 const result = ref<ComparisonResult | null>(null)
 const loading = ref(false)
+// Shareable period, hydrated from / mirrored to the URL alongside `athletes` (FRNTND-26).
+const period = ref<PeriodParams>(periodFromQuery(route.query))
 
 // Picking from the autocomplete adds a chip (max 3, no dupes) and clears the input.
 watch(picker, (a) => {
@@ -45,6 +49,13 @@ watch(picker, (a) => {
 
 function remove(id: number) {
   selected.value = selected.value.filter((s) => s.id !== id)
+}
+
+// Changing the period re-runs an existing comparison (and refreshes the URL); otherwise it just
+// takes effect on the next Compare.
+function onPeriodChange(value: PeriodParams) {
+  period.value = value
+  if (result.value) compare()
 }
 
 const athletes = computed<ComparisonAthlete[]>(() => result.value?.athletes ?? [])
@@ -94,9 +105,9 @@ async function compare() {
   loading.value = true
   try {
     const ids = selected.value.map((s) => s.id)
-    result.value = await compareAthletes(ids)
-    // Reflect the selection in the URL for shareable links.
-    router.replace({ query: { athletes: ids.join(',') } })
+    result.value = await compareAthletes(ids, period.value)
+    // Reflect the selection + period in the URL for shareable links.
+    router.replace({ query: { athletes: ids.join(','), ...periodToQuery(period.value) } })
   } catch (e) {
     toast.add({ severity: 'error', summary: t('common.error'), detail: toMessage(e), life: 4000 })
   } finally {
@@ -112,10 +123,10 @@ onMounted(async () => {
     .map((s) => Number(s.trim()))
     .filter((n) => Number.isInteger(n) && n > 0)
   if (ids.length >= 2 && ids.length <= 3) {
-    // A full comparison link — run it and hydrate the chips from the result.
+    // A full comparison link — run it (with any period from the URL) and hydrate the chips.
     loading.value = true
     try {
-      result.value = await compareAthletes(ids)
+      result.value = await compareAthletes(ids, period.value)
       selected.value = result.value.athletes.map((a) => ({ id: a.id, full_name: a.full_name }))
     } catch (e) {
       toast.add({ severity: 'error', summary: t('common.error'), detail: toMessage(e), life: 4000 })
@@ -140,6 +151,7 @@ onMounted(async () => {
 
     <div class="cmp__pick">
       <AthleteAutocomplete v-model="picker" :disabled="selected.length >= 3" class="cmp__auto" />
+      <PeriodSelector :model-value="period" @update:model-value="onPeriodChange" />
       <Button
         :label="$t('comparison.compare')"
         icon="pi pi-arrow-right-arrow-left"

@@ -26,6 +26,8 @@ import GenderSelect from '@/components/pickers/GenderSelect.vue'
 import RegionSelect from '@/components/pickers/RegionSelect.vue'
 import SportSelect from '@/components/pickers/SportSelect.vue'
 import PageHeader from '@/components/PageHeader.vue'
+import PeriodSelector from '@/components/PeriodSelector.vue'
+import { cleanPeriod, type PeriodParams } from '@/composables/usePeriodQuery'
 import { genderLabel, reportStatusLabel, reportTypeLabel } from '@/i18n/labels'
 import { useCatalogStore } from '@/stores/catalog'
 import type { Athlete } from '@/types/athlete'
@@ -47,6 +49,8 @@ const formatOptions = (Object.keys(REPORT_FORMAT_LABELS) as ReportFormat[]).map(
 const type = ref<ReportType>('athlete')
 const format = ref<ReportFormat>('pdf')
 const athlete = ref<Athlete | null>(null)
+// Optional period (BCKND-70) — travels inside the report's params; validated server-side at request.
+const period = ref<PeriodParams>({})
 const filters = reactive({
   region: null as number | null,
   sport_type: null as number | null,
@@ -64,8 +68,17 @@ let pollTimer: ReturnType<typeof setTimeout> | undefined
 const isAthlete = computed(() => type.value === 'athlete')
 
 function buildParams(): Record<string, number | string> {
-  if (isAthlete.value) return athlete.value ? { athlete: athlete.value.id } : {}
   const params: Record<string, number | string> = {}
+  // Period applies to every report type (athlete history + rankings).
+  const p = cleanPeriod(period.value)
+  if (p.period_type) params.period_type = p.period_type
+  if (p.period_year) params.period_year = p.period_year
+  if (p.period_index) params.period_index = p.period_index
+
+  if (isAthlete.value) {
+    if (athlete.value) params.athlete = athlete.value.id
+    return params
+  }
   if (filters.region) params.region = filters.region
   if (filters.sport_type) params.sport_type = filters.sport_type
   if (filters.age_category) params.age_category = filters.age_category
@@ -157,6 +170,10 @@ onUnmounted(() => clearTimeout(pollTimer))
       <div class="rep__field">
         <label>{{ $t('reports.format') }}</label>
         <Select v-model="format" :options="formatOptions" option-label="label" option-value="value" fluid />
+      </div>
+      <div class="rep__field rep__field--wide">
+        <label>{{ $t('period.label') }}</label>
+        <PeriodSelector v-model="period" />
       </div>
 
       <div v-if="isAthlete" class="rep__field rep__field--wide">

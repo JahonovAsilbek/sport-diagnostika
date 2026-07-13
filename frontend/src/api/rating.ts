@@ -1,3 +1,4 @@
+import type { PeriodParams } from '@/composables/usePeriodQuery'
 import type { DarajaLevel } from '@/constants/labels'
 import type { Gender, Paginated } from '@/types/catalog'
 
@@ -21,7 +22,8 @@ export interface RegionRatingRow {
   avg_score: number | null
 }
 
-export interface RatingQuery {
+// Period fields (BCKND-70) ride along via PeriodParams; clean() forwards them like any other filter.
+export interface RatingQuery extends PeriodParams {
   region?: number | null
   sport_type?: number | null
   age_category?: number | null

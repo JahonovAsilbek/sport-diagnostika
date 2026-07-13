@@ -25,3 +25,12 @@ metadata:
   (`EvaluationViewSet.get_queryset` + the athletes `evaluations`/`latest-evaluation` actions), reports
   (validated at request time → 400, honored in `datasets.py` builders).
 - History-stable because `session_date`/dims are snapshots (see [[project_athlete_transfer]]).
+
+**Frontend UI (FRNTND-26).** `frontend/src/composables/usePeriodQuery.ts` — `PeriodParams` type +
+`cleanPeriod` (empty/incomplete → latest; `year` drops index) + `periodToQuery`/`periodFromQuery`
+(URL (de)serialization). `components/PeriodSelector.vue` = a `v-model` of `PeriodParams` (type Select
+incl. "all" + year InputNumber defaulting to the current year + quarter/half index Select); `period`
+locale namespace. Wired into rating/comparison/reports views + `EvaluationPanel`. **URL-synced only on
+Rating + Comparison** (`?period_type=…&period_year=…&period_index=…`, hydrated on load); Reports folds
+the period into the report `params`; the athlete-card evaluation history is a local filter. See
+[[project_i18n]].
