@@ -1881,6 +1881,56 @@ keep it updated as tasks change; this is the QA acceptance basis.
 
 ---
 
+## FOLLOW-UPS (post-review requests — surfaced 2026-07-13 while testing the running app)
+
+These arose from real use: management screens that only exist in Django admin today, and a
+request to adopt the `premium/` visual language in the SPA. Analyse + get the user's go before
+building (design tasks are the standard multi-file, plan-mode workflow).
+
+# FRNTND-27 — User management view (replace the `/users` placeholder)
+
+`/users` is currently a placeholder — coaches/operators can only be created in Django admin.
+Build the real view: list + create/edit/deactivate users of every role (incl. coaches),
+region/organization-scoped, wired to the existing User CRUD API (BCKND-15). super_admin +
+region_admin only.
+
+# FRNTND-28 — Organization management (catalog admin UI)
+
+No SPA screen creates organizations (only Django admin), yet an athlete **requires** one. Add
+list + create/edit for organizations (name, type OTM/OPSTTM, region, district) in the catalog
+area, scoped. Depends on BCKND-71 if the catalog API is read-only.
+
+# BCKND-71 — Organization write API (verify first)
+
+BCKND-21 shipped **read-only** catalog APIs. Add scoped CRUD for Organization (and any other
+catalog entity the management UI needs). Skip/trim if a write endpoint already exists.
+
+# FRNTND-29 — Premium theme foundation (design migration · phase 1)
+
+Adopt the `premium/` look in the SPA. A custom PrimeVue preset — cyan primary (`#00D4FF`) + navy
+surfaces (`#07101F`/`#0E1B30`/`#15243C`), **dark by default**, Inter font — plus global tokens
+(radii/shadows/glow) and the radial-glow background, mirroring `premium/assets/css/base.css`.
+Foundation only; no per-view restyle yet.
+
+# FRNTND-30 — Shell & auth restyle (design migration · phase 2)
+
+Restyle `AppLayout` (topbar/sidebar/cards) and `LoginView` to the premium look: elevated-navy
+surfaces, cyan active states + glow, pill buttons, gradient login card. Remove hardcoded light
+fallbacks (`#fff`, `#e5e7eb`, …).
+
+# FRNTND-31 — Components & views restyle (design migration · phase 3)
+
+Align buttons (pill), inputs, tables, chips, badges (daraja green/yellow/red already match),
+dashboard cards, and chart palettes across every view to the premium tokens; sweep out remaining
+hardcoded light colors.
+
+# FRNTND-32 — Design polish (design migration · phase 4)
+
+Hover glows, transitions, dark scrollbars, responsive tuning, empty/error/loading states, chart
+colors, focus-visible rings — the finishing pass.
+
+---
+
 ## DEFERRED (parked — see `docs/DEFERRED.md`)
 
 The physical-first re-scope parked the tasks below. They are **not deleted** — the design
