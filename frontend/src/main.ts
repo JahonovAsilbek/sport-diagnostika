@@ -18,14 +18,16 @@ const app = createApp(App)
 
 app.use(createPinia())
 app.use(i18n)
-app.use(router)
 app.use(PrimeVue, { theme: { preset: SportPreset, options: { darkModeSelector: '.app-dark' } } })
 app.use(ToastService)
 app.use(ConfirmationService)
 
-// Validate the stored session (via /me) before mounting so guards see the right auth state
-// on first paint. Failure just leaves the user logged out.
+// Restore the stored session BEFORE installing the router. `app.use(router)` kicks off the initial
+// navigation (and its auth guard) asynchronously, so it must run only after /me has populated the
+// auth store — otherwise, on refresh, the guard races ahead and sees a logged-out state, bouncing a
+// valid session to /login before restore() finishes.
 const auth = useAuthStore()
 auth.restore().finally(() => {
+  app.use(router)
   app.mount('#app')
 })
