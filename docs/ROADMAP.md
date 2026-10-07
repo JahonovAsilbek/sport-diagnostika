@@ -16,6 +16,10 @@ Parked scope (functional / morphofunctional / psychological / OTM-OPSTTM): `DEFE
 > `DEFERRED.md`, not deleted. Scoring is **10/8/6 points** per exercise, 5 exercises →
 > **physical_total 0–50** → **daraja I/II/III**, universal by age × gender and
 > block-independent.
+>
+> **2026-10-07:** physical scope delivered. New **B14 (diagnostics backend)** + **F11
+> (diagnostics UI)** for the psychological questionnaires and functional vital signs the
+> client delivered in Aug–Sep 2026 — a separate module, not ranked (`DATA_MODEL.md` §6).
 
 ---
 
@@ -53,6 +57,7 @@ consumes it. **DVPS** provides the environment at the start and deployment/monit
 | **B11** | Excel import/export | Bulk upload of **physical** measurements (staging→validation→commit), template | B5, B6 |
 | **B12** | Reports | Async PDF/Word/Excel (Celery) on physical results, status/download, report types | B8 |
 | **B13** | Audit & Stats | AuditLog (signal), dashboard/stats endpoints (counts by daraja) | B2 |
+| **B14** | Diagnostics | `apps/diagnostics`: questionnaire catalog (Instrument/Item/Option/Scale + answer key + bands as data), functional indicators with age bands, Assessment/FunctionalCheck + finalize, API, admin, `seed_diagnostics` (Khanin, OPS, Milman, Frester, SpO₂/pulse/BP) | B3, B5 |
 
 ---
 
@@ -84,6 +89,7 @@ consumes it. **DVPS** provides the environment at the start and deployment/monit
 | **F8** | Comparison UI | Side-by-side view for 2–3 athletes | B9 |
 | **F9** | Recommendation & Report UI | Recommendations view, report request + download (async status) | B10, B12 |
 | **F10** | Dashboard UI | Stats (by daraja), charts, role-based home page | B13 |
+| **F11** | Diagnostics UI | Questionnaire entry form (generated from the instrument), functional check entry, athlete-card "Diagnostika" tab with results + history, i18n | B14 |
 
 ---
 
@@ -91,10 +97,10 @@ consumes it. **DVPS** provides the environment at the start and deployment/monit
 
 | Track | Blocks | Active tasks |
 |---|---|---|
-| BCKND | 13 | ~66 (a few parked in `DEFERRED.md`) |
+| BCKND | 14 | ~79 (a few parked in `DEFERRED.md`) |
 | DVPS | 7 | ~20 |
-| FRNTND | 10 | ~26 |
-| **Total** | **30 blocks** | **~110 active** (+ a small parked set) |
+| FRNTND | 11 | ~37 |
+| **Total** | **32 blocks** | **~136** (+ a small parked set) |
 
 > The physical-first re-scope removed several tasks (functional/morpho/psych/BMI
 > scoring, OTM/OPSTTM strategies, weight categories); they are **parked, not deleted**
@@ -107,7 +113,8 @@ consumes it. **DVPS** provides the environment at the start and deployment/monit
 | # | Topic | Status | Note |
 |---|---|---|---|
 | Pivot | **Physical-readiness-first scope** | ✅ **Decided (2026-07)** | Only the state *"Jismoniy tayyorgarlik darajasi"* standard exists today; we build it end-to-end. Model in `DATA_MODEL.md`/`SCORING.md`. |
-| Parked | **Functional / morphofunctional / psychological / BMI** categories + the **OTM/OPSTTM dual-strategy** scoring | 🅿️ **Deferred → `DEFERRED.md`** | Criteria not delivered by the client and their real structure may differ. `Organization.type` (OTM\|OPSTTM) is kept as a **classification/filter** attribute only, not a scoring axis. Revisit when criteria arrive. |
+| Decided | **Psychological + functional** diagnostics | ✅ **B14/F11 (2026-10-07)** | Client materials in `resources/`. Separate module, staff transcribe paper forms, keys/bands as data; not ranked, no overall verdict. Client gaps (Raven key/norms, Frester/OPS thresholds, Milman key conflicts, …): `SCORING.md` §12.5. |
+| Parked | **Morphofunctional / BMI** categories + the **OTM/OPSTTM dual-strategy** scoring | 🅿️ **Deferred → `DEFERRED.md`** | Criteria not delivered by the client and their real structure may differ. `Organization.type` (OTM\|OPSTTM) is kept as a **classification/filter** attribute only, not a scoring axis. Revisit when criteria arrive. |
 | Open | **TOIFA 4/5 boundary** within ages 13–17 | ⏳ **Ask the client** | Confirm exactly how the 13–17 span splits into the 4th/5th toifa (`SCORING.md` §11). |
 | Open | **Below-worst-band / above-best clamp** | ⏳ **Confirm** | Worse than the worst band → 0 (below norm); better than the best band → 10. Confirm this is the intended behavior (`SCORING.md` §3.5, §11). |
 | Open | **`birth_date` vs `birth_year`** | ⏳ **Confirm precision** | Norms are per single year (7–17); a full `birth_date` gives the correct age at the session date. Confirm the required precision. |

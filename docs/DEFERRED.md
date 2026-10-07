@@ -1,5 +1,13 @@
 # SPORT-DIAGNOSTIKA.UZ — Deferred / Parked Design
 
+> **Update (2026-10-07):** the client delivered **psychological** methodologies (OPS,
+> Milman, Spielberger–Khanin, Frester, Raven) and **functional** vital-sign sheets
+> (SpO₂, pulse, blood pressure). Those two categories are now designed as the
+> **`diagnostics` module (B14)** — `DATA_MODEL.md` §6, `SCORING.md` §12, `API.md` §15 —
+> and the psych/functional parts of §1–§2 below are **superseded** (the real criteria are
+> per-methodology scores and categorical levels, not "% → overall %"). Morphofunctional,
+> BMI, weight categories and the OTM/OPSTTM strategies remain parked.
+
 > Status: **parked, not cancelled.** This is design work that is correct in spirit but
 > cannot be built yet because the **client has not delivered the criteria** for these
 > categories, and their real structure may differ (as the physical-readiness criteria
@@ -43,6 +51,8 @@ category genuinely needs a block-specific rule, reintroduce a strategy at that p
 ## 2. Non-physical categories (indicator lists, from the TTZ)
 
 Kept for when the client delivers their criteria; **do not implement yet**.
+*(Functional + psychological: superseded by B14 — the delivered instruments differ from
+these lists, e.g. psych = 5 questionnaires, functional = SpO₂/pulse/BP. Morpho still parked.)*
 
 **Functional (5):** resting heart rate · post-load heart rate · recovery time · vital
 lung capacity · aerobic capacity.
@@ -91,6 +101,9 @@ morphofunctional category for OPSTTM. Not part of the active physical-readiness 
   combine into one athlete verdict) — undefined until the other criteria exist. Do not
   design the composition now.
 - **Excel bulk-import of norms** for the non-physical categories.
+- **Diagnostics follow-ups** (outside B14 v1): Raven (needs key + norms), recommendations
+  from psych/functional levels, diagnostics in reports, athlete self-fill, Excel import
+  of questionnaire answers.
 
 ---
 
@@ -99,3 +112,7 @@ morphofunctional category for OPSTTM. Not part of the active physical-readiness 
 - **PII / minors' biometric data** protection — revisit before go-live (legal).
 - **Report branding** (letterhead / logo / signature) — confirm with the client.
 - Device integration (TZ #6/#18) — **out of scope**, all data entered manually.
+- **Diagnostics (B14) client questions** — Raven key/norms/images, Frester & OPS
+  thresholds, Milman 18–20 / 23–25 keys and "0 = average" tolerance, Khanin score-30
+  boundary + 1–4 labels + XH-3 wording, combined BP category, visibility of psych results.
+  Full list: `SCORING.md` §12.5.

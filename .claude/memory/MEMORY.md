@@ -16,3 +16,4 @@
 - [Theme](project_theme.md) — SPA mirrors the LITE root landing: minimal light theme, blue primary (#1d4ed8); token-based (`--color-*`); premium dark pass F29→F32 reverted per user pref
 - [Traceability / QA](project_traceability.md) — docs/TRACEABILITY.md maps TZ→tasks (QA acceptance basis, hand-maintained); build is physical-scope complete, rest is client-criteria-gated (DEFERRED.md)
 - [Doc language](feedback_doc_language.md) — Internal docs in English (full English domain terms, TVI→BMI); Uzbek only for product/UI
+- [Diagnostics (B14/F11)](project_diagnostics.md) — psych questionnaires + functional vitals as separate `diagnostics` app; one data-driven formula; OPS/Frester docs not yet read in full

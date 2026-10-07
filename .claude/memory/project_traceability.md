@@ -18,3 +18,7 @@ other docs).
 load (TZ #13), morphofunctional fields (weight/BMI/height/staj — TZ #1), the percentage scoring
 scheme (TZ #7), OPSTTM/OTM report types (TZ #15), device/Polar-H10 integration (TZ #18). See
 [[project_open_questions]], [[project_physical_readiness]].
+
+**Update (2026-10-07):** psych + functional criteria arrived → **B14/F11** tasked
+(BCKND-72…79, FRNTND-33…37); TRACEABILITY rows 6 / 6p marked 🔵 Planned + UAT §10.
+See [[project_diagnostics]].

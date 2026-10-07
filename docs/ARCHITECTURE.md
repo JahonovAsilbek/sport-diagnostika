@@ -4,9 +4,10 @@ Physical-readiness monitoring platform for student-athletes.
 Source specification: `SPORT.docx` (technical spec, TTZ) + the client's
 **physical-readiness criteria** (`Jismoniy tayyorgarlik mezonlari` tables).
 
-> Status: **architecture agreed, physical-readiness scope.** Implementation not started.
-> Parked design (OTM/OPSTTM dual strategy, functional / morphofunctional / psychological,
-> BMI): `DEFERRED.md`. Models: `DATA_MODEL.md` · scoring: `SCORING.md` · API: `API.md`.
+> Status: **physical-readiness scope implemented.** **Diagnostics** (psychological
+> questionnaires + functional indicators) designed as a separate module (B14, 2026-10).
+> Parked design (OTM/OPSTTM dual strategy, morphofunctional, BMI): `DEFERRED.md`.
+> Models: `DATA_MODEL.md` · scoring: `SCORING.md` · API: `API.md`.
 
 ---
 
@@ -19,7 +20,10 @@ Evaluation, monitoring and analysis of student-athletes' **physical readiness**,
 categories (and BMI) are **parked** — see `DEFERRED.md` — until the client provides their
 criteria.
 
-- Scope now: **physical readiness only** — the single category with real criteria today.
+- Scope now: **physical readiness** (scored, ranked) + **diagnostics** (B14): the
+  psychological questionnaires and functional vital signs the client delivered in
+  Aug–Sep 2026 — scored per methodology, shown on the athlete card, **not ranked** and
+  not merged into an overall verdict. Morphofunctional/BMI stay parked.
 - Scale: **3000–5000 users** (role holders). Athlete records may be
   considerably more.
 - Requirements: clean architecture, easy to maintain, online + mobile
@@ -125,6 +129,9 @@ Dependencies only point downward.
         │
   REPORTS (PDF/Word/Excel — background job)
 
+  DIAGNOSTICS (beside MEASUREMENTS+SCORING, depends on athletes + catalog only):
+    questionnaire answers → scale scores → band label; vital signs → age-banded level
+
   Cross-cutting: AUDIT LOG · IMPORT/EXPORT · ADMIN
 ```
 
@@ -139,6 +146,7 @@ Dependencies only point downward.
 | `recommendations` | Rule-based recommendation text | scoring |
 | `comparison` | 2–3 athletes side by side | scoring |
 | `reports` | PDF/Word/Excel (Celery) | rating, scoring, athletes |
+| `diagnostics` | Psychological questionnaires (Instrument/Item/Scale/key/bands as data) + functional indicators (age-banded levels); entry, finalize, snapshot results. Never feeds scoring/rating | athletes, catalog |
 | `common` | Audit, base model, permission, mixin | — |
 
 ## 6. Key flow — "Top Athletes"

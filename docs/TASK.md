@@ -18,6 +18,9 @@ start until the current one is finished.
 > end (+ `docs/DEFERRED.md`). B1/B2 and the DVPS/JWT/Celery/OpenAPI plumbing are unchanged.
 > Open choices flagged in tasks: TypeScript vs JS (FRNTND-1), UI kit (FRNTND-4). Ready to
 > implement on an explicit go, starting BCKND-1.
+>
+> **2026-10-07:** physical scope complete; **BLOK B14 + F11 (diagnostics)** added after the
+> FOLLOW-UPS section.
 
 ---
 
@@ -1995,12 +1998,158 @@ colors, focus-visible rings — the finishing pass.
 
 ---
 
+---
+
+**BLOK B14 — Diagnostics: psychological questionnaires + functional indicators**
+(BCKND-72 … BCKND-79) · dependency: B5 (athletes), B3 (catalog)
+Goal: a separate `apps/diagnostics` module that scores the client's Aug–Sep 2026
+materials (`resources/`): questionnaires via a data-driven answer key + bands, vital signs
+via age-banded levels. Never touches `Evaluation`, rating, comparison or recommendations.
+Design: `DATA_MODEL.md` §6 · `SCORING.md` §12 · `API.md` §15. Decisions (2026-10-07):
+separate module; staff transcribe the paper forms; build with the data that exists
+(no band → "daraja belgilanmagan"; Raven not seeded). Client gaps: `SCORING.md` §12.5.
+
+---
+
+# BCKND-72 — diagnostics app + questionnaire catalog models
+
+Create `apps/diagnostics` (registered in `LOCAL_APPS`). Models per `DATA_MODEL.md` §6.3:
+`Instrument`, `Item` (`response_type` single|multi|rating, `rating_min/max`), `Option`
+(`code`, `group`), `Scale` (`offset`, `direction`), `ScaleKey` (`option` nullable, `weight`),
+`ScaleBand` (`[lower, upper)`, `label`, `color`). Constraints: unique `(instrument, number)`,
+`(item, code)`, `(instrument, scale code)`, `(scale, item, option)`. Model `clean()`:
+rating items need `rating_min < rating_max` and no options; `ScaleKey.option` must belong
+to `ScaleKey.item` and be null exactly for rating items; `ScaleBand` `lower < upper` and no
+overlap within a scale. Migration.
+Edge case: a scale must only key items of its own instrument (validate in `clean()`).
+
+# BCKND-73 — Functional indicator models + band lookup
+
+`Indicator` (`code`, `name`, `unit`, `order`, `is_active`) and `IndicatorBand` (`age_min`,
+`age_max`, `gender` nullable = both, `lower`, `upper`, `label`, `color`, `valid_from`).
+Selector `indicator_bands_for(indicator, age, gender, on_date)` — latest `valid_from ≤ date`,
+age in range, gender match or null (gender-specific wins over null). `clean()`: no
+overlapping value ranges within the same `(indicator, age range, gender, valid_from)`.
+Edge case: bands may be non-monotonic (low and high pulse both warnings) — lookup is a
+pure range match, never a clamp (unlike `NormBand`).
+
+# BCKND-74 — Assessment / FunctionalCheck result models
+
+`Assessment` (`athlete`, `instrument`, `date`, `entered_by`, `status` draft|finalized,
+`finalized_at`, snapshot dims `age_category/gender/region/organization/sport_type` frozen at
+create — reuse the TestSession snapshot helper), `Response` (`item`, `option`?, `value`?;
+unique `(assessment, item, option)`), `ScaleResult` (`scale`, `score`, `label`, `color`).
+`FunctionalCheck` (same header + snapshot) and `FunctionalReading` (`indicator`, `value`,
+`label`, `color`; unique `(check, indicator)`). Indexes for athlete history
+(`athlete, date desc`).
+Edge case: snapshot dims come from the athlete at create time and never change after.
+
+# BCKND-75 — Pure scoring domain (questionnaire + functional)
+
+`apps/diagnostics/domain/`: `score_scale(keys, answers) → Decimal` implementing
+`offset + Σ contribution` (`SCORING.md` §12.1), `band_for(bands, score)` (half-open, `None`
+when no band), `indicator_level(bands, value)`, and `missing_items(items, answers)` (single/
+rating need exactly one answer, multi ≥ 1). No ORM inside the domain functions (plain
+data in/out), same style as `scoring/domain/points.py`. Services `finalize_assessment` /
+`finalize_functional_check` (atomic: validate → compute → write `ScaleResult`s /
+reading levels → `status=finalized`) and `recompute_assessment` (super_admin).
+Edge case: rating value outside `[rating_min, rating_max]` → ValidationError; Khanin XSh
+gives a result in 20–80 — verify against hand-computed examples.
+
+# BCKND-76 — Diagnostics API + scoping
+
+Per `API.md` §15: read-only `instruments` (detail returns items/options/scales/bands;
+**`ScaleKey`s hidden** from non-super_admin) and `indicators`; `assessments` and
+`functional-checks` ViewSets (CRUD in draft, `PUT …/responses/`, `PUT …/readings/`,
+`POST …/finalize/`), filters `athlete`, `instrument`, `status` + the period params
+(BCKND-70). Scoping and roles = measurements (`ScopedQuerysetMixin` via the athlete;
+ministry read-only; coach own athletes; lab_operator own organization). drf-spectacular
+schemas.
+Edge case: writing responses/readings or deleting a finalized record → `400`; an athlete
+outside the caller's scope → `403/404` as elsewhere.
+
+# BCKND-77 — Django admin for diagnostics
+
+Admin for `Instrument` (inline `Item`s; `Option`s inline on `Item`), `Scale` (inline
+`ScaleKey`s + `ScaleBand`s), `Indicator` (inline `IndicatorBand`s); results read-only
+(`Assessment` with `Response`/`ScaleResult` inlines, `FunctionalCheck` with readings).
+super_admin only for writes (TZ #16).
+
+# BCKND-78 — Seed command: seed_diagnostics
+
+Idempotent `seed_diagnostics` (update_or_create by codes), transcribing `resources/`:
+**Khanin** (40 rating 1–4 items; `xh` offset 50, `xsh` offset 35; bands per §12.1),
+**OPS** (28 Ha/Yo'q items + the 4 components + total, keyed answers from the document; no
+bands), **Milman** (40 items with option letters a…i, #17 multi with `group`, key table →
+`ScaleKey` weights, items 18–20 → `self_regulation`, 4 stress subtypes + `stress_total`,
+bands per §12.1), **Frester** (21 rating 1–9 items, `total`; no bands), **functional
+indicators** (`spo2`, `pulse_rest`, `bp_sys`, `bp_dia` with the §12.3 age bands). Raven:
+**not seeded**. Item texts verbatim in Uzbek (fix obvious typos only).
+Edge case: re-running must not duplicate rows or orphan keys; a band change re-seeds bands
+for that scale atomically.
+
+# BCKND-79 — Diagnostics tests + factories
+
+Factories for the catalog + results. Domain: every scale formula (Khanin direct/reverse +
+offset, OPS 0/1, Milman negative weights + multi #17 unscored, Frester sum), band edges
+(lower inclusive / upper exclusive, gap → no label), functional non-monotonic bands, age/
+gender band selection, `valid_from` pinning. API: scoping per role, draft-only writes,
+finalize `400` with `missing_items`, keys hidden for non-super_admin, finalized results are
+snapshots (a band edit doesn't change them until recompute). `seed_diagnostics` runs twice
+cleanly and hand-computed sample answers reproduce the documents' expected scores.
+
+---
+
+**BLOK F11 — Diagnostics UI** (FRNTND-33 … FRNTND-37) · dependency: B14
+
+---
+
+# FRNTND-33 — Diagnostics types + API client
+
+`types/diagnostics.ts` (Instrument, Item, Option, Scale, ScaleBand, Indicator, Assessment,
+ScaleResult, FunctionalCheck, FunctionalReading) and `api/diagnostics.ts` for every
+`API.md` §15 endpoint, following the existing `api/*.ts` pattern.
+
+# FRNTND-34 — Questionnaire entry form
+
+From the athlete card (or a "Diagnostika" menu entry): pick an instrument → open a draft
+assessment → a form generated from the instrument definition: `single` = radio group,
+`multi` = checkboxes, `rating` = segmented 1…N. Progress indicator (answered / total),
+keyboard-friendly fast entry (staff transcribe paper forms), save draft, finalize. On
+`400 missing_items` highlight and scroll to the first missing item.
+Edge case: 40-item instruments must stay fast — no per-item network calls (one PUT).
+
+# FRNTND-35 — Functional check entry
+
+Draft check with numeric inputs for the active indicators (SpO₂, pulse, BP sys/dia), any
+subset allowed, unit hints, finalize → per-reading level badges (label + color).
+
+# FRNTND-36 — Athlete card "Diagnostika" tab
+
+A new tab on `AthleteCardView`: latest result per instrument (scale scores + band badges;
+"daraja belgilanmagan" when no band; Milman #17 chosen groups), latest functional check,
+and a history list (date, instrument, results) with the period filter (FRNTND-26). Read
+for every role in scope; entry buttons only for roles that may write.
+
+# FRNTND-37 — i18n for diagnostics
+
+A `diagnostics` namespace in uz/ru/kk/en for all UI strings (form chrome, statuses,
+"daraja belgilanmagan", errors). Instrument/item/option/band texts are reference content
+→ stay Uzbek (`project_i18n`). Verify: lint + type-check + build.
+
+---
+
 ## DEFERRED (parked — see `docs/DEFERRED.md`)
 
 The physical-first re-scope parked the tasks below. They are **not deleted** — the design
 is correct in spirit but cannot be built until the client delivers the functional /
 morphofunctional / psychological criteria (and their real structure may differ, as the
 physical criteria did). One-line rationale per item; revisit when those criteria arrive.
+
+> **2026-10-07:** psychological + functional criteria arrived and are designed as **B14**
+> (above). DEF-2 (psych/functional test lists), DEF-6 and DEF-7 (psych/functional
+> percentages) are **superseded by B14** for those two categories; their morpho/BMI/OTM-OPSTTM
+> parts stay parked here.
 
 # DEF-1 — WeightCategory model (was part of BCKND-18)
 

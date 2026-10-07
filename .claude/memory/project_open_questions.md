@@ -26,6 +26,12 @@ age at the session date); (4) whether **"Maxsus talab boʻyicha"** implies a sec
 (general) norm tier; (5) that `DarajaThreshold` is **constant** across all tables (looks
 fixed at 48/38/30). Details: [[project_physical_readiness]].
 
+**NEW — diagnostics (B14, 2026-10-07; full list `docs/SCORING.md` §12.5):** ask the client
+for Raven key + norms + images/rights; Frester and OPS thresholds; Milman items 18–20
+(self-regulation vs emotional) and 23–25 (inverted stability key?), "0 = average" tolerance,
+stress <8/>12 labels; Khanin score 30 boundary, 1–4 answer labels, XH-3 wording; combined
+BP category; who may see psych results (minors). See [[project_diagnostics]].
+
 **Settled (no work / known limitations):** Device integration (TZ #6/#18) out of
 scope — ALL measurements entered **manually**. No athlete unique-ID/de-dup (mitigation:
 train moderators). No bulk-norm-import (norms entered manually via admin; a

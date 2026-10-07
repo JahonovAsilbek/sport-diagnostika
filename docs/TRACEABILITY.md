@@ -15,7 +15,7 @@ until the client delivers their real structure (`docs/DEFERRED.md`). Those show 
 **Deferred** below — they are coverage gaps by design, not omissions.
 
 **Status legend:** ✅ Done · 🟡 Partial (physical scope done; a slice deferred) ·
-⛔ Deferred (awaiting client criteria). At the time of writing **115 of 116 non-deferred
+⛔ Deferred (awaiting client criteria) · 🔵 Planned (designed + tasked, not built yet). At the time of writing **115 of 116 non-deferred
 tasks are complete** (only DVPS-20, this document, was open); every "Done" row below is
 backed by merged + tested code.
 
@@ -30,7 +30,8 @@ backed by merged + tested code.
 | 3 | **Sport turlari bo'yicha saralash** — filter/rank by sport | ✅ | BCKND-18, BCKND-23 (seed sports), BCKND-36 (filters), BCKND-49/50, FRNTND-18 | Pick a sport on the rating view → ranking filters to that sport type. |
 | 4 | **Yosh kategoriyasi bo'yicha saralash** — per-age norms | ✅ | BCKND-18 (AgeCategory/TOIFA), BCKND-35, BCKND-23, BCKND-26/32 (per-age norms) | An athlete's TOIFA is derived from birth year; scoring uses the age-appropriate norm; rating filters by age category. |
 | 5 | **Jismoniy tayyorgarlik testi** — physical test battery | ✅ | BCKND-19 (Exercise/Battery), BCKND-24 (seed), BCKND-39/40 (session+entry), BCKND-26/27/44 (norms→points), FRNTND-13 | Open a session for an athlete; the battery presents the age×gender exercises; entering a raw value auto-converts to 10/8/6 points via the norm bands. |
-| 6 | **Funksional tayyorgarlik testi** — HR/Polar H10/VO₂/spirography… | ⛔ | DEF-2 (functional test types), DEF-6 (non-physical evaluation), Polar H10 = TZ #18 future | **Gap — deferred.** No functional criteria delivered yet; blocked in `DEFERRED.md §2`. Client action required (open question). |
+| 6 | **Funksional tayyorgarlik testi** — HR/Polar H10/VO₂/spirography… | 🔵 | B14: BCKND-73/74/75/76/78 (indicators SpO₂, resting pulse, BP), F11: FRNTND-35/36 | Open a functional check, enter SpO₂ / pulse / BP → each reading gets an age-banded level (Me'yor/E'tibor/Past…) with a colour; visible on the athlete card's "Diagnostika" tab. **Still parked:** VO₂/spirography/recovery (no criteria), Polar H10 (TZ #18). |
+| 6p | **Psixologik tayyorgarlik** (TZ category list) — psychological diagnostics | 🔵 | B14: BCKND-72/74/75/76/78, F11: FRNTND-34/36 | Enter a Khanin / OPS / Milman / Frester questionnaire from the paper form → finalize → scale scores (+ band label where the client defined one); missing answers block finalize. **Pending client:** Raven key/norms, Frester/OPS thresholds (`SCORING.md` §12.5). |
 | 7 | **Avtomatik baholash tizimi** — auto scoring → total | 🟡 | BCKND-43 (Evaluation), BCKND-44 (points), BCKND-45 (daraja), BCKND-46 (service), BCKND-28 (thresholds) | Finalize a session → an Evaluation snapshot with `physical_total` (0–50) + daraja I/II/III. **Deviation:** the TZ's 85–100/65–84/0–64 **percentage** bands (physical+functional) were re-scoped to physical `0–50 → daraja` (functional half deferred; percentage scheme parked as DEF-4). Documented in `docs/SCORING.md`. |
 | 8 | **Avtomatik reyting** — rank high→mid→low across dimensions | 🟡 | BCKND-49 (RANK selectors), BCKND-50 (rating API), BCKND-51 (cache), BCKND-70 + FRNTND-26 (period), FRNTND-18 | `/rating/top/` ranks athletes high→low within a (region, sport, age, gender) partition; results snapshot the dimensions. **Partial:** organization / OPSTTM-vs-OTM breakdown is on the dashboard (`by_organization_type`), not a ranking partition. |
 | 9 | **Rangli indikator** — green/yellow/red | ✅ | BCKND-43/45 (color on snapshot), FRNTND (DarajaBadge severities) | Daraja I → green, II → yellow, III → red badge everywhere an evaluation shows. |
@@ -53,7 +54,10 @@ backed by merged + tested code.
 Every gap traces to missing client criteria and is parked in `docs/DEFERRED.md` — none is
 an implementation miss.
 
-- **TZ #6 Funksional tayyorgarlik** ⛔ — functional test types + scoring (`DEF-2`, `DEF-6`).
+- **TZ #6 Funksional tayyorgarlik** 🔵 — SpO₂/pulse/BP planned in **B14/F11** (2026-10-07);
+  VO₂/spirography/recovery still without criteria.
+- **Psychological diagnostics** 🔵 — 4 of 5 delivered methodologies planned in **B14/F11**;
+  Raven + Frester/OPS thresholds await the client (`SCORING.md` §12.5).
 - **TZ #13 Mashg'ulot yuklamasi** ⛔ — training-load model + thresholds (open question).
 - **TZ #1 morphofunctional fields** 🟡 — weight category (`DEF-1`), BMI/height/weight/staj/
   competitions (`DEF-5`).
@@ -140,3 +144,11 @@ Group 1 gates the rest (nothing works without auth + scope).
 ### 9. Deferred — confirm expectations with the client
 - [ ] Functional readiness (TZ #6), training-load (TZ #13), morphofunctional fields, and device
       integration are **understood to be out of the current physical-first scope** pending criteria.
+
+### 10. Diagnostics (B14/F11 — when built)
+- [ ] A coach/operator enters a Khanin questionnaire from paper; finalize shows XH/XSh scores + Past/O'rta/Yuqori.
+- [ ] An incomplete questionnaire cannot be finalized; the missing items are highlighted.
+- [ ] OPS / Frester show scores with "daraja belgilanmagan" until the client supplies thresholds.
+- [ ] A functional check (SpO₂, pulse, BP) shows an age-appropriate level per reading.
+- [ ] Psychological/functional results never appear in the rating, comparison, or daraja.
+- [ ] Scoping: a coach sees only own athletes' diagnostics; ministry is read-only.

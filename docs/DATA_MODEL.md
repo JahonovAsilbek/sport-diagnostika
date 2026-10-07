@@ -4,9 +4,10 @@ Source: `SPORT.docx` (TTZ) + the client's **physical-readiness criteria**
 (`resources/Jismoniy tayyorgarlik mezonlari …`). Architecture: `ARCHITECTURE.md`.
 Parked design (OTM/OPSTTM, functional/morpho/psych): `DEFERRED.md`.
 
-> Status: **model agreed, physical-readiness scope.** Migration/implementation not
-> started. This document covers **physical readiness only** — the single category with
-> real criteria today. Other categories are parked (`DEFERRED.md`).
+> Status: **physical readiness implemented** (§0–§5). **Diagnostics (psychological
+> questionnaires + functional indicators) designed** in §6 (B14, 2026-10) from the
+> client's Aug–Sep 2026 materials — a separate module that leaves the physical model
+> untouched. Morphofunctional/BMI remain parked (`DEFERRED.md`).
 
 ---
 
@@ -235,3 +236,96 @@ by Celery Beat. **Period filter:** ranking/comparison/history/reports accept an 
 `period_type(quarter|half|year)` + value, applied as a `session_date` range. No period
 entity. With no period, the latest Evaluation per athlete is used. Ties → same `RANK()`;
 display tiebreak: latest evaluation date, then full name.
+
+---
+
+## 6. Diagnostics — psychological questionnaires + functional indicators (B14)
+
+Source: the client's Aug–Sep 2026 materials in `resources/` — five psychological
+methodologies (OPS, V.E. Milman, Spielberger–Khanin, R. Frester, Raven) and two
+functional reference sheets (pulse oximetry, automatic tonometry). Scoring rules:
+`SCORING.md` §12.
+
+### 6.1 Decisions (2026-10-07)
+
+| Question | Decision | Reason |
+|---|---|---|
+| Where it lives | New app **`apps/diagnostics`**; `Evaluation`/rating/comparison stay physical-only | Questionnaires and categorical vital-sign levels don't fit `Measurement`/`NormBand`/`physical_total`; mixing would make a psych session the athlete's "latest" evaluation in the ranking |
+| Who enters answers | **Staff** (coach / lab_operator / admins) transcribe the athlete's paper form | No athlete login; same roles and scoping as measurements |
+| Answer keys, weights, offsets, bands | **DATA** (`ScaleKey`, `ScaleBand`, `IndicatorBand`) | Project invariant: thresholds are data; client gaps get filled by data, not code |
+| Incomplete client criteria | Build with what exists; a scale with no band shows the score with "daraja belgilanmagan"; Raven is not seeded | Unblocks the rest; answers from the client become data updates |
+| Overall psych/functional verdict, ranking | **None** (v1) | No client rule exists (DEFERRED §4) |
+| Old DEF-2/4/6/7 design | **Superseded** for psych/functional | Real criteria are per-methodology raw scores / categorical levels, not "% → overall %" |
+
+### 6.2 ERD
+
+```
+  ┌─── DIAGNOSTICS CATALOG (data, super_admin + seed_diagnostics) ─────────┐
+  │  Instrument ──o<── Item ──o<── Option (code a/b/v…, value?, group?)    │
+  │      │                │                                                │
+  │      └──o<── Scale ──o<── ScaleKey >o── Item, Option?   (weight)       │
+  │                 └──o<── ScaleBand (score range → label, color)         │
+  │  Indicator ──o<── IndicatorBand (age×gender×value range → label, color)│
+  └────────────────────────────────────────────────────────────────────────┘
+  ┌─── DIAGNOSTICS RESULTS (snapshot) ─────────────────────────────────────┐
+  │  Assessment >o── Athlete, Instrument   (date, status, snapshot dims)   │
+  │      ├──o<── Response >o── Item, Option?   (value?)                    │
+  │      └──o<── ScaleResult >o── Scale   (score, label, color)            │
+  │  FunctionalCheck >o── Athlete   (date, status, snapshot dims)          │
+  │      └──o<── FunctionalReading >o── Indicator   (value, label, color)  │
+  └────────────────────────────────────────────────────────────────────────┘
+```
+
+### 6.3 Entities
+
+**Instrument** — `id · code(unique) · name · description · instructions · time_limit_min? · is_active`
+> One psychological methodology (`ops`, `milman`, `khanin`, `frester`; `raven` later).
+**Item** — `id · instrument_id → · number · text · response_type(single|multi|rating) · rating_min? · rating_max?`
+> Unique `(instrument, number)`. `single` = one option (Ha/Yo'q, a/b/v); `multi` = several
+> options (Milman #17); `rating` = an integer in `[rating_min, rating_max]` (Khanin 1–4,
+> Frester 1–9).
+**Option** — `id · item_id → · code · text · group? · order`
+> Unique `(item, code)`. `code` is the printed letter (`a, b, v, g, d, e, j, z, i` — the
+> Cyrillic order transliterated). `group` is a free label for categorical items (Milman
+> #17: `neytral | stenik | astenik`). Rating items have no options.
+**Scale** — `id · instrument_id → · code · name · offset(decimal, default 0) · direction(higher_better|lower_better) · order`
+> A scored dimension: a component, subscale or total (e.g. Khanin `xh`, `xsh`; OPS `uv`,
+> `sp`, `zn`, `others`, `total`). `direction` drives display only (which end is "good").
+**ScaleKey** — `id · scale_id → · item_id → · option_id →? · weight(decimal)`
+> The answer key as data. Choice item: `(item, option) → weight` (no row = 0). Rating
+> item: `option = null` and the answer value is multiplied by `weight` (±1). Unique
+> `(scale, item, option)`. One item may feed several scales (Milman 23–25).
+**ScaleBand** — `id · scale_id → · lower(decimal) · upper(decimal) · label · color`
+> `[lower, upper)`, same convention as `NormBand`. Non-overlapping per scale (validated).
+> No band covering the score → result label empty = "daraja belgilanmagan".
+
+**Indicator** — `id · code(unique) · name · unit · order · is_active`
+> Functional vital sign: `spo2` (%), `pulse_rest` (urish/min), `bp_sys`, `bp_dia` (mmHg).
+> Blood pressure is two indicators so each value is one number.
+**IndicatorBand** — `id · indicator_id → · age_min · age_max · gender? · lower · upper · label · color · valid_from`
+> `[lower, upper)`; `gender = null` = both. Bands need **not** be monotonic (both a low and
+> a high pulse are warnings). Versioned by `valid_from`, pinned to the check date (as
+> `Norm`). Non-overlapping per `(indicator, age range, gender, valid_from)` (validated).
+
+**Assessment** — `id · athlete_id → · instrument_id → · date · entered_by → User · status(draft|finalized) · finalized_at?` + **snapshot dims** `age_category · gender · region_id · organization_id · sport_type_id`
+> One administration of one instrument. Snapshot dims frozen at creation, exactly as on
+> `TestSession`, so history survives transfers.
+**Response** — `id · assessment_id → · item_id → · option_id →? · value?`
+> `single`: one row with `option`; `multi`: one row per chosen option; `rating`: one row
+> with `value`. Unique `(assessment, item, option)`.
+**ScaleResult** — `id · assessment_id → · scale_id → · score(decimal) · label · color`
+> Written on finalize; `label`/`color` copied from the band (snapshot — a later band edit
+> doesn't rewrite history; super_admin can recompute explicitly).
+
+**FunctionalCheck** — `id · athlete_id → · date · entered_by → User · status(draft|finalized) · finalized_at?` + **snapshot dims** (as `Assessment`)
+**FunctionalReading** — `id · check_id → · indicator_id → · value(decimal) · label · color`
+> Unique `(check, indicator)`. Not every indicator is required per check (a check may
+> record only SpO₂ + pulse). `label`/`color` resolved on finalize from the band for the
+> athlete's age at `date` (+ gender); no band → empty label.
+
+### 6.4 Invariants
+- Keys, offsets and bands are **data**; the engine has one formula (`SCORING.md` §12).
+- Finalize is the only place results are computed; finalized rows are read-only for
+  non-super_admin.
+- Scoping is the measurements scoping (`ScopedQuerysetMixin` via the athlete), server-side.
+- Nothing in `diagnostics` writes to `Evaluation`, rating, comparison, or recommendations.

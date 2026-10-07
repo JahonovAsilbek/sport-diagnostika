@@ -58,6 +58,10 @@ Validation error (422/400):
 | **lab_operator** | read | entry (CRUD) | read | — | read | — | only own `organization_id` |
 | **ministry** | read | — | read | — | ✓ | ✓ | entire country (read only) |
 
+**Diagnostics (B14)** follows the **Measurements** column for assessments and functional
+checks (same roles, same scoping through the athlete); the instrument/indicator catalog
+follows **Catalog/Norms** (super_admin writes, everyone reads).
+
 Scope is enforced **on the server side** for every request (queryset filter) — regardless
 of the client filter. `403` is returned if the user accesses a resource outside their
 scope.
@@ -401,3 +405,65 @@ Long-running jobs (import, report, recompute after a norm change) follow the sam
 **POST `/evaluations/recompute/`** (admin, after a norm change) → `202` + job id.
 All `Evaluation`s for the given slice (`exercise / age / gender / ...`) are recomputed
 against the current norms and the rating cache is cleared.
+
+---
+
+## 15. Diagnostics — questionnaires + functional indicators (B14)
+
+Models: `DATA_MODEL.md` §6 · scoring: `SCORING.md` §12. Results never touch
+`/evaluations/`, rating or comparison.
+
+### Catalog
+| Method | Path | Description |
+|---|---|---|
+| GET | `/diagnostics/instruments/` | active instruments (id, code, name, item count) |
+| GET | `/diagnostics/instruments/{id}/` | full definition: items + options (for the entry form) and scales + bands; **answer keys omitted** for non-super_admin |
+| GET | `/diagnostics/indicators/` | functional indicators with their bands |
+
+Writes to instruments/items/options/scales/keys/bands/indicators: **Django admin** (super_admin)
++ `seed_diagnostics`; no SPA write API in v1.
+
+### Questionnaire assessments
+| Method | Path | Description |
+|---|---|---|
+| GET·POST | `/diagnostics/assessments/?athlete=&instrument=&status=` | list / open (draft) |
+| GET·PATCH·DELETE | `/diagnostics/assessments/{id}/` | single (editable/deletable in draft) |
+| PUT | `/diagnostics/assessments/{id}/responses/` | replace all answers (draft only) |
+| POST | `/diagnostics/assessments/{id}/finalize/` | validate completeness → compute `ScaleResult`s |
+
+**PUT `/diagnostics/assessments/71/responses/`**
+```json
+{ "responses": [
+    { "item": 1, "option": "a" },
+    { "item": 17, "options": ["b", "g"] },
+    { "item": 21, "value": 3 }
+] }
+```
+> Shapes from different instruments shown together for illustration. `option` = the printed option code; `options` for `multi` items; `value` for `rating`
+> items. Unknown item/option or out-of-range value → `400`.
+
+**POST `/diagnostics/assessments/71/finalize/`** → `200`
+```json
+{ "id": 71, "status": "finalized", "instrument": "khanin",
+  "results": [
+    { "scale": "xh",  "name": "Vaziyatga xos xavotir", "score": 42, "label": "O'rta", "color": "yellow" },
+    { "scale": "xsh", "name": "Shaxsiy xavotir", "score": 29, "label": "Past", "color": "green" }
+  ] }
+```
+> `400` with `missing_items: [..]` if any item is unanswered. A scale with no matching
+> band returns `"label": ""` (UI: "daraja belgilanmagan").
+
+### Functional checks
+| Method | Path | Description |
+|---|---|---|
+| GET·POST | `/diagnostics/functional-checks/?athlete=&status=` | list / open (draft) |
+| GET·PATCH·DELETE | `/diagnostics/functional-checks/{id}/` | single (editable in draft) |
+| PUT | `/diagnostics/functional-checks/{id}/readings/` | `{ "readings": [{ "indicator": "spo2", "value": 97 }, …] }` |
+| POST | `/diagnostics/functional-checks/{id}/finalize/` | resolve each reading's level (age at date + gender) |
+
+Finalize response: `{ id, status, readings: [{ indicator, value, unit, label, color }] }`.
+`400` if there are no readings or a value is outside its sane bounds.
+
+### History
+Both list endpoints accept `athlete=` plus the optional period params (§7) and return
+finalized items newest-first — the athlete card's "Diagnostika" tab reads them.
